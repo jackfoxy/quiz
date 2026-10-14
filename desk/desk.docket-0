@@ -1,0 +1,10 @@
+:~
+  title+'quiz'
+  info+'property-based testing'
+  color+0xe3.9871
+  image+'/quiz/quiz.png'
+  version+[0 1 0]
+  website+'https://github.com/jackfoxy/quiz'
+  license+'MIT+n'
+  site+/quiz
+==
