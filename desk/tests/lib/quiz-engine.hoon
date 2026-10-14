@@ -3,10 +3,17 @@
 ::
 ++  sized  !>(|=([size=@ud rng=_og] ^-(@ud size)))
 ::
+++  no-alts  !>(|=(vase *(list vase)))
+::
+++  config
+  |=  [requested=@ud attempts=@ud drops=@ud duplicates=@ud]
+  ^-  conf:engine
+  [requested attempts drops duplicates bounds:defaults:engine]
+::
 ++  start
   |=  [fate=vase norn=(unit vase)]
   ^-  state:engine
-  (init:engine 0v1 [3 10 5 5] [fate norn ~])
+  (init:engine 0v1 (config 3 10 5 5) [fate norn `no-alts])
 ::
 ++  complete
   ::  A broken completion condition must fail instead of hanging the suite.
@@ -66,7 +73,7 @@
 ++  test-crash-trace
   ^-  tang
   =/  fate  !>(|=(@ud ^-(? ~|(%engine-crash !!))))
-  =/  done  (step:engine (start fate `sized))
+  =/  done  (complete (start fate `sized))
   =/  result  (need result.done)
   ?>  ?=(%failed -.result)
   ?>  ?=(%crash -.why.result)
@@ -78,7 +85,7 @@
 ++  test-scry
   ^-  tang
   =/  fate  !>(|=(@ud .^(? %cz /quiz-engine-missing)))
-  =/  done  (step:engine (start fate `sized))
+  =/  done  (complete (start fate `sized))
   =/  result  (need result.done)
   ?>  ?=(%failed -.result)
   ;:  weld
@@ -90,8 +97,8 @@
   ^-  tang
   =/  atom-fate  !>(|=(@ud 42))
   =/  cell-fate  !>(|=(@ud [0 1]))
-  =/  atom-done  (step:engine (start atom-fate `sized))
-  =/  cell-done  (step:engine (start cell-fate `sized))
+  =/  atom-done  (complete (start atom-fate `sized))
+  =/  cell-done  (complete (start cell-fate `sized))
   =/  a  (need result.atom-done)
   =/  b  (need result.cell-done)
   ?>  ?=([%failed [%bad-product *] * *] a)
@@ -106,7 +113,7 @@
   =/  give  !>(|=([size=@ud rng=_og] ^-(@ud ~|(%norn-crash !!))))
   =/  done  (step:engine (start !>(|=(@ud &)) `give))
   =/  result  (need result.done)
-  ?>  ?=([%error %norn [%crash *]] result)
+  ?>  ?=([%error %norn [%crash *] ~] result)
   ;:  weld
     (expect !>(?=(^ trace.why.result)))
     (expect-eq !>(*counters:engine) !>(counts.done))
@@ -118,7 +125,7 @@
   =/  give  !>(|=([size=@ud rng=_og] .^(@ud %cz /quiz-engine-missing)))
   =/  done  (step:engine (start !>(|=(@ud &)) `give))
   ;:  weld
-    (expect !>(?=([~ %error %norn [%scry *]] result.done)))
+    (expect !>(?=([~ %error %norn [%scry *] ~] result.done)))
     (expect-eq !>(*counters:engine) !>(counts.done))
   ==
 ::
@@ -128,7 +135,7 @@
   =/  s  (start !>(|=(@ud &)) ~)
   =/  done  (step:engine s(size 0))
   ;:  weld
-    (expect !>(?=([~ %error %generate [%crash *]] result.done)))
+    (expect !>(?=([~ %error %generate [%crash *] ~] result.done)))
     (expect-eq !>(*counters:engine) !>(counts.done))
   ==
 ::
@@ -191,7 +198,7 @@
 ::
 ++  test-zero-requested
   ^-  tang
-  =/  s  (init:engine 0v1 [0 0 0 0] [!>(|=(@ud !!)) ~ ~])
+  =/  s  (init:engine 0v1 (config 0 0 0 0) [!>(|=(@ud !!)) ~ ~])
   ;:  weld
     (expect !>(?=([~ %passed ~] result.s)))
     (expect-eq !>(*counters:engine) !>(counts.s))
@@ -201,9 +208,9 @@
 ++  test-zero-budgets
   ^-  tang
   =/  compiled=parts:engine  [!>(|=(@ud !!)) ~ ~]
-  =/  a  (init:engine 0v1 [1 0 5 5] compiled)
-  =/  b  (init:engine 0v1 [1 5 0 5] compiled)
-  =/  c  (init:engine 0v1 [1 5 5 0] compiled)
+  =/  a  (init:engine 0v1 (config 1 0 5 5) compiled)
+  =/  b  (init:engine 0v1 (config 1 5 0 5) compiled)
+  =/  c  (init:engine 0v1 (config 1 5 5 0) compiled)
   ;:  weld
     (expect !>(?=([~ %exhausted %attempts %.n] result.a)))
     (expect !>(?=([~ %exhausted %drops %.n] result.b)))
@@ -215,12 +222,12 @@
 ::
 ++  test-boundary-precedence
   ^-  tang
-  =/  compiled=parts:engine  [!>(|=(@ud &)) `sized ~]
-  =/  passed  (complete (init:engine 0v1 [1 1 1 1] compiled))
-  =/  drop-parts=parts:engine  [!>(|=(@ud %drop)) `sized ~]
-  =/  dropped  (complete (init:engine 0v1 [1 1 1 1] drop-parts))
-  =/  fail-parts=parts:engine  [!>(|=(@ud |)) `sized ~]
-  =/  failed  (complete (init:engine 0v1 [1 1 1 1] fail-parts))
+  =/  compiled=parts:engine  [!>(|=(@ud &)) `sized `no-alts]
+  =/  passed  (complete (init:engine 0v1 (config 1 1 1 1) compiled))
+  =/  drop-parts=parts:engine  [!>(|=(@ud %drop)) `sized `no-alts]
+  =/  dropped  (complete (init:engine 0v1 (config 1 1 1 1) drop-parts))
+  =/  fail-parts=parts:engine  [!>(|=(@ud |)) `sized `no-alts]
+  =/  failed  (complete (init:engine 0v1 (config 1 1 1 1) fail-parts))
   ;:  weld
     (expect !>(?=([~ %passed ~] result.passed)))
     (expect !>(?=([~ %exhausted %attempts %.y] result.dropped)))
@@ -230,11 +237,11 @@
 ++  test-fixed-seed-resume
   ^-  tang
   =/  give  !>(|=([size=@ud rng=_og] (rad:rng 65.536)))
-  =/  compiled=parts:engine  [!>(|=(@ud &)) `give ~]
-  =/  first  (init:engine 0v1a [3 10 5 5] compiled)
+  =/  compiled=parts:engine  [!>(|=(@ud &)) `give `no-alts]
+  =/  first  (init:engine 0v1a (config 3 10 5 5) compiled)
   =/  checkpoint  (step:engine (step:engine first))
   =/  done  (complete first)
-  =/  other  (complete (init:engine 0v1b [3 10 5 5] compiled))
+  =/  other  (complete (init:engine 0v1b (config 3 10 5 5) compiled))
   ;:  weld
     (expect !>(=(done (complete checkpoint))))
     (expect !>(=(done (complete first))))
@@ -245,10 +252,10 @@
 ++  test-fixed-seed-counterexample
   ^-  tang
   =/  give  !>(|=([size=@ud rng=_og] (rad:rng 65.536)))
-  =/  compiled=parts:engine  [!>(|=(@ud |)) `give ~]
-  =/  a  (step:engine (init:engine 0v1a [3 10 5 5] compiled))
-  =/  b  (step:engine (init:engine 0v1a [3 10 5 5] compiled))
-  =/  c  (step:engine (init:engine 0v1b [3 10 5 5] compiled))
+  =/  compiled=parts:engine  [!>(|=(@ud |)) `give `no-alts]
+  =/  a  (complete (init:engine 0v1a (config 3 10 5 5) compiled))
+  =/  b  (complete (init:engine 0v1a (config 3 10 5 5) compiled))
+  =/  c  (complete (init:engine 0v1b (config 3 10 5 5) compiled))
   ;:  weld
     (expect-eq !>(result.a) !>(result.b))
     (expect !>(!=(result.a result.c)))
