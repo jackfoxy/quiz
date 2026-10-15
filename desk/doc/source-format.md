@@ -89,3 +89,7 @@ local scries only after checking desk, revision, and file existence. `our` and
 Compilation, type inference, and arm evaluation can still allocate heavily or
 fail to terminate. Vere 4.6 provides no per-evaluation fuel limit here. Size
 checks are not hard memory isolation, and this builder cannot preempt a loop.
+
+Suite execution and durable replay are documented in
+[suites and replay](suites-and-replay.md). Unavailable context diagnostics
+distinguish `%desk-unavailable` from `%revision-unavailable`.

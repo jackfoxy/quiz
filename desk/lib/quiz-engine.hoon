@@ -84,6 +84,11 @@
       result=(unit outcome)
   ==
 ::
+++  version
+  ::  Bump when deterministic generation/evaluation/shrinking semantics change.
+  ^-  @tas
+  %quiz-engine-1
+::
 ++  defaults
   ^-  conf
   :*  100  10.000  1.000  1.000

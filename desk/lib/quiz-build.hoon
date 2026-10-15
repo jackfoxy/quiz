@@ -76,7 +76,9 @@
   ?:  &(?=([%tas *] revision) !(safe-name p.revision))
     [%.n (issue %case / [1 1] ~ ~)]
   =/  desks  .^((set @tas) %cd [(scot %p our) %$ (scot %da now) ~])
-  ?.  (~(has in desks) desk)  [%.n (issue %context / [1 1] ~ ~)]
+  ?.  (~(has in desks) desk)
+    =/  trace=tang  ~[[%leaf "desk %{(trip desk)} is unavailable on {<our>}"]]
+    [%.n (issue %desk-unavailable / [1 1] ~ trace)]
   =/  latest=path  /(scot %p our)/[desk]/(scot %da now)
   =/  dom  .^(domo:clay %cv latest)
   =/  exists
@@ -85,10 +87,14 @@
       %tas  (~(has by lab.dom) p.revision)
       %da  (lte p.revision now)
     ==
-  ?.  exists  [%.n (issue %context / [1 1] ~ ~)]
+  ?.  exists
+    =/  trace=tang
+      ~[[%leaf "revision {<revision>} is unavailable in %{(trip desk)}"]]
+    [%.n (issue %revision-unavailable / [1 1] ~ trace)]
   =/  root=path  /(scot %p our)/[desk]/(scot revision)
   =/  cass  .^([@ud @da] %cw root)
-  ?:  =(-.cass 0)  [%.n (issue %context / [1 1] ~ ~)]
+  ?:  =(-.cass 0)
+    [%.n (issue %revision-unavailable / [1 1] ~ ~)]
   [%.y [our `@tas`desk -.cass]]
 ::
 ++  import-rule
