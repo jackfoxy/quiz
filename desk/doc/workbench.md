@@ -10,7 +10,10 @@ choose `hoon` or `md` when saving. Ctrl-S, Ctrl-Shift-S and Ctrl-O invoke
 these actions. Closing or reopening an edited tab asks before discarding
 changes. Leaving the page prompts when the browser permits it.
 
-**Examples** contains the bundled test suites. **Documentation** contains
+**Examples** contains passing property documents (`props`), intentional
+failures (`failing`), and existing test suites (`examples`). Property documents
+default to saved-property execution; suites default to saved-suite execution.
+See the [example catalog](examples.md) for expected outcomes. **Documentation** contains
 these reference files. Both are read-only. **Open editable copy** creates
 an unsaved tab; save it in My documents to keep your version.
 

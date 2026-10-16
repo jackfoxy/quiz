@@ -1,6 +1,41 @@
 (() => {
   'use strict';
   const byId = (id) => document.getElementById(id);
+  // Keep repository-relative Markdown links usable in rendered Help tabs.
+  // Shared urui owns the frames; Quiz owns its documentation/source routes.
+  document.addEventListener('load', (event) => {
+    const frame = event.target;
+    if (frame.tagName !== 'IFRAME'
+        || !frame.classList.contains('docs-explorer-frame')) return;
+    let doc;
+    try { doc = frame.contentDocument; } catch (_) { return; }
+    if (!doc) return;
+    const location = new URL(doc.URL);
+    const prefix = '/docs/d/quiz/';
+    if (location.origin !== window.location.origin
+        || !location.pathname.startsWith(prefix)) return;
+    const repository = 'https://github.com/jackfoxy/quiz/blob/dev/desk/';
+    const source = repository + 'doc/' + location.pathname.slice(prefix.length) + '.md';
+    for (const link of doc.querySelectorAll('a[href]')) {
+      const href = link.getAttribute('href');
+      if (!href.startsWith('#') && !href.startsWith('/')
+          && !/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+        const target = new URL(href, source);
+        const docRoot = new URL(repository + 'doc/');
+        if (target.origin === docRoot.origin
+            && target.pathname.startsWith(docRoot.pathname)
+            && target.pathname.endsWith('.md')) {
+          link.href = prefix + target.pathname.slice(docRoot.pathname.length, -3)
+            + target.hash;
+        } else link.href = target.href;
+      }
+      const target = new URL(link.href, location);
+      if (target.origin !== location.origin) {
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+      }
+    }
+  }, true);
   const validContext = (value) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     const {desk, revision} = value;

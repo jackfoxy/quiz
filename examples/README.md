@@ -1,16 +1,20 @@
 # Examples
 
-The executable example suites live in [desk/tests/examples](../desk/tests/examples):
+Open **Examples** in the Quiz workbench, or read the
+[example catalog](../desk/doc/examples.md) for source links and recorded outcomes.
 
-- [Quiz tutorial](../desk/tests/examples/01-quiz-tutorial.hoon)
-- [Boxcar](../desk/tests/examples/02-boxcar.hoon)
-- [Euler](../desk/tests/examples/03-euler.hoon)
+- `desk/examples/props/`: passing property documents.
+- `desk/examples/failing/`: intentional counterexamples and exhaustion.
+- `desk/tests/examples/`: existing tutorial, boxcar and Euler test suites.
 
-After copying and committing the desk to a ship, run:
+The new property documents run through the app's saved-property or draft
+workflow. The three existing suites run through its saved-suite workflow or
+Dojo:
 
 ```hoon
 -test /=quiz=/tests/examples ~
 ```
 
-All three suites pass. Properties that deliberately find counterexamples are
-asserted as expected failures inside passing test arms.
+All three suites pass. Legacy tutorial arms assert expected failures as
+successful test assertions. New teaching failures stay outside `desk/tests/`
+and do not make the default passing regression suite fail.

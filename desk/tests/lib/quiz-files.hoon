@@ -34,6 +34,19 @@
   !>((locate:files bol /work/legacy/hoon))
   !>((locate:files bol /legacy/hoon))
 ::
+++  test-property-example-roots
+  ^-  tang
+  =/  props  (locate:files bol /props/success/hoon)
+  =/  failing  (locate:files bol /failing/crash/hoon)
+  ?>  ?=(%.y -.props)
+  ?>  ?=(%.y -.failing)
+  ;:  weld
+    (expect-eq !>(/examples/props/success/hoon) !>(rel.p.props))
+    (expect-eq !>(/examples/failing/crash/hoon) !>(rel.p.failing))
+    (expect !>(!write.p.props))
+    (expect !>(!write.p.failing))
+  ==
+::
 ++  test-clay-selection-required
   ^-  tang
   =/  missing  (locate:files bol /clay)

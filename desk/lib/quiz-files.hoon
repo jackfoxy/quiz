@@ -55,6 +55,8 @@
     [%.y [here (weld /data/quiz rel) &]]
     [%work *]      [%.y [here (weld /data/quiz t.rel) &]]
     [%examples *]  [%.y [here (weld /tests/examples t.rel) |]]
+    [%props *]     [%.y [here (weld /examples/props t.rel) |]]
+    [%failing *]   [%.y [here (weld /examples/failing t.rel) |]]
     [%docs *]      [%.y [here (weld /doc t.rel) |]]
     [%clay *]
       ?.  ?=([%clay @ @ *] rel)

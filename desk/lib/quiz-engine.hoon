@@ -170,7 +170,9 @@
     ?>  ?=(^ why)
     =/  stage  ?:(=(~ norn.compiled.s) %generate %norn)
     (stop-error s stage why ~)
-  =/  sam  ;;(vase p.made)
+  ::  generate's maker already returns a vase. Unbox that trusted product;
+  ::  molding its shared type tree again can expand recursive sample types.
+  =/  sam  !<(vase [p:!>(*vase) p.made])
   =.  s
     s(rng next-rng, size (add +(size.s) (div (mul size.s 2) 21)))
   =.  attempted.counts.s  +(attempted.counts.s)

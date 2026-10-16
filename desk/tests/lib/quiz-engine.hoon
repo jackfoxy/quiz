@@ -260,4 +260,18 @@
     (expect-eq !>(result.a) !>(result.b))
     (expect !>(!=(result.a result.c)))
   ==
+::
+++  test-recursive-sample-type-limit
+  ^-  tang
+  =/  fate  !>(|=(items=(list @ud) =(items (flop (flop items)))))
+  =/  give
+    !>  |=  [size=@ud rng=_og]
+        ^-  (list @ud)
+        ~[size]
+  =/  initial  (start fate `give)
+  =/  done  (step:engine initial(sample-bytes.bounds.config 1))
+  ;:  weld
+    (expect !>(?=([~ %limited %sample-bytes ~] result.done)))
+    (expect-eq !>(`counters:engine`[1 0 0 0 0 0]) !>(counts.done))
+  ==
 --

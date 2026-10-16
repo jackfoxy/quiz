@@ -105,6 +105,7 @@
       if (!path || path.at(-1) !== 'hoon') return null;
       if (path[0] === 'work') return ['data', 'quiz', ...path.slice(1)];
       if (path[0] === 'examples') return ['tests', 'examples', ...path.slice(1)];
+      if (['props', 'failing'].includes(path[0])) return ['examples', ...path];
       if (path[0] === 'clay') return path.slice(3);
       return null;
     }
@@ -117,6 +118,7 @@
         value.desk = clay ? tab.path[1] : context?.desk || '';
         value.revision = clay ? tab.path[2] : context?.revision || '';
         if (tab.path?.[0] === 'examples') value.mode = 'suite';
+        else if (['props', 'failing'].includes(tab.path?.[0])) value.mode = 'file';
         else if (clay) value.mode = tab.path[3] === 'tests' ? 'suite' : 'file';
       }
       return value;

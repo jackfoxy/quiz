@@ -59,6 +59,8 @@
       :~  :*  %property  'Document'  'Untitled'  starter
               :~  [/work ~[%hoon %md] ~ &]
                   [/examples ~[%hoon] ~ |]
+                  [/props ~[%hoon] ~ |]
+                  [/failing ~[%hoon] ~ |]
                   [/docs ~[%md] ~ |]
                   [/clay ~[%hoon] ~ |]
               ==
@@ -66,7 +68,7 @@
           ==
       ==
       :~  [%work-files %property ~[/work]]
-          [%example-files %property ~[/examples]]
+          [%example-files %property ~[/props /failing /examples]]
           [%doc-files %property ~[/docs]]
       ==
   ==
@@ -156,6 +158,10 @@
   ^-  marl
   :~  ;div#fallback-help-content
         ;p: Install %docs for the full Quiz help and reference.
+        ;p: Documentation opens the shipped guide and reference as text.
+        ;h2: Start here
+        ;p: Examples has passing props, intentional failing cases and suites.
+        ;p: Run 01-success with blank overrides; inspect 03-crash at zero.
         ;h2: Documents
         ;p: Use + for a new property. Open files from My documents or Examples.
         ;p: Save writes to this desk. Save As keeps another copy.
@@ -165,11 +171,13 @@
         ;p: Read-only files can be opened as editable copies.
         ;h2: Runs
         ;p: Draft runs use the editor; saved runs use the pinned revision.
+        ;p: After saving, choose Use latest revision for the saved version.
         ;p: Blank overrides use document conf. Read document conf previews it.
         ;p: Replay keeps seed and context. Rerun repeats the request.
         ;p: Counters come from the ship; stale results retain their source.
         ;h2: Shortcuts
         ;p: Ctrl-S saves; Ctrl-Shift-S saves as; Ctrl-O opens a document.
+        ;p: On macOS use Command. Run, replay and cancel have no shortcuts.
         ;p: Ace supports search, undo, redo and optional Vim keys in Settings.
       ==
       ;div#docs-help-content.docs-help-content(hidden "")

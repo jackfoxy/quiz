@@ -234,7 +234,9 @@ is the mark, such as `hoon` or `md`):
 | Prefix | Clay location | Access |
 | --- | --- | --- |
 | `work` | This desk's `/data/quiz` | Read/write Hoon and Markdown |
-| `examples` | This desk's `/tests/examples` | Read-only Hoon |
+| `examples` | This desk's `/tests/examples` | Read-only Hoon suites |
+| `props` | This desk's `/examples/props` | Read-only Hoon properties |
+| `failing` | This desk's `/examples/failing` | Read-only teaching failures |
 | `docs` | This desk's `/doc` | Read-only Markdown |
 | `clay/<desk>/<revision>` | Local desk, explicit decimal revision | Read-only Hoon |
 

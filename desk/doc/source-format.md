@@ -79,7 +79,8 @@ more precise spans. Oversized traces are omitted and `clipped` is true.
 
 `prepared` values are internal validated data, not an untrusted wire format.
 A caller must use `prepare`/`prepare-file` before requesting compilation. The
-Gall action boundary and job lifecycle are implemented in later plan units.
+Gall action boundary and job lifecycle are described in the
+[agent API](agent-api.md).
 
 Document and arm evaluation reject scries; dependency reads are explicit.
 Failed build scries can escape Gall virtualization, so dependency builds use
