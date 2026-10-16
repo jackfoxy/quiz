@@ -2,6 +2,7 @@
 /+  shell=urui-shell, ucfg=urui-config, ujs=urui-js, ufiles=urui-files
 /+  ucss=urui-css, uace=urui-ace, locations=quiz-files
 /*  client  %js  /web/quiz/js
+/*  runs  %js  /web/quiz-runs/js
 |%
   ::  Document workbench. urui owns editors, files, dialogs and persistence.
   ::
@@ -49,6 +50,7 @@
       ['resultOpen' %urui %scalar ~]
       ['fileTrees' %urui %record ~]
       ['clayContext' %app %record ~]
+      ['runSelection' %app %scalar ~]
   ==
 ::
 ++  files
@@ -127,6 +129,8 @@
                 ; New document
               ==
           ==
+          %+  pinned  %run-controls
+          [%controls ~[;div#run-controls;]]
           %+  pinned  %body
           :*  %panel  'editor-body'
               `['quiz-editor' 'Hoon source' 'ace/mode/hoon']  ~
@@ -136,16 +140,12 @@
 ::
 ++  result-pane
   ^-  pane:urui
-  :*  %result  'result-pane'  'Document information'  %read-only  ~
-      :~  (pinned %head [%heading `'Document information' ~ ~])
-          (pinned %tabs [%tabs ~[[%info 'Information' %fixed ~ ~ ~ | |]]])
+  :*  %result  'result-pane'  'Run results'  %read-only  ~
+      :~  (pinned %head [%heading `'Run results' ~ ~])
           %+  pinned  %body
           :-  %panel
           :*  'result-body'  ~
-              :~  ;p: Start with a property, or open an example suite.
-                  ;p: My documents are saved in /data/quiz on this desk.
-                  ;p: Examples, documentation and Clay revisions are read-only.
-                  ;p: Use Open editable copy to keep your own version.
+              :~  ;div#quiz-runs;
                   ;p#quiz-error(role "alert", hidden "");
               ==
           ==
@@ -163,6 +163,11 @@
         ;h2: Clay source
         ;p: Select a desk and an immutable revision, then browse Hoon files.
         ;p: Read-only files can be opened as editable copies.
+        ;h2: Runs
+        ;p: Draft runs use the editor; saved runs use the pinned revision.
+        ;p: Blank overrides use document conf. Read document conf previews it.
+        ;p: Replay keeps seed and context. Rerun repeats the request.
+        ;p: Counters come from the ship; stale results retain their source.
         ;h2: Shortcuts
         ;p: Ctrl-S saves; Ctrl-Shift-S saves as; Ctrl-O opens a document.
         ;p: Ace supports search, undo, redo and optional Vim keys in Settings.
@@ -210,6 +215,25 @@
   :~  (compose:ucss ~[%tokens %controls %shell %explorer %tabs %dialogs])
       '''
       #result-pane { flex-direction: column; }
+      #run-controls { display: grid; grid-template-columns: 1fr 1fr;
+        gap: .5rem; padding: .75rem; flex: 0 0 auto; }
+      #run-controls { width: 100%; }
+      #run-controls label { font-size: .8rem; min-width: 0; }
+      #run-controls input, #run-controls select { width: 100%; }
+      #run-controls p, #run-toolbar { grid-column: 1 / -1; margin: 0; }
+      #run-toolbar, #result-actions { display: flex; gap: .4rem;
+        flex-wrap: wrap; }
+      #run-source-note, #run-settings-note, #run-message {
+        font-size: .8rem; white-space: pre-wrap; }
+      #run-history { display: flex; gap: .3rem; flex-wrap: wrap;
+        max-height: 9rem; overflow: auto; margin: .75rem 0; }
+      #run-detail pre { white-space: pre-wrap; overflow-wrap: anywhere;
+        max-height: 18rem; overflow: auto; font-size: .8rem; }
+      #run-detail h2 { font-size: 1rem; }
+      #run-detail h3 { font-size: .9rem; }
+      #run-detail p, #runs-connection { font-size: .85rem; }
+      #run-stale { font-weight: bold; }
+      #run-controls [disabled] { opacity: .6; }
       #quiz-editor { height: 100%; min-height: 12rem; }
       #document-location { overflow-wrap: anywhere; color: var(--muted); }
       #clay-source-panel { padding: .75rem; overflow: auto; }
@@ -224,5 +248,5 @@
 ::
 ++  javascript
   ^-  @t
-  (rap 3 ~[(emit:ucfg spec) core:ujs client])
+  (rap 3 ~[(emit:ucfg spec) core:ujs runs client])
 --

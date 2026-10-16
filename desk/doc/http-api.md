@@ -1,7 +1,7 @@
 # Quiz HTTP API
 
-`%quiz-web` serves `/apps/quiz` on the `%quiz` desk. The shell is currently a
-minimal compiled urui page; editing and run controls are later workbench units.
+`%quiz-web` serves `/apps/quiz` on the `%quiz` desk. The compiled urui
+[workbench](workbench.md) provides editing, run controls and confirmed results.
 The engine's [typed API](agent-api.md) remains available to Gall clients.
 
 ## Routes and authorization
@@ -110,14 +110,28 @@ Replay uses the stored property text, immutable context, effective settings,
 seed, and engine version. Suite replay is refused. Neither operation accepts
 replacement replay inputs.
 
-Both return **202 `{"accepted":true}` after the engine acknowledges the
-poke**. This means admission, not completion. The response does not claim a
-run ID: the existing engine poke acknowledgement carries none. Refresh `runs`
-and inspect records to select the admitted run, then poll `status`. On the
-dedicated single-client test ship, the before/after ID difference identifies
-it; concurrent producers must inspect records rather than assume the newest
-ID belongs to their request. `request` in each record exposes the original
-submitted inputs. No HTTP idempotency or automatic retry is provided.
+Both return **202 `{"accepted":true,"id":"43"}` after correlated engine
+admission**. The decimal ID identifies this request even with concurrent
+producers. Poll that ID's `status` for completion. The engine allocates it and
+sends a local `%quiz-admitted` callback; an ordinary poke acknowledgement alone
+does not complete this HTTP response. `request` in each record exposes the
+original submitted inputs. No HTTP idempotency or automatic retry is provided.
+A timeout or lost connection may occur after admission; inspect history before
+retrying.
+
+### Inspect document configuration
+
+Send the same draft or file request as `run`, with `"op":"document-conf"`.
+Suite sources are refused. Returns 200 with pinned `context`, full `config`
+and nullable `seed` from the compiled document's `conf` or engine defaults.
+This operation compiles the source and evaluates its configuration; it does
+not enqueue a run or apply request overrides. Invalid source/context/imports
+return 422 with a located diagnostic. Reads use the same pinned asynchronous
+Clay build paths as execution.
+
+The workbench uses this operation when overriding requested checks: it copies
+the document's full configuration and changes only `requested`, preserving
+other budgets. Blank controls leave the engine to resolve document settings.
 
 ### History, status and cancellation
 
@@ -180,7 +194,7 @@ Returns 200 with pinned `context` and ordered `arms` names after an asynchronous
 Clay build. Discovery does not execute the test arms. Invalid/missing source,
 desk, revision, or test core returns 422 with the located diagnostic object.
 
-One API mutation/discovery may await a reply at a time; another returns 503
+One API mutation/discovery/configuration inspection may await a reply at a time; another returns 503
 `{"error":"api-busy"}`. Reads remain available. Pending API requests time out
 after 30 seconds with 504 `{"error":"api-timeout"}`; stale replies are ignored.
 A timeout is not a rollback of an admitted run. An engine rejection returns

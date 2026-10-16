@@ -485,4 +485,29 @@
     %-  expect-fail
     |.  (on-watch:~(. agent bol) /elsewhere)
   ==
+::
+++  test-correlated-admission
+  ^-  tang
+  =/  prior  (queued 3)
+  =/  a  ~(. agent bol)
+  =.  a  a(state prior)
+  =/  got  (on-poke.a %quiz-submit !>(['ticket' request]))
+  =/  ticket=@ta  'ticket'
+  =/  id=@ud  4
+  =/  expected=card:agent:gall
+    :*  %pass  /quiz-admitted  %agent  [~zod %quiz-web]
+        %poke  %quiz-admitted  !>([ticket id])
+    ==
+  ;:  weld
+    (expect !>((lien -.got |=(c=card:agent:gall =(c expected)))))
+    (expect-eq !>(5) !>(next-id.saved.state:+.got))
+    (expect-eq !>(request) !>(request:(get-record state:+.got 4)))
+  ==
+::
+++  test-correlated-admission-foreign-denied
+  ^-  tang
+  =/  bowl  bol
+  %-  expect-fail
+  |.  (on-poke:~(. agent bowl(src ~nec)) %quiz-submit !>(['x' request]))
+
 --

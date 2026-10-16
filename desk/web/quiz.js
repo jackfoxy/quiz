@@ -11,6 +11,9 @@
     return {desk, revision};
   };
   let context = null;
+  let defaults = null;
+  let runSelection = null;
+  let runner = null;
   let contexts = [];
   let browseGeneration = 0;
   const problem = (message = '') => {
@@ -25,14 +28,18 @@
       resultPane: byId('result-pane'),
       editorStatus: byId('source-status')
     },
-    onChange: () => runtime.session.queue(),
+    onChange: () => { runtime.session.queue(); runner?.changed(); },
     session: {
-      read: (key) => key === 'clayContext' ? context : undefined,
+      read: (key) => key === 'clayContext' ? context
+        : key === 'runSelection' ? runSelection : undefined,
       validate: (key, value) => key === 'clayContext'
-        ? validContext(value) : undefined
+        ? validContext(value) : key === 'runSelection'
+          ? (typeof value === 'string' && /^[1-9][0-9]{0,39}$/.test(value) ? value : null)
+          : undefined
     },
     documents: {
       property: {
+        fields: {defaults: window.quizRunFields, validate: window.quizRunFields},
         afterActivate: (tab) => showDocument(tab),
         saved: (tab) => showDocument(tab)
       }
@@ -52,6 +59,7 @@
     raw?.session?.setMode((tab.path?.at(-1) === 'md'
       || (!tab.path && tab.label?.endsWith('.md')))
       ? 'ace/mode/text' : 'ace/mode/hoon');
+    runner?.activate(tab);
   }
   function editableCopy() {
     const tab = docs.active('property');
@@ -94,18 +102,30 @@
   const files = control('div', 'clay-files');
   panel.append(deskLabel, desk, revLabel, revision, browse, state, files);
   async function post(url, body) {
-    const response = await fetch(url, {
-      method: 'POST', credentials: 'same-origin',
-      headers: {'content-type': 'application/json'},
-      body: JSON.stringify(body)
-    });
-    const result = await response.json();
-    if (!response.ok || result.ok === false) {
-      const reason = typeof result.error === 'string'
-        ? result.error : result.error?.message;
-      throw new Error(reason || result.code || `Request failed (${response.status})`);
-    }
-    return result;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 35000);
+    const mutation = ['run', 'replay', 'cancel'].includes(body.op);
+    try {
+      const response = await fetch(url, {
+        method: 'POST', credentials: 'same-origin', signal: controller.signal,
+        headers: {'content-type': 'application/json'}, body: JSON.stringify(body)
+      });
+      let result;
+      try { result = await response.json(); }
+      catch { throw new Error(`Unexpected server response (${response.status}).`); }
+      if (!response.ok || result.ok === false) {
+        const reason = typeof result.error === 'string' ? result.error : result.error?.message;
+        const error = new Error(reason || result.code || `Request failed (${response.status})`);
+        error.status = response.status;
+        error.diagnostic = result.code && result.path ? result : undefined;
+        error.uncertain = mutation && response.status >= 500;
+        throw error;
+      }
+      return result;
+    } catch (error) {
+      if (!error.status) error.uncertain = mutation;
+      throw error;
+    } finally { clearTimeout(timeout); }
   }
   async function browseClay() {
     const selected = validContext({desk: desk.value, revision: revision.value});
@@ -154,6 +174,7 @@
     try {
       const result = await post('/apps/quiz/api', {op: 'contexts'});
       contexts = result.contexts.map(validContext).filter(Boolean);
+      defaults = result.defaults;
       const selected = context || contexts.find((item) => item.desk === 'quiz');
       desk.replaceChildren();
       for (const item of contexts) {
@@ -175,12 +196,19 @@
       problem('Could not load desks. Sign in and reload to try again.');
     }
   }
-  window.quiz = {runtime, documents: docs, editableCopy, browseClay, validContext};
+  runner = window.createQuizRuns({runtime, post,
+    getContexts: () => contexts, getDefaults: () => defaults,
+    selection: () => runSelection, select: (id) => { runSelection = id; }
+  });
+  window.quiz = {runtime, documents: docs, editableCopy, browseClay, validContext, runs: runner};
   window.urui.boot({
     onReady() {
-      runtime.start((saved) => { context = validContext(saved?.clayContext); });
+      runtime.start((saved) => {
+        context = validContext(saved?.clayContext);
+        runSelection = saved?.runSelection || null;
+      });
       showDocument(docs.active('property'));
-      window.quiz.ready = loadContexts();
+      window.quiz.ready = loadContexts().then(() => runner.start());
     },
     editor: {primary: () => docs.editor('property')},
     dialog: {help: runtime.dialogs.setHelpOpen},

@@ -50,6 +50,17 @@ before enqueueing. Missing sources or unavailable contexts yield `%invalid`.
 A source snapshot is retained before property parsing, so syntax errors still
 refer to the captured text. If the source/context cannot be read, it is absent.
 
+## Correlated web admission
+
+The local web adapter pokes `%quiz-submit` with `[ticket=@ta request]`.
+After successful admission, `%quiz` pokes the local `%quiz-web` agent with
+`%quiz-admitted` carrying `[ticket=@ta id=@ud]`. The ID is allocated in the
+same event as admission; a rejected request sends no callback. `%quiz-web`
+accepts only a matching pending ticket and ignores stale callbacks. These
+marks support the HTTP adapter; `%quiz-action` and its ordinary poke
+acknowledgement remain unchanged. Tickets and pending HTTP state are transient;
+the durable state schema and engine semantics version are unchanged.
+
 ## Reads and updates
 
 Subscribe using `%quiz-update` facts:

@@ -152,6 +152,17 @@
   |=  [=mark =vase]
   ^-  (quip card:agent:gall _this)
   ?>  =(our.bowl src.bowl)
+  ?:  =(%quiz-submit mark)
+    =/  [ticket=@ta req=request:app]  !<([@ta request:app] vase)
+    =/  id  next-id.saved.state
+    =/  admitted  (admit:job state req now.bowl eny.bowl)
+    ~|  ?:(?=(%.n -.admitted) p.admitted %admit)
+    ?>  ?=(%.y -.admitted)
+    =/  response=card:agent:gall
+      :*  %pass  /quiz-admitted  %agent  [our.bowl %quiz-web]
+          %poke  %quiz-admitted  !>([ticket id])
+      ==
+    (publish:ops saved.state p.admitted ~[response])
   ?>  =(%quiz-action mark)
   =/  command  !<(action:app vase)
   =/  next=state:job

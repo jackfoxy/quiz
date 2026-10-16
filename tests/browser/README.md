@@ -22,3 +22,15 @@ help and Hoon tokenization. Temporary files are deleted in a `finally` block.
 The ship needs at least two revisions. The context test uses its previous
 revision; retain the packaged library there. No code is committed to Git.
 Traces/screenshots are under ignored `test-results/`.
+
+Quiz execution doubles also cover correlated IDs beyond JavaScript's exact
+integer range, a concurrent producer, per-tab settings, full configuration
+preservation, stale snapshots, cancellation/replay/rerun, unavailable suite
+metrics, empty history, rejection, reload cancellation and network failures.
+The Playwright run suite exercises document configuration, real draft failure
+and shrinking, replay, rerun, session restoration, saved Clay suites,
+cancellation, compilation diagnostics and disconnected progress. Server run
+history is retained on the disposable ship for inspection.
+
+Run/replay HTTP replies now carry their correlated decimal `id`; configuration
+inspection uses `document-conf`. See `desk/doc/http-api.md` for both contracts.

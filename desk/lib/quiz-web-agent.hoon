@@ -16,8 +16,16 @@
 /*  ace-lic  %txt  /web/ace/license/txt
 |%
 +$  card  card:agent:gall
-+$  pending
-  [id=@ta until=@da task=$%([%poke ~] [%suite doc=document:suite])]
++$  task
+  $%  [%poke ~]
+      [%run ~]
+      [%suite doc=document:suite]
+      $:  %conf  doc=prepared:build  saved=?
+          todo=(list [ship desk (unit rave:clay)])
+          replies=(list riot:clay)
+      ==
+  ==
++$  pending  [id=@ta until=@da task=task]
 +$  state
   [files=(unit pending:ufiles) api=(unit pending)]
 ::
@@ -86,6 +94,20 @@
     `[%give %kick ~[watched] `who]
   (weld kicks cards)
 
+::
+++  conf-response
+  |=  [id=@ta got=result:build]
+  ^-  (list card)
+  ?:  ?=(%invalid -.got)
+    (reply id 422 (diagnostic-out:codec +.got))
+  %+  reply  id
+  :-  200
+  %-  pairs:enjs:format
+  :~  ['context' (context-out:codec where.got)]
+      ['config' (config-out:codec config.settings.got)]
+      ['seed' ?~(seed.settings.got ~ s+(scot %uv u.seed.settings.got))]
+  ==
+
 --
 =|  state
 =*  state  -
@@ -111,6 +133,18 @@
 ++  on-poke
   |=  [mark=mark vase=vase]
   ^-  (quip card _this)
+  ?:  =(%quiz-admitted mark)
+    ?>  =(src.bowl our.bowl)
+    =/  [ticket=@ta admitted=@ud]  !<([@ta @ud] vase)
+    =/  current  api.state
+    ?~  current  `this
+    ?.  &(=(ticket id.u.current) ?=(%run -.task.u.current))  `this
+    =/  body
+      %-  pairs:enjs:format
+      ~[['accepted' b+&] ['id' (decimal:codec admitted)]]
+    :_  this(api.state ~)
+    :-  [%pass /quiz-http/[ticket] %arvo %b %rest until.u.current]
+    (private-cards bowl (reply ticket 202 body))
   ?.  =(%handle-http-request mark)
     ?>  =(src.bowl our.bowl)
     (on-poke:def mark vase)
@@ -180,6 +214,29 @@
         [[%draft ''] %quiz [%ud 1] ~ ~ `id.cmd]
       (submit id [%run req])
     %run  (submit id [%run +.cmd])
+    %document-conf
+      ?:  !=(~ api.state)  [(refuse id 503 'api-busy') this]
+      ?:  ?=(%suite -.source.cmd)
+        [(refuse id 400 'property-required') this]
+      =/  ctx  (pin:build our.bowl desk.cmd revision.cmd now.bowl)
+      ?:  ?=(%.n -.ctx)
+        [(reply id 422 (diagnostic-out:codec p.ctx)) this]
+      =/  doc
+        ?:  ?=(%draft -.source.cmd)
+          (prepare:build p.ctx /draft/hoon text.source.cmd)
+        (prepare-file:build p.ctx path.source.cmd)
+      ?:  ?=(%.n -.doc)
+        [(reply id 422 (diagnostic-out:codec p.doc)) this]
+      =/  saved  ?=(%file -.source.cmd)
+      =/  todo=(list [ship desk (unit rave:clay)])
+        ?:(saved ~[(saved-request:build p.doc)] (draft-requests:build p.doc))
+      ?~  todo
+        [(conf-response id (draft:build p.doc ~)) this]
+      =/  until  (add now.bowl ~s30)
+      :_  this(api.state `[id until [%conf p.doc saved t.todo ~]])
+      :~  [%pass /quiz-http/[id] %arvo %c %warp i.todo]
+          [%pass /quiz-http/[id] %arvo %b %wait until]
+      ==
     %contexts
       =/  desks
         .^((set @tas) %cd [(scot %p our.bowl) %$ (scot %da now.bowl) ~])
@@ -217,6 +274,13 @@
   ^-  (quip card _this)
   ?:  !=(~ api.state)  [(refuse id 503 'api-busy') this]
   =/  until  (add now.bowl ~s30)
+  ?:  ?=(%run -.act)
+    :_  this(api.state `[id until [%run ~]])
+    :~  :*  %pass  /quiz-http/[id]  %agent  [our.bowl %quiz]
+            %poke  %quiz-submit  !>([id +.act])
+        ==
+        [%pass /quiz-http/[id] %arvo %b %wait until]
+    ==
   :_  this(api.state `[id until [%poke ~]])
   :~  :*  %pass  /quiz-http/[id]  %agent  [our.bowl %quiz]
           %poke  %quiz-action  !>(act)
@@ -232,7 +296,8 @@
   ?~  current  `this
   =/  pending  u.current
   ?.  &(?=([%quiz-http @ ~] wire) =(i.t.wire id.pending))  `this
-  ?.  &(?=(%poke -.task.pending) ?=(%poke-ack -.sign))  `this
+  ?.  &(?=(?(%poke %run) -.task.pending) ?=(%poke-ack -.sign))  `this
+  ?:  &(?=(%run -.task.pending) =(~ p.sign))  `this
   =/  response=(list card)
     ?~  p.sign
       (reply id.pending 202 (pairs:enjs:format ~[['accepted' b+&]]))
@@ -257,9 +322,27 @@
   ?:  ?=([%behn %wake *] sign)
     :_  this(api.state ~)
     =/  cards  (private-cards bowl (refuse id.pending 504 'api-timeout'))
-    ?.  ?=(%suite -.task.pending)  cards
-    =/  doc  doc.task.pending
-    [[%pass wire %arvo %c %warp our.where.doc desk.where.doc ~] cards]
+    ?.  ?=(?(%suite %conf) -.task.pending)  cards
+    =/  ctx=context:build
+      ?-  -.task.pending
+        %suite  where.doc.task.pending
+        %conf   where.doc.task.pending
+      ==
+    [[%pass wire %arvo %c %warp our.ctx desk.ctx ~] cards]
+  ?:  &(?=(%conf -.task.pending) ?=([%clay %writ *] sign))
+    =/  work  task.pending
+    =/  replies  (snoc replies.work +>.sign)
+    =/  todo  todo.work
+    ?^  todo
+      =/  next  work(todo t.todo, replies replies)
+      :_  this(api.state `[id.pending until.pending next])
+      ~[[%pass wire %arvo %c %warp i.todo]]
+    =/  got
+      ?:  saved.work  (take-saved:build doc.work +>.sign)
+      (draft:build doc.work replies)
+    :_  this(api.state ~)
+    :-  [%pass wire %arvo %b %rest until.pending]
+    (private-cards bowl (conf-response id.pending got))
   ?.  &(?=(%suite -.task.pending) ?=([%clay %writ *] sign))  `this
   =/  got  (take-built:suite doc.task.pending +>.sign)
   =/  response=(list card)

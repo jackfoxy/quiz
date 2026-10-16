@@ -6,6 +6,7 @@
   ::
 +$  command
   $%  [%run request:app]
+      [%document-conf request:app]
       [%status id=@ud]
       [%cancel id=@ud]
       [%replay id=@ud]
@@ -94,7 +95,7 @@
           (case-in (field fields 'revision'))
           (path-in (field fields 'path'))
       ==
-    %run
+    ?(%run %document-conf)
       =/  src  (object (field fields 'source'))
       =/  kind  (text (field src 'kind'))
       =/  source=source:app
@@ -116,11 +117,12 @@
         ?~  val  ~
         ?:  ?=(%~ u.val)  ~
         `(slav %uv (text u.val))
-      :*  %run  source
-          (name (field fields 'desk'))
-          (case-in (field fields 'revision'))
-          cfg  seed  ~
-      ==
+      =/  req=request:app
+        :*  source  (name (field fields 'desk'))
+            (case-in (field fields 'revision'))  cfg  seed  ~
+        ==
+      ?:  =(op %run)  [%run req]
+      [%document-conf req]
   ==
 ::
 ++  decimal

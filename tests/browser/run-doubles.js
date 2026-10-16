@@ -10,7 +10,7 @@ const {spawnSync} = require('node:child_process');
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'quiz-doubles-'));
   const filename = path.join(directory, 'app.js');
   fs.writeFileSync(filename, source);
-  for (const scenario of ['documents', 'restore', 'invalid-session']) {
+  for (const scenario of ['documents', 'restore', 'invalid-session', 'runs', 'run-errors']) {
     const result = spawnSync(process.execPath,
       [require.resolve('./scenario.js'), scenario, filename], {encoding: 'utf8', timeout: 15000});
     process.stdout.write(result.stdout);

@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const {createEnvironment, bootApplication} = require('./doubles');
 const {createAce} = require('./doubles/ace');
 const scenario = process.argv[2];
+const runTests = require('./run-scenarios');
+const mock = runTests.mockApi();
 setTimeout(() => {console.error('Scenario timeout'); process.exit(1);}, 10000);
 const env = createEnvironment({session: null});
 const addListener = env.window.addEventListener;
@@ -14,7 +16,7 @@ env.window.addEventListener = (name, callback) => {
 const {ace, aceAssets} = createAce('ace/mode/hoon');
 // Consumer-only shell nodes; the upstream doubles stay unchanged.
 for (const id of ['quiz-editor', 'editable-copy', 'document-location',
-  'quiz-error', 'clay-source-panel', 'work-files-tree', 'example-files-tree',
+  'quiz-error', 'run-controls', 'quiz-runs', 'clay-source-panel', 'work-files-tree', 'example-files-tree',
   'doc-files-tree', 'property-save', 'property-save-as', 'property-open',
   'property-ref', 'source-status']) {
   const node = new env.Element(); node.id = id;
@@ -27,7 +29,7 @@ env.window.location.href = 'http://localhost/apps/quiz/';
 const savedTab = {id: 'property-7', path: ['work', 'restored', 'hoon'],
   text: '|=  a=@ud\n+(a)', clean: '|=  a=@ud\na', hash: '0v1',
   selection: {start: 2, end: 5}, display: 'source'};
-if (scenario !== 'documents') {
+if (['restore', 'invalid-session'].includes(scenario)) {
   env.saved.set('quiz.session', JSON.stringify({version: 2,
     propertyTabs: [savedTab], activePropertyTabId: 'property-7', nextPropertyTab: 8,
     clayContext: scenario === 'restore'
@@ -40,7 +42,11 @@ global.fetch = async (url, options = {}) => {
   const req = options.body ? JSON.parse(options.body) : {};
   requests.push({url, ...req});
   let body = {ok: true}; let status = 200;
-  if (url === '/docs' || url.endsWith('/doc.toc')) status = 404;
+  if (url.endsWith('/api') && req.op !== 'contexts') {
+    body = await mock.api(req); status = body?._status || 200;
+  }
+  else if (url === '/docs' || url.endsWith('/doc.toc')) status = 404;
+  else if (url.endsWith('/api') && req.op === 'runs') body.ids = [];
   else if (url.endsWith('/api')) body.contexts = [
     {desk: 'quiz', revision: '20'}, {desk: 'base', revision: '10'}];
   else if (req.op === 'browse') body.entries = [...files.keys()]
@@ -52,6 +58,7 @@ global.fetch = async (url, options = {}) => {
   else if (req.op === 'save') {
     files.set(req.path.join('/'), req.text); body.hash = '0v2';
   }
+  if (req.op === 'contexts') body.defaults = mock.config;
   return {ok: status < 400, status, headers: {get: () => 'application/json'},
     text: async () => JSON.stringify(body), json: async () => body};
 };
@@ -60,6 +67,9 @@ const el = (id) => env.document.getElementById(id);
 (async () => {
   bootApplication(env, fs.readFileSync(process.argv[3], 'utf8'), 'quiz-app.js');
   await env.window.quiz.ready;
+  if (scenario.startsWith('run')) {
+    await runTests.scenario(env, mock, scenario); console.log(`PASS ${scenario}`); return;
+  }
   const {documents: docs, runtime, validContext} = env.window.quiz;
   assert.equal(validContext({desk: 'quiz', revision: '0'}), null);
   assert.equal(validContext({desk: 'quiz', revision: '01'}), null);

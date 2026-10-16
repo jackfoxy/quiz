@@ -1,5 +1,5 @@
 /-  app=quiz-app
-/+  *test, codec=quiz-json, web=quiz-web, engine=quiz-engine
+/+  *test, codec=quiz-json, web=quiz-web, engine=quiz-engine, build=quiz-build
 /=  agent  /lib/quiz-web-agent
 /=  packaged  /app/quiz-web
 |%
@@ -301,4 +301,75 @@
   =/  req  (request %'POST' '/apps/quiz/files' `(as-octs:mimes:html body))
   =/  response  (poke req)
   (expect-eq !>(expected) !>((status -.response)))
+::
+++  test-correlated-run-reply
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =.  a  a(api.state `['ticket' ~2026.10.15 [%run ~]])
+  =/  ack  (on-agent.a /quiz-http/ticket [%poke-ack ~])
+  =/  wrong  (on-poke.a %quiz-admitted !>(['other' 6]))
+  =/  got  (on-poke.a %quiz-admitted !>(['ticket' 9.007.199.254.740.993]))
+  =/  done  +.got
+  =/  stale  (on-agent.done /quiz-http/ticket [%poke-ack ~])
+  ;:  weld
+    (expect-eq !>(~) !>(-.ack))
+    (expect-eq !>(api.state.a) !>(api.state:+.ack))
+    (expect-eq !>(~) !>(-.wrong))
+    (expect-eq !>(202) !>((status -.got)))
+    (expect-eq !>(~) !>(api.state.done))
+    (expect-eq !>(~) !>(-.stale))
+    %+  expect-eq
+      !>('{"id":"9007199254740993","accepted":true}')
+    !>((response-body -.got))
+  ==
+::
+++  test-correlated-run-rejection
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =.  a  a(api.state `['ticket' ~2026.10.15 [%run ~]])
+  =/  got  (on-agent.a /quiz-http/ticket [%poke-ack `~[[%leaf "no"]]])
+  (expect-eq !>(422) !>((status -.got)))
+::
+++  test-inspection-response
+  ^-  tang
+  =/  parts=parts:engine  [!>(|=(n=@ud &)) ~ ~]
+  =/  got=result:build
+    [%ready [~zod %quiz 1] [`0v123 defaults:engine] parts]
+  =/  cards  (conf-response:agent 'ticket' got)
+  =/  body  (object:codec (need (de:json:html (response-body cards))))
+  ;:  weld
+    (expect-eq !>(200) !>((status cards)))
+    (expect-eq !>(s+'0v123') !>((field:codec body 'seed')))
+    %+  expect-eq
+      !>((config-out:codec defaults:engine))
+    !>((field:codec body 'config'))
+  ==
+::
+++  test-inspection-timeout-reply-and-reload
+  ^-  tang
+  =/  made
+    (prepare:build [~zod %quiz 1] /draft/hoon '|%  ++  fate  |=(@ud &)  --')
+  ?>  ?=(%.y -.made)
+  =/  a  ~(. agent bol)
+  =.  a
+    a(api.state `['request' ~2026.10.15 [%conf p.made & ~ ~]])
+  =/  bad  (on-arvo.a /quiz-http/request [%clay %writ ~])
+  =/  late  (on-arvo.a /quiz-http/other [%clay %writ ~])
+  =/  timeout  (on-arvo.a /quiz-http/request [%behn %wake ~])
+  =/  loaded  (on-load.a on-save.a)
+  ;:  weld
+    (expect-eq !>(422) !>((status -.bad)))
+    (expect-eq !>(~) !>(api.state:+.bad))
+    (expect-eq !>(~) !>(-.late))
+    (expect-eq !>(504) !>((status -.timeout)))
+    (expect-eq !>(4) !>((lent -.timeout)))
+    (expect-eq !>(~) !>(api.state:+.loaded))
+  ==
+::
+++  test-admitted-foreign-denied
+  ^-  tang
+  =/  bowl  bol
+  %-  expect-fail
+  |.  (on-poke:~(. agent bowl(src ~nec)) %quiz-admitted !>(['x' 1]))
+
 --
