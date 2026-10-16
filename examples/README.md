@@ -1,25 +1,16 @@
-Here are examples of how you can use %quiz to test gates you might know from Hoon School.
+# Examples
 
-To test them, put them in your ship, under a desk where you have cloned/copied the %quiz library, in the `tests` folder.
-For example, if you have `quiz.hoon` and `test.hoon` in the `lib` folder of your %base desk:
+The executable example suites live in [desk/tests/examples](../desk/tests/examples):
 
-```
-base
-├── lib
-│   ├── quiz.hoon
-│   └── test.hoon
-└── tests
-    ├── boxcar.hoon
-    └── euler.hoon
-```
+- [Quiz tutorial](../desk/tests/examples/01-quiz-tutorial.hoon)
+- [Boxcar](../desk/tests/examples/02-boxcar.hoon)
+- [Euler](../desk/tests/examples/03-euler.hoon)
 
-Then, from the dojo, run the following:
+After copying and committing the desk to a ship, run:
 
-```
-dojo> -test /=base=/tests
+```hoon
+-test /=quiz=/tests/examples ~
 ```
 
-Remember to change the desk name (in this case `base`) according to which desk you are working in.
-
-These example use the built-in testing library in Urbit, in addition to %quiz.
-You can learn more about that testing library here: [https://developers.urbit.org/guides/core/hoon-school/I-testing](https://developers.urbit.org/guides/core/hoon-school/I-testing)
+All three suites pass. Properties that deliberately find counterexamples are
+asserted as expected failures inside passing test arms.
