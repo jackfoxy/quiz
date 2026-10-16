@@ -211,3 +211,20 @@ Errors use urui's `{"ok":false,"error":{"code":...,"message":...,
 403 (read-only), 404 (missing), 409 (conflict), 503 (busy), and 504 (timeout).
 The route's authentication, method, size and content-type errors use the
 simpler `{"error":"..."}` shape described above.
+
+## Workbench file locations
+
+The `/apps/quiz/files` wire accepts these virtual paths (the last segment
+is the mark, such as `hoon` or `md`):
+
+| Prefix | Clay location | Access |
+| --- | --- | --- |
+| `work` | This desk's `/data/quiz` | Read/write Hoon and Markdown |
+| `examples` | This desk's `/tests/examples` | Read-only Hoon |
+| `docs` | This desk's `/doc` | Read-only Markdown |
+| `clay/<desk>/<revision>` | Local desk, explicit decimal revision | Read-only Hoon |
+
+The earlier relative Hoon paths remain writable aliases under `/data/quiz`.
+Read-only restrictions are enforced by the server, including save and
+delete requests. Browse Clay with a desk and revision; bare `clay` returns
+a context-selection error. Unavailable desks or revisions return 404.

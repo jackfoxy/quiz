@@ -1,9 +1,10 @@
 /-  app=quiz-app
 /+  default-agent, web=quiz-web, codec=quiz-json, build=quiz-build
 /+  suite=quiz-suite, engine=quiz-engine
-/+  uhttp=urui-http, ufiles=urui-files
+/+  uhttp=urui-http, ufiles=urui-files, qfiles=quiz-files
 /*  docs-toc  %toc  /doc/toc
 /*  favicon  %png  /favicon/png
+/*  ace-hoon  %js  /web/ace/mode-hoon/js
 /*  ace-core  %js  /web/ace/ace/js
 /*  ace-light  %js  /web/ace/theme-github/js
 /*  ace-dark  %js  /web/ace/theme-monokai/js
@@ -30,6 +31,8 @@
         ['/app.js' js javascript:web]
         ['/doc.toc' plain docs-toc]
         ['/ace/ace.js' js ace-core]
+        ['/ace/config.js' js ace-config:web]
+        ['/ace/mode-hoon.js' js ace-hoon]
         ['/ace/theme-github.js' js ace-light]
         ['/ace/theme-monokai.js' js ace-dark]
         ['/ace/ext-beautify.js' js ace-beaut]
@@ -144,7 +147,7 @@
     [(refuse id 415 'content-type') this]
   ?:  =('/apps/quiz/files' url)
     =^  cards  files.state
-      (handle:ufiles file-policy:web bowl id req files.state)
+      (handle:qfiles file-policy:web bowl id req files.state)
     [cards this]
   =/  parsed  (de:json:html q.body)
   ?~  parsed  [(refuse id 400 'malformed-json') this]

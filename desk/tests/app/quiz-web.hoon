@@ -287,4 +287,18 @@
     (expect-eq !>(~) !>(files.state:+.got))
     (expect-eq !>(~) !>(files.state:+.loaded))
   ==
+::
+++  test-workbench-read-only-writes
+  ^-  tang
+  =/  cases
+    :~  ['{"op":"save","path":["examples","copy","hoon"],"text":"x"}' 403]
+        ['{"op":"delete","path":["docs","source-format","md"]}' 403]
+        ['{"op":"save","path":["docs","copy","md"],"text":"x"}' 400]
+    ==
+  %-  zing
+  %+  turn  cases
+  |=  [body=@t expected=@ud]
+  =/  req  (request %'POST' '/apps/quiz/files' `(as-octs:mimes:html body))
+  =/  response  (poke req)
+  (expect-eq !>(expected) !>((status -.response)))
 --
