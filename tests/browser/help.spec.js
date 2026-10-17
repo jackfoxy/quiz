@@ -33,11 +33,11 @@ test('rendered help routes, repository links and restored tabs', async ({page}, 
   await expect(page.locator('#docs-help-content')).toBeVisible();
   await page.locator('#docs-help-nav').getByText("User's Guide",{exact:true}).click();
   const guide = page.frameLocator('iframe[title="User\'s Guide documentation"]');
-  await expect(guide.locator('h1')).toHaveText("Quiz user's guide");
+  await expect(guide.locator('main h1')).toHaveText("Quiz user's guide");
   await expect(guide.getByRole('link',{name:'reference',exact:true}).first())
     .toHaveAttribute('href','/docs/d/quiz/reference');
   await guide.getByRole('link',{name:'reference',exact:true}).first().click();
-  await expect(guide.locator('h1')).toHaveText('Quiz reference');
+  await expect(guide.locator('main h1')).toHaveText('Quiz reference');
   await expect(guide.getByRole('link',{name:'legacy library',exact:true}))
     .toHaveAttribute('href','https://github.com/jackfoxy/quiz/blob/dev/desk/lib/quiz.hoon');
   await expect(guide.getByRole('link',{name:'legacy library',exact:true}))
@@ -52,7 +52,9 @@ test('rendered help routes, repository links and restored tabs', async ({page}, 
   await page.waitForFunction(() => window.quiz?.ready);
   await page.evaluate(() => window.quiz.ready);
   await expect(page.locator('.docs-tab')).toHaveCount(3);
-  await expect(page.frameLocator('iframe[title="Keyboard Shortcuts documentation"]').locator('h1'))
+  const restoredPanel = await page.locator('.docs-tab[data-doc-path="keyboard-shortcuts"]')
+    .getAttribute('aria-controls');
+  await expect(page.frameLocator(`#${restoredPanel} iframe`).locator('main h1'))
     .toHaveText('Keyboard shortcuts');
   expect(errors).toEqual([]);
   fs.writeFileSync(info.outputPath('help-routes.json'),JSON.stringify(routes,null,2)+'\n');

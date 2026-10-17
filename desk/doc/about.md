@@ -33,7 +33,7 @@ a Markdown-capable `%docs` app supplies rendered help pages.
 ## Ace editor
 
 The editor bundles **Ace 1.44.0**, copyright 2010 Ajax.org B.V., under its BSD
-license. The [bundled Ace license](/apps/quiz/ace/license.txt) is served by the
-application and also lives at `desk/web/ace/license.txt` in the repository.
+license. The [bundled Ace license](../web/ace/license.txt) also has a local
+application URL, `/apps/quiz/ace/license.txt`.
 Settings selects the default or Vim keymap; see
 [Keyboard shortcuts](keyboard-shortcuts.md).

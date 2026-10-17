@@ -47,3 +47,14 @@ It checks every TOC route, relative document/source links inside Help frames,
 and restored tabs. With `%docs` absent, run the same file without that variable
 to check fallback help. The workbench suite's fallback scenario also expects
 `%docs` absent. These two states are tested separately, without mocking `%docs`.
+
+When switching an existing disposable ship from installed to absent, `%docs`
+can leave its landing page in Eyre's response cache after uninstall. Clear
+that page and its binding before running the fallback checks:
+
+```hoon
+|uninstall %docs
+|pass [%e %set-response '/docs' ~]
+|pass [%e %set-response '/docs/' ~]
+|pass [%e %disconnect ~ /docs]
+```
