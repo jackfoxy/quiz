@@ -12,6 +12,7 @@ The engine's [typed API](agent-api.md) remains available to Gall clients.
 | GET | `/app.js` | compiled config, urui runtime, application code | public |
 | GET | `/doc.toc` | documentation table of contents | public |
 | GET | `/favicon.png` | PNG | public |
+| GET | `/quiz.png` | Landscape tile PNG | public |
 | GET | `/ace/ace.js` | vendored Ace | public |
 | GET | `/ace/theme-github.js`, `/ace/theme-monokai.js` | Ace themes | public |
 | GET | `/ace/ext-beautify.js`, `/ace/ext-prompt.js` | Ace extensions | public |

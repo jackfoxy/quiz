@@ -3,6 +3,7 @@
 /+  ucss=urui-css, uace=urui-ace, locations=quiz-files
 /*  client  %js  /web/quiz/js
 /*  runs  %js  /web/quiz-runs/js
+/*  favicon  %png  /favicon/png
 |%
   ::  Document workbench. urui owns editors, files, dialogs and persistence.
   ::
@@ -189,6 +190,8 @@
 ::
 ++  spec
   ^-  shell-spec:urui
+  =/  favicon-url=tape
+    "/apps/quiz/favicon.png?v={(trip (scot %uv (mug favicon)))}"
   :*  config
       ~[;h1.app-title:"Quiz"]
       ~[;button#help(type "button", aria-expanded "false"):"Help"]
@@ -205,7 +208,7 @@
           '/apps/quiz/ace/ext-settings_menu.js'
           '/apps/quiz/app.js'
       ==
-      ~[;link(rel "icon", href "/apps/quiz/favicon.png");]
+      ~[;link(rel "icon", type "image/png", href "{favicon-url}");]
   ==
 ::
 ++  page

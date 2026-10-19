@@ -4,6 +4,7 @@
 /+  uhttp=urui-http, ufiles=urui-files, qfiles=quiz-files
 /*  docs-toc  %toc  /doc/toc
 /*  favicon  %png  /favicon/png
+/*  quiz-tile  %png  /quiz/png
 /*  ace-hoon  %js  /web/ace/mode-hoon/js
 /*  ace-core  %js  /web/ace/ace/js
 /*  ace-light  %js  /web/ace/theme-github/js
@@ -51,6 +52,7 @@
         ['/ace/license.txt' plain (of-wain:format ace-lic)]
     ==
   :-  ['/favicon.png' 'image/png' (as-octs:mimes:html favicon)]
+  :-  ['/quiz.png' 'image/png' (as-octs:mimes:html quiz-tile)]
   %+  turn  texts
   |=  [suffix=@t kind=@t body=@t]
   [suffix kind (as-octs:mimes:html body)]

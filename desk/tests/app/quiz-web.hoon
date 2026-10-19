@@ -91,6 +91,7 @@
   =/  urls=(list @t)
     :~  '/apps/quiz'  '/apps/quiz/'  '/apps/quiz/app.js?x=1'
         '/apps/quiz/doc.toc'  '/apps/quiz/favicon.png'
+        '/apps/quiz/quiz.png'
         '/apps/quiz/ace/ace.js'  '/apps/quiz/ace/theme-github.js'
         '/apps/quiz/ace/theme-monokai.js'
         '/apps/quiz/ace/ext-beautify.js'  '/apps/quiz/ace/ext-prompt.js'
