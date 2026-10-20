@@ -1,25 +1,20 @@
-Here are examples of how you can use %quiz to test gates you might know from Hoon School.
+# Examples
 
-To test them, put them in your ship, under a desk where you have cloned/copied the %quiz library, in the `tests` folder.
-For example, if you have `quiz.hoon` and `test.hoon` in the `lib` folder of your %base desk:
+Open **Examples** in the Quiz workbench, or read the
+[example catalog](../desk/doc/examples.md) for source links and recorded outcomes.
 
-```
-base
-├── lib
-│   ├── quiz.hoon
-│   └── test.hoon
-└── tests
-    ├── boxcar.hoon
-    └── euler.hoon
-```
+- `desk/examples/props/`: passing property documents.
+- `desk/examples/failing/`: intentional counterexamples and exhaustion.
+- `desk/tests/examples/`: existing tutorial, boxcar and Euler test suites.
 
-Then, from the dojo, run the following:
+The new property documents run through the app's saved-property or draft
+workflow. The three existing suites run through its saved-suite workflow or
+Dojo:
 
-```
-dojo> -test /=base=/tests
+```hoon
+-test /=quiz=/tests/examples ~
 ```
 
-Remember to change the desk name (in this case `base`) according to which desk you are working in.
-
-These example use the built-in testing library in Urbit, in addition to %quiz.
-You can learn more about that testing library here: [https://developers.urbit.org/guides/core/hoon-school/I-testing](https://developers.urbit.org/guides/core/hoon-school/I-testing)
+All three suites pass. Legacy tutorial arms assert expected failures as
+successful test assertions. New teaching failures stay outside `desk/tests/`
+and do not make the default passing regression suite fail.

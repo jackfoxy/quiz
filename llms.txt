@@ -1,0 +1,53 @@
+# Quiz
+
+> Property-based testing for Hoon. A frozen legacy library (`lib/quiz.hoon`)
+> and generator, plus an Urbit Gall application: `%quiz` runs property
+> documents and existing Clay `test-*` suites as bounded, replayable jobs, and
+> `%quiz-web` serves a browser workbench at `/apps/quiz/`. Targets
+> `[%zuse 408]`. Random checks are evidence, not proof. Each user call has a
+> `%jinx` CPU limit; there is no memory isolation.
+
+## Start here
+
+- [README](README.md): installation, quick start, library-only use
+- [User's guide](desk/doc/users-guide.md): seven-step tutorial, property-design advice, blog corrections
+- [Reference](desk/doc/reference.md): public contracts, limits, outcomes, troubleshooting
+- [Limitations](desk/doc/limitations.md): safety boundaries, unsupported behavior, operational caveats
+- [Examples catalog](desk/doc/examples.md): bundled examples with recorded results
+
+## Contracts
+
+- [Property documents](desk/doc/source-format.md): `++fate`, `++norn`, `++alts`, `++conf`, restricted Ford prelude
+- [Suites and replay](desk/doc/suites-and-replay.md): `test-*` discovery, aggregation, replay inputs
+- [Agent API](desk/doc/agent-api.md): `%quiz-action` pokes, `%quiz-update` facts, scries
+- [HTTP API](desk/doc/http-api.md): routes, authentication, JSON shapes
+- [Workbench](desk/doc/workbench.md): explorer, documents, run controls
+- [Keyboard shortcuts](desk/doc/keyboard-shortcuts.md)
+- [Public types](desk/sur/quiz-app.hoon): request, record, outcome, state
+
+## Source
+
+- [Legacy library](desk/lib/quiz.hoon) and [generator](desk/gen/quiz.hoon): frozen
+- [App engine](desk/lib/quiz-engine.hoon): stepper, shrinking, limits
+- [Document builder](desk/lib/quiz-build.hoon)
+- [Job lifecycle](desk/lib/quiz-job.hoon) and [Gall adapter](desk/lib/quiz-agent.hoon)
+- [Web agent](desk/lib/quiz-web-agent.hoon) and [workbench config](desk/lib/quiz-web.hoon)
+- [Internal module map](desk/doc/reference.md#internal-implementation-map)
+
+## Examples
+
+- [Passing property documents](desk/examples/props/)
+- [Intentional failures](desk/examples/failing/)
+- [Original suites](desk/tests/examples/): tutorial, boxcar, Euler
+
+## Contributing
+
+- [AGENTS.md](AGENTS.md): ownership, rules, contributor commands
+- [Property authoring skill](.claude/skills/quiz-properties/SKILL.md)
+- [Development and debugging skill](.claude/skills/quiz-dev/SKILL.md)
+- [Browser tests](tests/browser/README.md)
+
+## Optional
+
+- [About](desk/doc/about.md): history, license, Ace
+- [Original blog post](blogpost.md): historical; the guide corrects its outdated claims
