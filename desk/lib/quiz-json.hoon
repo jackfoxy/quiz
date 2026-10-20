@@ -1,8 +1,9 @@
 /-  app=quiz-app
-/+  engine=quiz-engine, build=quiz-build, suite=quiz-suite
+/+  engine=quiz-engine, build=quiz-build, suite=quiz-suite, job=quiz-job
 |%
   ::  HTTP codec. Decode under mule; never expose a parser crash to Eyre.
-  ::  IDs are decimal strings; seeds, dates and durations use Hoon aura strings.
+  ::  IDs are decimal strings; seeds and dates use Hoon aura strings.
+  ::  Timeouts are whole seconds.
   ::
 +$  command
   $%  [%run request:app]
@@ -13,6 +14,8 @@
       [%runs ~]
       [%contexts ~]
       [%suite-arms desk=@tas revision=case path=path]
+      [%timeouts ~]
+      [%set-timeouts timeouts:app]
   ==
 ::
 ++  max-body  524.288
@@ -89,6 +92,16 @@
     %status    [%status (natural (field fields 'id'))]
     %cancel    [%cancel (natural (field fields 'id'))]
     %replay    [%replay (natural (field fields 'id'))]
+    %timeouts  [%timeouts ~]
+    %set-timeouts
+      =/  seconds
+        |=  key=@t
+        ^-  @dr
+        (mul ~s1 (natural (field fields key)))
+      =/  value=timeouts:app
+        [(seconds 'call-time') (seconds 'build-time') (seconds 'arm-time')]
+      ?>  (valid-timeouts:job value)
+      [%set-timeouts value]
     %suite-arms
       :*  %suite-arms
           (name (field fields 'desk'))
@@ -329,7 +342,6 @@
             (natural (field bounds 'alts-bytes'))
             (natural (field bounds 'retained-runs'))
             (natural (field bounds 'samples-per-slice'))
-            (slav %dr (text (field bounds 'call-time')))
         ==
     ==
   ?>  (valid-config:build cfg)
@@ -360,7 +372,15 @@
       ['alts-bytes' (numb:enjs:format alts-bytes.value)]
       ['retained-runs' (numb:enjs:format retained-runs.value)]
       ['samples-per-slice' (numb:enjs:format samples-per-slice.value)]
-      ['call-time' s+(scot %dr call-time.value)]
+  ==
+::
+++  timeouts-out
+  |=  value=timeouts:app
+  ^-  json
+  %-  pairs:enjs:format
+  :~  ['call-time' (numb:enjs:format (div call.value ~s1))]
+      ['build-time' (numb:enjs:format (div build.value ~s1))]
+      ['arm-time' (numb:enjs:format (div arm.value ~s1))]
   ==
 ::
 ++  property-counts

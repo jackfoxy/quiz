@@ -158,7 +158,7 @@ Model: [09-custom-alts](../../../desk/examples/failing/09-custom-alts.hoon).
 | `error` | The norn, default generation or alts crashed. The stage says which. |
 | `invalid` | Source, import, arm type, context or conf problem. Use the code and line. |
 | `cancelled` | Cancelled by request, or by an agent reload. |
-| `interrupted` | A call exceeded its CPU limit (`call-time`, default 10 s), was stopped with Ctrl-C, or exhausted memory. `during` gives the stage, `arm` the suite arm, and `proof` the best counterexample so far. Look for a loop or runaway allocation. |
+| `interrupted` | A call exceeded its CPU limit (**Settings**, default 10 s per call), was stopped with Ctrl-C, or exhausted memory. `during` gives the stage, `arm` the suite arm, and `proof` the best counterexample so far. Look for a loop or runaway allocation. |
 
 Counter definitions:
 [counters, status and outcomes](../../../desk/doc/reference.md#counters-status-and-outcomes).

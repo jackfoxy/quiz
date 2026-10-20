@@ -187,7 +187,8 @@ Preserve the fate's input type and its semantic domain. The builder checks the
 alts gate's declared product, but cannot prove every dynamically returned vase
 is semantically valid for the fate. Terminate every alts invocation. Limiting
 how many candidates the engine considers cannot stop one call that never
-returns; that call hits `call-time` and the run ends `%interrupted`.
+returns; that call hits the property call limit and the run ends
+`%interrupted`.
 
 The default `sink` tries halving and decrementing nonzero atoms, subtrees for
 noun cells, and combinations of cell component candidates. It preserves
@@ -237,11 +238,9 @@ All other fields can be lowered but not raised above their engine defaults.
 | `bounds.alts-bytes` | 262,144 | Jammed candidate-list bytes |
 | `bounds.retained-runs` | 100 | Completed records retained after this property finishes |
 | `bounds.samples-per-slice` | 25 | Engine steps per scheduling slice, including shrink work |
-| `bounds.call-time` | `~s10` | CPU time for one fate, norn, alts or rendering call (`@dr`); enforced by `%jinx` |
 
 Requested, attempt, drop, duplicate, shrink-candidate and shrink-depth limits
-may be zero. Byte caps, retained-runs, samples-per-slice and call-time must be
-positive.
+may be zero. Byte caps, retained-runs and samples-per-slice must be positive.
 Requested-max may be zero when requested is also zero.
 Requested must fit requested-max. Reaching the requested accepted
 count wins over budgets reached on the same step. Otherwise, budget ties use
@@ -253,9 +252,19 @@ suite arms; HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
 pending API mutation/discovery/configuration inspection at a time and times it
 out after 30 seconds. The file wire permits one pending write and verifies it
 with a 10-second timeout. These are request timers, not Hoon execution limits.
-Fixed CPU limits: draft compilation and each document arm check get 30 s
-(`build-time:quiz-build`); each suite arm's compile and run gets 1 minute
-(`arm-time:quiz-suite`).
+CPU time limits are ship-wide operational settings, not part of a document's
+`conf`, so replay neither records nor restores them. Set them in the
+workbench's **Settings** dialog, with the `%timeouts` action, or with the HTTP
+`set-timeouts` operation. Each must be from 1 s to 1 hour.
+
+| Limit | Default | Applies to |
+| --- | ---: | --- |
+| Property call (`call`) | 10 s | One fate, norn, alts or sample-rendering call |
+| Draft build (`build`) | 30 s | Draft compilation and document arm checks, including conf inspection |
+| Suite arm (`arm`) | 1 min | One suite arm's compile and run |
+
+A change applies from the next slice, build or arm. It does not reach a call
+that is already running.
 
 Byte limits apply after generation, rendering or list construction as relevant;
 `jam` also allocates. Build and suite diagnostics use the default diagnostic
@@ -373,15 +382,16 @@ numeric revisions. Suites can rerun, but cannot use property replay.
 ### Gall, HTTP and persistence
 
 `%quiz` accepts local-ship `%quiz-action` pokes: `%run`, `%cancel`, `%delete`,
-`%clear`. Facts use `%quiz-update` on `/runs` or `/run/<id>`. Scries are
-`/x/runs`, `/x/run/<id>`, `/x/limits`, `/x/version`; Gall paths use dotted Hoon
+`%clear`, and `%timeouts` to set the CPU limits. Facts use `%quiz-update` on
+`/runs`, `/run/<id>` or `/timeouts`. Scries are `/x/runs`, `/x/run/<id>`,
+`/x/limits`, `/x/version`, `/x/timeouts`; Gall paths use dotted Hoon
 `@ud` formatting where needed. Exact types, examples and authorization are in
 [the agent API](agent-api.md).
 
 `%quiz-web` serves public shell/assets at `/apps/quiz/`; `POST /api` and
 `POST /files` require an authenticated local session. API operations are
 `contexts`, `run`, `replay`, `cancel`, `runs`, `status`, `suite-arms`,
-`document-conf`. Run/replay return 202 with the allocated decimal ID after
+`document-conf`, `timeouts`, `set-timeouts`. Run/replay return 202 with the allocated decimal ID after
 correlated admission; completion requires polling that record. Cancellation
 returns admission acknowledgement, not immediate confirmation of termination.
 There is no HTTP delete/clear operation or automatic mutation retry.
@@ -451,7 +461,7 @@ The [workbench guide](workbench.md) describes editing and dirty protection.
 | HTTP 401 / disconnected | Sign in to this ship; refresh confirmed history before resubmitting an uncertain mutation. |
 | HTTP 503 / 504 | Another request is pending or a response timed out; inspect history before retrying. |
 | Cancellation cannot interrupt a call | Cooperative cancellation waits for the current call to return. Wait for its CPU limit, or press Ctrl-C in the Vere terminal; either way the run ends `%interrupted`. |
-| `%interrupted` | A call exceeded `call-time` (or a build or arm limit), was stopped with Ctrl-C, or exhausted memory. Fix the non-terminating or oversized code. `call-time` can be lowered for faster detection but not raised above 10 s. `during` and `arm` locate the stage. |
+| `%interrupted` | A call exceeded its CPU limit (property call, draft build or suite arm), was stopped with Ctrl-C, or exhausted memory. Fix the non-terminating or oversized code. In **Settings**, lower a limit for faster detection, or raise it (up to 1 hour) for genuinely slow code. `during` and `arm` locate the stage. |
 | HTTP 500 `crud!` | The ship aborted a configuration inspection or suite discovery event, usually a build that exceeded its CPU limit or memory. Run the document as a draft to see the result. |
 
 ## Internal implementation map

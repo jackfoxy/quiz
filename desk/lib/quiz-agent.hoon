@@ -55,7 +55,9 @@
         ?:  ?=(%file -.source)
           (send-build s(active `[id [%file doc]]) (saved-request:build doc))
         =/  requests  (draft-requests:build doc)
-        ?~  requests  (property-ready s id doc (draft:build doc ~))
+        ?~  requests
+          =/  limit  build.timeouts.saved.s
+          (property-ready s id doc ~>(%jinx.limit (draft:build doc ~)))
         (send-build s(active `[id [%draft doc t.requests ~]]) i.requests)
       ::
       ++  send-build
@@ -119,6 +121,11 @@
             ==
           [fact [%give %kick ~[/run/(scot %ud id)] ~] out]
         =.  cards  (weld cards removed)
+        =?  cards  !=(timeouts.old timeouts.saved.next)
+          :_  cards
+          :*  %give  %fact  ~[/timeouts]  %quiz-update
+              !>(`update:app`[%timeouts timeouts.saved.next])
+          ==
         =?  cards  !=(order.old order.saved.next)
           :_  cards
           :*  %give  %fact  ~[/runs]  %quiz-update
@@ -180,6 +187,10 @@
         |-  ^-  state:job
         ?~  ids  s
         $(ids t.ids, s (delete:job s i.ids))
+      %timeouts
+        ~|  %bad-timeouts
+        ?>  (valid-timeouts:job +.command)
+        state(timeouts.saved +.command)
     ==
   (publish:ops saved.state next ~)
 ::
@@ -190,6 +201,10 @@
   ?:  =(/runs path)
     :_  this
     ~[[%give %fact ~ %quiz-update !>(`update:app`[%runs order.saved.state])]]
+  ?:  =(/timeouts path)
+    =/  limits  timeouts.saved.state
+    :_  this
+    ~[[%give %fact ~ %quiz-update !>(`update:app`[%timeouts limits])]]
   ?>  ?=([%run @ ~] path)
   =/  id  (parse-id:ops i.t.path)
   ?>  ?=(^ id)
@@ -204,6 +219,7 @@
   ?:  =(/x/runs path)  ``noun+!>(order.saved.state)
   ?:  =(/x/limits path)  ``noun+!>(defaults:engine)
   ?:  =(/x/version path)  ``noun+!>(version:engine)
+  ?:  =(/x/timeouts path)  ``noun+!>(timeouts.saved.state)
   ?.  ?=([%x %run @ ~] path)  ~
   =/  id  (parse-id:ops i.t.t.path)
   ?~  id  ~
@@ -254,7 +270,10 @@
   =/  taken=(quip card:agent:gall state:job)
     ?+  -.work  [~ next]
       %file
-        =/  built  (take-saved:build doc.work p.sign-arvo)
+        =/  limit  build.timeouts.saved.next
+        =/  built
+          ~>  %jinx.limit
+          (take-saved:build doc.work p.sign-arvo)
         (property-ready:ops next id.rec doc.work built)
       %suite-build
         =/  built  (take-built:suite doc.work p.sign-arvo)
@@ -278,7 +297,10 @@
           =.  next
             next(active `[id.rec work(requests t.todo, replies replies)])
           (send-build:ops next i.todo)
-        =/  built  (draft:build doc.work (flop replies))
+        =/  limit  build.timeouts.saved.next
+        =/  built
+          ~>  %jinx.limit
+          (draft:build doc.work (flop replies))
         (property-ready:ops next id.rec doc.work built)
     ==
   (publish:ops saved.state +.taken -.taken)

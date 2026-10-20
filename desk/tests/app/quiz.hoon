@@ -630,4 +630,42 @@
     (expect-eq !>(0) !>(shrink-tried.counts.done))
     (expect !>(?=([~ %interrupted %shrinking [~ *] ~] result.stopped)))
   ==
+::
+++  test-timeouts-action-and-scry
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =/  got  (on-poke.a %quiz-action !>([%timeouts ~s5 ~s20 ~m2]))
+  =/  peek  (need (need (on-peek:+.got /x/timeouts)))
+  =/  bad  (mule |.((on-poke.a %quiz-action !>([%timeouts ~ ~s20 ~m2]))))
+  =/  long  (mule |.((on-poke.a %quiz-action !>([%timeouts ~s5 ~h2 ~m2]))))
+  =/  fact=card:agent:gall
+    :*  %give  %fact  ~[/timeouts]  %quiz-update
+        !>(`update:app`[%timeouts ~s5 ~s20 ~m2])
+    ==
+  =/  watched  (on-watch:+.got /timeouts)
+  =/  first=card:agent:gall  (snag 0 -.watched)
+  ?>  ?=([%give %fact ~ %quiz-update *] first)
+  =/  initial  !<(update:app q.cage.p.first)
+  ;:  weld
+    (expect !>(?=(^ (find ~[fact] -.got))))
+    (expect !>(=(initial [%timeouts ~s5 ~s20 ~m2])))
+    (expect-eq !>(`timeouts:app`[~s5 ~s20 ~m2]) q.peek)
+    (expect-eq !>(default-timeouts:job) !>(timeouts.saved:initial:job))
+    (expect !>(?=(%.n -.bad)))
+    (expect !>(?=(%.n -.long)))
+  ==
+::
+++  test-slice-applies-current-call-time
+  ::  A settings change reaches an active run at its next slice.
+  ^-  tang
+  =/  s  (running 1 0)
+  =.  timeouts.saved.s  [~s3 ~s30 ~m1]
+  =/  after  (advance:job s now:bol)
+  =/  current  (need active.after)
+  ?>  ?=(%property -.work.current)
+  =/  restored  (restore:job saved.s now:bol)
+  ;:  weld
+    (expect-eq !>(~s3) !>(time.+.work.current))
+    (expect-eq !>([~s3 ~s30 ~m1]) !>(timeouts.saved.restored))
+  ==
 --

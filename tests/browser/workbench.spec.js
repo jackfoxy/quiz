@@ -130,3 +130,38 @@ test('file wire rejects writes outside work and unavailable contexts', async ({p
   expect((await post({op: 'save', path, text: 'forbidden'})).status()).toBe(403);
   expect((await post({op: 'delete', path})).status()).toBe(403);
 });
+
+test('Settings saves ship-wide CPU limits that stop a looping run', async ({page}) => {
+  test.setTimeout(120000);
+  const api = (data) => page.request.post('/apps/quiz/api', {data});
+  const defaults = {'call-time': 10, 'build-time': 30, 'arm-time': 60};
+  try {
+    await page.evaluate(() => window.quiz.limitsReady);
+    await page.locator('#settings').click();
+    await expect(page.locator('#settings-modal')).toBeVisible();
+    await expect(page.locator('#quiz-limit-call')).toHaveValue('10');
+    await expect(page.locator('#quiz-limits-save')).toHaveCount(0);
+    await page.locator('#quiz-limit-call').fill('2');
+    await page.locator('#close-settings').click();
+    await expect(page.locator('#settings-modal')).toBeHidden();
+    await expect.poll(async () => (await (await api({op: 'timeouts'})).json())['call-time'])
+      .toBe(2);
+    await page.reload();
+    await page.waitForFunction(() => window.quiz?.limitsReady);
+    await page.evaluate(() => window.quiz.limitsReady);
+    await expect(page.locator('#quiz-limit-call')).toHaveValue('2');
+    const contexts = await (await api({op: 'contexts'})).json();
+    const rev = contexts.contexts.find((item) => item.desk === 'quiz').revision;
+    const text = '|%\n++  fate\n  |=  n=@ud\n  =/  i=@ud  0\n  |-  ^-  ?\n'
+      + '  ?:  =(i 1)  &\n  $\n--\n';
+    const run = await (await api({op: 'run', source: {kind: 'draft', text},
+      desk: 'quiz', revision: {kind: 'ud', value: rev}})).json();
+    await expect.poll(async () =>
+      (await (await api({op: 'status', id: run.id})).json()).outcome?.kind,
+    {timeout: 60000}).toBe('interrupted');
+    const record = await (await api({op: 'status', id: run.id})).json();
+    expect(record.outcome.during).toBe('running');
+  } finally {
+    await api({op: 'set-timeouts', ...defaults});
+  }
+});

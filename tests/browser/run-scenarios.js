@@ -7,6 +7,7 @@ function mockApi() {
   let next = 9007199254740993n;
   let offline = false, reject = false, uncertain = false;
   let holdConf = false, releaseConf;
+  let limits = {'call-time': 10, 'build-time': 30, 'arm-time': 60};
   const calls = [];
   const api = async (req) => {
     calls.push(req);
@@ -18,6 +19,12 @@ function mockApi() {
       return {config, seed: '0v123'};
     }
     if (req.op === 'suite-arms') return {arms: ['test-one', 'test-two']};
+    if (req.op === 'timeouts') return {...limits};
+    if (req.op === 'set-timeouts') {
+      limits = {'call-time': Number(req['call-time']),
+        'build-time': Number(req['build-time']), 'arm-time': Number(req['arm-time'])};
+      return {accepted: true};
+    }
     if (req.op === 'cancel') {
       const rec = records.get(req.id); rec.status = 'done';
       rec.outcome = {kind: 'cancelled', reason: 'request'};

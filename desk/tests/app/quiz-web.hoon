@@ -1,5 +1,6 @@
 /-  app=quiz-app
 /+  *test, codec=quiz-json, web=quiz-web, engine=quiz-engine, build=quiz-build
+/+  job=quiz-job
 /=  agent  /lib/quiz-web-agent
 /=  packaged  /app/quiz-web
 |%
@@ -372,5 +373,60 @@
   =/  bowl  bol
   %-  expect-fail
   |.  (on-poke:~(. agent bowl(src ~nec)) %quiz-admitted !>(['x' 1]))
-
+::
+++  test-set-timeouts-pokes-engine
+  ^-  tang
+  =/  body
+    '{"op":"set-timeouts","call-time":5,"build-time":30,"arm-time":60}'
+  =/  started  (api body)
+  =/  sent  (snag 0 -.started)
+  ?>  ?=([%pass * %agent [@ %quiz] %poke *] sent)
+  =/  wanted=action:app  [%timeouts ~s5 ~s30 ~m1]
+  =/  done  (on-agent:+.started /quiz-http/request [%poke-ack ~])
+  =/  bad
+    %-  api
+    '{"op":"set-timeouts","call-time":0,"build-time":30,"arm-time":60}'
+  ;:  weld
+    (expect-eq !>(%quiz-action) !>(p.cage.task.q.sent))
+    (expect !>(=(q.q.cage.task.q.sent wanted)))
+    (expect-eq !>(202) !>((status -.done)))
+    (expect-eq !>(400) !>((status -.bad)))
+  ==
+::
+++  test-spec-hosts-limits-in-settings
+  ::  urui splices this marl into its Settings dialog; urui tests that.
+  ^-  tang
+  =/  extra=marl  settings:spec:web
+  =/  ids=(list tape)
+    %+  turn  c:(snag 0 extra)
+    |=(kid=manx (zing (turn a.g.kid |=([n=mane v=tape] ?:(=(%id n) v ~)))))
+  ;:  weld
+    (expect-eq !>(1) !>((lent extra)))
+    %+  expect-eq  !>("quiz-limits")
+    !>((zing (turn a.g:(snag 0 extra) |=([n=mane v=tape] ?:(=(%id n) v ~)))))
+    (expect !>(?=(~ (find ~["quiz-limits-save"] ids))))
+  ==
+::
+++  test-limits-follow-engine-subscription
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =/  init  on-init.a
+  =/  watch=card:agent:gall
+    [%pass /quiz-timeouts %agent [~zod %quiz] %watch /timeouts]
+  =/  update=update:app  [%timeouts ~s7 ~s40 ~m3]
+  =/  fact  (on-agent.a /quiz-timeouts [%fact %quiz-update !>(update)])
+  =/  b  +.fact
+  =/  body  (as-octs:mimes:html '{"op":"timeouts"}')
+  =/  req  (request %'POST' '/apps/quiz/api' `body)
+  =/  read  (on-poke:b %handle-http-request !>(['request' req]))
+  =/  got  (de:json:html (response-body -.read))
+  =/  kick  (on-agent.a /quiz-timeouts [%kick ~])
+  ;:  weld
+    (expect !>(?=(^ (find ~[watch] -.init))))
+    (expect-eq !>(default-timeouts:job) !>(limits.state.a))
+    (expect-eq !>([~s7 ~s40 ~m3]) !>(limits.state.b))
+    (expect-eq !>(~[watch]) !>(-.kick))
+    %+  expect-eq  !>(`(timeouts-out:codec [~s7 ~s40 ~m3]))
+    !>(got)
+  ==
 --

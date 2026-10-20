@@ -276,7 +276,8 @@ is rejected as a counterexample. The assertion in `fate` checks that the even,
 positive domain is preserved. Default shrinking could leave that domain.
 
 A finite candidate list and a decreasing measure make this shrinker terminate.
-An alts call that loops is stopped by its CPU limit, `call-time`, and the run
+An alts call that loops is stopped by its CPU limit (**Settings → Property
+call**, default 10 s), and the run
 ends **interrupted**, keeping the best counterexample found so far. Domain-aware generation and
 shrinking are paired design responsibilities. [FsCheck Test Data](https://fscheck.github.io/FsCheck/TestData.html).
 

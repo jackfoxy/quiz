@@ -18,7 +18,8 @@ const {ace, aceAssets} = createAce('ace/mode/hoon');
 for (const id of ['quiz-editor', 'editable-copy', 'document-location',
   'quiz-error', 'run-controls', 'quiz-runs', 'clay-source-panel', 'work-files-tree', 'example-files-tree',
   'doc-files-tree', 'property-save', 'property-save-as', 'property-open',
-  'property-ref', 'source-status']) {
+  'property-ref', 'source-status', 'quiz-limit-call', 'quiz-limit-build',
+  'quiz-limit-arm', 'quiz-limits-state']) {
   const node = new env.Element(); node.id = id;
   env.elements[`#${id}`] = node;
   env.document.body.append(node);
@@ -75,6 +76,19 @@ const el = (id) => env.document.getElementById(id);
   assert.equal(validContext({desk: 'quiz', revision: '01'}), null);
   assert.equal(validContext([]), null);
   if (scenario === 'documents') {
+    await env.window.quiz.limitsReady;
+    assert.equal(el('quiz-limit-call').value, '10');
+    assert.equal(el('quiz-limit-arm').value, '60');
+    el('quiz-limit-call').value = '0';
+    assert.equal(await env.window.quiz.saveLimits(), false);
+    assert.match(el('quiz-limits-state').textContent, /whole number/);
+    assert(!requests.some((req) => req.op === 'set-timeouts'), 'refuse before posting');
+    el('quiz-limit-call').value = '5';
+    assert.equal(await env.window.quiz.saveLimits(), true);
+    assert.deepEqual(requests.filter((req) => req.op === 'set-timeouts').map((req) =>
+      [req['call-time'], req['build-time'], req['arm-time']]), [['5', '30', '60']]);
+    assert.equal(el('quiz-limit-call').value, '5');
+    assert.match(el('quiz-limits-state').textContent, /^Saved/);
     assert.equal(docs.list('property').length, 1);
     const editor = docs.editor('property');
     editor.setSource('|=  n=@ud\n=(n n)', {history: 'reset'});

@@ -290,9 +290,6 @@
     (expect !>(!(valid-config:build cfg(rendered-bytes.bounds 0))))
     (expect !>(!(valid-config:build cfg(diagnostics-bytes.bounds 0))))
     (expect !>(!(valid-config:build cfg(retained-runs.bounds 0))))
-    (expect !>(!(valid-config:build cfg(call-time.bounds `@dr`0))))
-    (expect !>(!(valid-config:build cfg(call-time.bounds ~s11))))
-    (expect !>((valid-config:build cfg(call-time.bounds ~s1))))
   ==
 ::
 ++  test-body-scry

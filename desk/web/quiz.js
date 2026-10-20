@@ -235,11 +235,68 @@
       problem('Could not load desks. Sign in and reload to try again.');
     }
   }
+  // Ship-wide CPU time limits live in %quiz; urui's Settings dialog hosts them.
+  const limitFields = [['call-time', 'quiz-limit-call'],
+    ['build-time', 'quiz-limit-build'], ['arm-time', 'quiz-limit-arm']];
+  let limitsLoaded = false;
+  let limitsSnapshot = '';
+  const currentLimits = () => limitFields.map(([, id]) => byId(id)?.value.trim() || '');
+  const limitState = (text) => {
+    const status = byId('quiz-limits-state');
+    if (status) status.textContent = text;
+  };
+  async function loadLimits() {
+    if (!byId('quiz-limits-state')) return null;
+    try {
+      const result = await post('/apps/quiz/api', {op: 'timeouts'});
+      for (const [key, id] of limitFields) byId(id).value = String(result[key]);
+      limitsLoaded = true;
+      limitsSnapshot = currentLimits().join('\n');
+      limitState('Ship-wide. Changes save when Settings closes and apply to the next slice or build.');
+      return result;
+    } catch (cause) {
+      limitsLoaded = false;
+      limitState(String(cause.message || cause));
+      return null;
+    }
+  }
+  async function saveLimits() {
+    const body = {op: 'set-timeouts'};
+    for (const [key, id] of limitFields) {
+      const value = byId(id)?.value.trim() || '';
+      if (!/^[1-9][0-9]*$/.test(value) || Number(value) > 3600) {
+        limitState('Each limit must be a whole number of seconds from 1 to 3600.');
+        return false;
+      }
+      body[key] = value;
+    }
+    limitState('Saving…');
+    try {
+      await post('/apps/quiz/api', body);
+    } catch (cause) {
+      limitState(String(cause.message || cause));
+      return false;
+    }
+    const saved = await loadLimits();
+    if (saved) limitState('Saved. Changes apply to the next slice or build.');
+    return Boolean(saved);
+  }
+  const settingsModal = byId('settings-modal');
+  if (settingsModal && typeof MutationObserver === 'function') {
+    let wasOpen = !settingsModal.hidden;
+    new MutationObserver(() => {
+      const open = !settingsModal.hidden;
+      if (wasOpen && !open && limitsLoaded
+          && currentLimits().join('\n') !== limitsSnapshot) void saveLimits();
+      wasOpen = open;
+    }).observe(settingsModal, {attributes: true, attributeFilter: ['hidden']});
+  }
   runner = window.createQuizRuns({runtime, post,
     getContexts: () => contexts, getDefaults: () => defaults,
     selection: () => runSelection, select: (id) => { runSelection = id; }
   });
-  window.quiz = {runtime, documents: docs, editableCopy, browseClay, validContext, runs: runner};
+  window.quiz = {runtime, documents: docs, editableCopy, browseClay, validContext, runs: runner,
+    loadLimits, saveLimits};
   window.urui.boot({
     onReady() {
       runtime.start((saved) => {
@@ -248,6 +305,7 @@
       });
       showDocument(docs.active('property'));
       window.quiz.ready = loadContexts().then(() => runner.start());
+      window.quiz.limitsReady = loadLimits();
     },
     editor: {primary: () => docs.editor('property')},
     dialog: {help: runtime.dialogs.setHelpOpen},

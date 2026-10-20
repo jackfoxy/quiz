@@ -153,9 +153,23 @@
     !>((field:codec fields 'request'))
   ==
 ::
-++  test-call-time-encodes-as-duration
+++  test-timeouts-commands
+  ::  Whole seconds on the wire, from one second to one hour.
   ^-  tang
-  =/  jon  (bounds-out:codec bounds:defaults:engine)
-  =/  fields  (object:codec jon)
-  (expect-eq !>(s+'~s10') !>((field:codec fields 'call-time')))
+  =/  set
+    '{"op":"set-timeouts","call-time":"5","build-time":30,"arm-time":"60"}'
+  =/  got  (decode:codec (need (de:json:html set)))
+  =/  zero  '{"op":"set-timeouts","call-time":0,"build-time":30,"arm-time":60}'
+  =/  long
+    '{"op":"set-timeouts","call-time":3601,"build-time":30,"arm-time":60}'
+  =/  out  (timeouts-out:codec [~s5 ~s30 ~m1])
+  =/  query  (decode:codec (need (de:json:html '{"op":"timeouts"}')))
+  ;:  weld
+    (expect !>(=(got `[%set-timeouts ~s5 ~s30 ~m1])))
+    (expect-eq !>(~) !>((decode:codec (need (de:json:html zero)))))
+    (expect-eq !>(~) !>((decode:codec (need (de:json:html long)))))
+    (expect !>(=(`[%timeouts ~] query)))
+    (expect-eq !>(n+'5') !>((field:codec (object:codec out) 'call-time')))
+    (expect-eq !>(n+'60') !>((field:codec (object:codec out) 'arm-time')))
+  ==
 --

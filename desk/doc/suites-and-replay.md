@@ -54,7 +54,8 @@ bundled example suites have the same 19 passing arm outcomes in both runners:
 -test /=quiz=/tests/examples ~
 ```
 
-Each arm's compile and run has a fixed 1-minute CPU limit (`arm-time`). An arm
+Each arm's compile and run has the ship-wide suite arm CPU limit (default
+1 minute, set in **Settings**). An arm
 that exceeds it, is stopped with Ctrl-C, or exhausts memory ends the suite as
 `%interrupted` with `arm` naming it. Earlier arms' counts are kept; their
 individual results are not. The Clay build of the suite file has no CPU limit,

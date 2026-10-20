@@ -209,6 +209,29 @@
           '/apps/quiz/app.js'
       ==
       ~[;link(rel "icon", type "image/png", href "{favicon-url}");]
+      settings
+  ==
+::
+++  settings
+  ::  Ship-wide CPU time limits, appended to urui's Settings dialog.
+  ::  quiz.js loads them from and saves them to %quiz when Settings closes.
+  ^-  marl
+  :~  ;fieldset#quiz-limits.settings-field
+        ;legend.settings-label: Quiz CPU time limits (seconds)
+        ;label.preference
+          ;span: Property call
+          ;input#quiz-limit-call(type "number", min "1", max "3600");
+        ==
+        ;label.preference
+          ;span: Draft build
+          ;input#quiz-limit-build(type "number", min "1", max "3600");
+        ==
+        ;label.preference
+          ;span: Suite arm
+          ;input#quiz-limit-arm(type "number", min "1", max "3600");
+        ==
+        ;p#quiz-limits-state(role "status"): Loading limits…
+      ==
   ==
 ::
 ++  page
@@ -226,6 +249,9 @@
   :~  (compose:ucss ~[%tokens %controls %shell %explorer %tabs %dialogs])
       '''
       #result-pane { flex-direction: column; }
+      #settings-modal .settings-card > .settings-field {
+        margin-top: 1rem;
+      }
       #run-controls { display: grid; grid-template-columns: 1fr 1fr;
         gap: .5rem; padding: .75rem; flex: 0 0 auto; }
       #run-controls { width: 100%; }

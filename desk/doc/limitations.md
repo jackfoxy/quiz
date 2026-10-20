@@ -11,9 +11,10 @@ authoritative behavior and recovery guidance.
   property holds for every input. See
   [counters, status and outcomes](reference.md#counters-status-and-outcomes).
 - **CPU limits stop a stuck call, but block the ship until they fire.** Each
-  fate, norn, alts or rendering call has a `%jinx` CPU limit (`call-time`,
-  default and maximum 10 s). Draft compilation has a fixed 30 s limit, and a
-  suite arm 1 minute. Until a limit fires, the ship processes nothing else.
+  fate, norn, alts or rendering call has a `%jinx` CPU limit (default 10 s).
+  Draft compilation defaults to 30 s and a suite arm to 1 minute. All three
+  are ship-wide and set in **Settings** (1 s to 1 hour). Until a limit fires,
+  the ship processes nothing else.
   Clay builds of saved files and suites have no CPU limit. See
   [configuration and limits](reference.md#configuration-and-limits).
 - **An aborted run keeps only committed progress.** A CPU limit, Ctrl-C or

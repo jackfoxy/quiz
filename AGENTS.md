@@ -56,7 +56,9 @@ lists each module's entry points.
   silently discards state in `on-load`.
 - **Containment.** Evaluated user code runs under `sandbox:quiz-engine`: `mong`
   with a refusing scry gate, inside a `%jinx` CPU limit. Draft builds and
-  suite arms have their own `%jinx` limits. A timeout, Ctrl-C or loom
+  suite arms have their own `%jinx` limits. All three are ship-wide
+  `timeouts` in `%quiz` state, set from Settings; they are never part of a
+  replayable `conf`. A timeout, Ctrl-C or loom
   exhaustion aborts the whole Gall event and cannot be caught. `%quiz` learns
   of it from the error wake on its tick wire and records `%interrupted`.
   Keep one kind of work per tick, so that every abort has exactly one culprit.
@@ -66,7 +68,10 @@ lists each module's entry points.
 - **urui copies.** Never edit a urui copy here. Make the change in the urui
   repository, test it there, re-copy every changed file by hand, and update the
   pinned revision below. There is no sync manifest.
-  Pinned urui revision: `fba9f973e234594bb17efcf7c74c6480e511c1e5`.
+  Pinned urui revision: **pending**. The copies match urui `960de94` plus an
+  uncommitted `settings` marl slot in `$shell-spec` (`sur/urui.hoon`,
+  `lib/urui-shell.hoon`). After that urui change is committed, put its hash
+  here and in the drift check below.
 - **No secrets or machine paths** in committed files. Use `<pier>`, `<vere>`
   and `QUIZ_*` environment variables as placeholders.
 - **Disposable ships only.** Develop and test on a fake ship. Never install on,
@@ -116,7 +121,7 @@ for f in tests/browser/*.js; do node --check "$f"; done
 urui drift check, with the urui repository checked out at `../urui`:
 
 ```sh
-rev=fba9f973e234594bb17efcf7c74c6480e511c1e5
+rev=<pinned urui commit>   # see the pin above; pending a urui commit
 for f in desk/sur/urui.hoon desk/lib/urui-*.hoon \
     desk/tests/lib/urui-files.hoon desk/web/ace/README.md \
     desk/web/ace/license.txt desk/web/ace/ace.js desk/web/ace/ext-*.js \
@@ -126,8 +131,10 @@ for f in desk/sur/urui.hoon desk/lib/urui-*.hoon \
 done
 ```
 
-No output means all 27 copies match the pin. Compare against the pinned
-revision, not the urui working tree, which may have moved ahead.
+No output means all 27 copies match the pin. Once a pin is set, compare
+against it rather than the urui working tree, which may have moved ahead.
+While the pin is pending, compare against the working tree instead
+(`cmp ../urui/$f $f`).
 
 Also run `git diff --check` and `find desk -type l` (expect no symlinks).
 

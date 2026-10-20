@@ -87,8 +87,9 @@ Failed build scries can escape Gall virtualization, so dependency builds use
 asynchronous requests. Context metadata and existing native Hoon source use
 local scries only after checking desk, revision, and file existence. `our` and
 `now` must come from the caller’s Gall bowl.
-Draft compilation, type inference and arm evaluation run under a fixed 30 s
-`%jinx` CPU limit (`build-time`). A build that exceeds it, is stopped with
+Draft compilation, type inference and arm evaluation run under the ship-wide
+**draft build** `%jinx` CPU limit (default 30 s, set in **Settings**). A build
+that exceeds it, is stopped with
 Ctrl-C, or exhausts memory aborts its Gall event; the run is recorded as
 `%interrupted` with `during=%building`. Saved files compile in Clay through
 `%warp %a`, outside this limit. Size checks are not memory isolation.

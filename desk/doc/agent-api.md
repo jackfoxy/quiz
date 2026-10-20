@@ -18,6 +18,9 @@ Poke `%quiz-action` with one of:
 - `[%delete id]`: delete a completed record. Missing and unfinished IDs are
   no-ops.
 - `[%clear ~]`: delete completed records; preserve queued and active work.
+- `[%timeouts call=@dr build=@dr arm=@dr]`: set the ship-wide CPU time limits.
+  Each must be from `~s1` to `~h1`, or the poke is nacked. Defaults are
+  `[~s10 ~s30 ~m1]`. A change applies from the next slice, build or arm.
 
 The request fields, in order, are:
 
@@ -70,6 +73,8 @@ Subscribe using `%quiz-update` facts:
 - `/run/<id>` initially sends `[%run record]` and then progress snapshots.
   Unknown IDs are rejected. Deletion/pruning sends `[%deleted id]` followed
   by a kick. Completion keeps the subscription open.
+- `/timeouts` initially sends `[%timeouts timeouts]`, then the new value after
+  every change. `%quiz-web` subscribes here for its build limit.
 
 IDs in paths use canonical `(scot %ud id)`, including dots for thousands.
 Snapshots are current state; they are not a lossless log of every internal
@@ -84,6 +89,7 @@ Scries return `%noun` cages:
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
 | `/x/version` | Engine semantics version (`%quiz-engine-2`) |
+| `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |
 
 The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:
 
@@ -137,8 +143,9 @@ building, running, shrinking, or cancelling record `%cancelled` with reason
 ## Aborted events and `%interrupted`
 
 Every fate, norn, alts and sample-rendering call runs under a Vere `%jinx`
-CPU-time limit, `call-time` (default 10 s). Draft compilation and document arm
-checks use a fixed 30 s limit, and each suite arm a fixed 1 minute. When a
+CPU-time limit. Draft compilation and document arm checks have a build limit,
+and each suite arm an arm limit. All three come from the ship-wide `timeouts`
+(see below). When a
 limit expires the runtime aborts the **whole Gall event**; `mule` and `mong`
 cannot catch it. The same happens when the operator presses Ctrl-C in the Vere
 terminal, or when the computation exhausts the ship's memory (loom).

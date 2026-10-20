@@ -19,11 +19,17 @@
       replay-of=(unit run-id)
   ==
 ::
++$  timeouts
+  ::  Ship-wide %jinx CPU limits: one property call, one draft build, one
+  ::  suite arm. Operational settings, never part of a replayable conf.
+  [call=@dr build=@dr arm=@dr]
+::
 +$  action
   $%  [%run request]
       [%cancel id=run-id]
       [%delete id=run-id]
       [%clear ~]
+      [%timeouts timeouts]
   ==
 ::
 +$  status  ?(%queued %building %running %shrinking %cancelling %done)
@@ -76,6 +82,7 @@
   $%  [%run record]
       [%runs ids=(list run-id)]
       [%deleted id=run-id]
+      [%timeouts timeouts]
   ==
 ::
 +$  state-0
@@ -84,6 +91,7 @@
       records=(map run-id record)
       order=(list run-id)
       queue=(list run-id)
+      =timeouts
   ==
 ::
 +$  versioned-state  [%0 state-0]

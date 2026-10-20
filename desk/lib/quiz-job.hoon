@@ -24,9 +24,21 @@
 ::
 ++  initial
   ^-  state
-  [[1 1 ~ ~ ~] ~ ~ ~]
+  [[1 1 ~ ~ ~ default-timeouts] ~ ~ ~]
 ::
 ++  queue-max  100
+::
+++  default-timeouts
+  ^-  timeouts:app
+  [call-time:engine ~s30 ~m1]
+::
+++  valid-timeouts
+  ::  Each limit from one second to one hour.
+  |=  value=timeouts:app
+  ^-  ?
+  =/  limits=(list @dr)  ~[call.value build.value arm.value]
+  %+  levy  limits
+  |=(limit=@dr &((gte limit ~s1) (lte limit ~h1)))
 ::
 ++  admit
   ::  Reject oversized requests before retaining them. Replay ignores overrides.
@@ -236,6 +248,8 @@
   ?+  -.work  s
     %property
       =/  running  +.work
+      ::  A settings change applies from the next slice.
+      =.  time.running  call.timeouts.saved.s
       =/  left  samples-per-slice.bounds.config.running
       =/  shrinking  !=(~ shrink.running)
       =.  running
@@ -259,7 +273,9 @@
       ?~  result  s
       (finish s id (persist-outcome u.result) now)
     %suite
-      =/  running  (step:suite +.work)
+      =/  running
+        ~>  %jinx.arm.timeouts.saved.s
+        (step:suite +.work)
       =.  rec
         %=  rec
           counts  [%suite counts.running %unavailable]

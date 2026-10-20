@@ -42,8 +42,7 @@ IDs and immutable revision numbers are decimal strings, without separators,
 so clients can retain integers larger than JavaScript's safe integer range.
 The decoder also accepts nonnegative integer JSON tokens; clients should use
 strings for large values. Seeds are Hoon `@uv` strings, including `"0v0"`.
-Dates are Hoon `@da` strings. The `bounds.call-time` configuration field is a
-Hoon `@dr` string, for example `"~s10"`. Paths are arrays of Clay segments ending with
+Dates are Hoon `@da` strings. CPU time limits are whole seconds. Paths are arrays of Clay segments ending with
 `"hoon"`; they are not URL paths. Optional configuration/seed fields may be
 omitted or null. Unknown object fields are ignored. Invalid required fields,
 invalid desk/path syntax, and unsupported revision kinds are refused.
@@ -75,12 +74,10 @@ immutable `revision`), `defaults` (the complete engine configuration), and
 `engine-version`. Configuration has `requested`, `attempts-max`, `drops-max`,
 `duplicates-max`, and `bounds`. Bounds are `source-bytes`, `requested-max`,
 `shrink-candidates`, `shrink-depth`, `sample-bytes`, `rendered-bytes`,
-`diagnostics-bytes`, `alts-bytes`, `retained-runs`, `samples-per-slice`,
-`call-time`. Configuration values are JSON integers, except `call-time`, which
-is a Hoon `@dr` string such as `"~s10"`. `requested` may be raised up to
+`diagnostics-bytes`, `alts-bytes`, `retained-runs`, `samples-per-slice`.
+All configuration values are JSON integers. `requested` may be raised up to
 `requested-max`; attempts, drop/duplicate budgets, and bounds cannot exceed
-their engine defaults. Size, retention, slice and call-time bounds must stay
-positive.
+their engine defaults. Size, retention, and slice bounds must stay positive.
 
 ### Run and replay
 
@@ -132,7 +129,7 @@ This operation compiles the source and evaluates its configuration; it does
 not enqueue a run or apply request overrides. Invalid source/context/imports
 return 422 with a located diagnostic. Reads use the same pinned asynchronous
 Clay build paths as execution. If the runtime aborts the inspection, because
-compilation or `conf` evaluation exceeded the 30-second build limit,
+compilation or `conf` evaluation exceeded the draft build limit,
 exhausted memory or was interrupted, the event rolls back and Eyre answers
 500 with the body `crud!`. No pending API request remains. `suite-arms`
 discovery behaves the same way when interrupted; its Clay build has no CPU
@@ -141,6 +138,18 @@ limit.
 The workbench uses this operation when overriding requested checks: it copies
 the document's full configuration and changes only `requested`, preserving
 other budgets. Blank controls leave the engine to resolve document settings.
+
+### CPU time limits
+
+```json
+{"op":"timeouts"}
+{"op":"set-timeouts","call-time":10,"build-time":30,"arm-time":60}
+```
+
+`timeouts` returns 200 with the three ship-wide limits in whole seconds.
+`set-timeouts` returns 202 `{"accepted":true}` once `%quiz` accepts the change.
+Each value must be a whole number from 1 to 3600, or the request is refused
+with 400 `invalid-command`. The workbench's **Settings** dialog uses both.
 
 ### History, status and cancellation
 

@@ -3,8 +3,9 @@
   ::  Resumable app engine. The legacy runner remains frozen.
   ::  One step generates at most one sample and evaluates at most one fate.
   ::  Virtualization catches crashes/scries. Each user call also runs under
-  ::  a %jinx CPU limit: a timeout bails the whole Gall event, uncatchably,
-  ::  and the Gall adapter records that event's job as interrupted.
+  ::  a %jinx CPU limit, `time` in the state: a timeout bails the whole Gall
+  ::  event, uncatchably, and the Gall adapter records that event's job as
+  ::  interrupted. The limit is operational, not part of the replayable conf.
   ::
 ::  Source/retention/slice limits are consumed by later app layers.
 +$  limits
@@ -18,7 +19,6 @@
       alts-bytes=@ud
       retained-runs=@ud
       samples-per-slice=@ud
-      call-time=@dr
   ==
 ::
 +$  conf
@@ -85,6 +85,7 @@
       counts=counters
       shrink=(unit shrinking)
       result=(unit outcome)
+      time=@dr
   ==
 ::
 ++  version
@@ -95,8 +96,12 @@
 ++  defaults
   ^-  conf
   :*  100  10.000  1.000  1.000
-      [262.144 10.000 1.000 100 65.536 16.384 16.384 262.144 100 25 ~s10]
+      [262.144 10.000 1.000 100 65.536 16.384 16.384 262.144 100 25]
   ==
+::
+++  call-time
+  ::  Default CPU limit per user call; the app sets `time` from its settings.
+  ~s10
 ::
 ++  init
   ::  Compiled parts must already be type-checked by the source builder.
@@ -106,7 +111,7 @@
   ^-  state
   %-  finish
   :*  seed  config  compiled  (slot 6 fate.compiled)
-      1  ~(. og seed)  *(set @)  *counters  ~  ~
+      1  ~(. og seed)  *(set @)  *counters  ~  ~  call-time
   ==
 ::
 ++  classify
@@ -167,7 +172,7 @@
   ?:  !=(~ result.s)  s
   ?:  !=(~ shrink.s)  (shrink-step s)
   =/  [fill-rng=_og next-rng=_og]  (split-rng:legacy rng.s)
-  =/  time  call-time.bounds.config.s
+  =/  time  time.s
   =/  made  (generate time size.s fill-rng sample.s norn.compiled.s)
   ?.  ?=(%0 -.made)
     =/  why  (classify made)
@@ -180,7 +185,7 @@
   =.  s
     s(rng next-rng, size (add +(size.s) (div (mul size.s 2) 21)))
   =.  attempted.counts.s  +(attempted.counts.s)
-  =/  capped  (sample-limit sam bounds.config.s)
+  =/  capped  (sample-limit time sam bounds.config.s)
   ?:  ?=(%.n -.capped)
     =/  stage  ?:(=(~ norn.compiled.s) %generate %norn)
     (stop-error s stage p.capped ~)
@@ -217,7 +222,7 @@
 ++  sample-limit
   ::  A vase returned by alts can have a valid type but an invalid value.
   ::  Keep rendering inside virtualization so such products become errors.
-  |=  [sam=vase bounds=limits]
+  |=  [time=@dr sam=vase bounds=limits]
   ^-  (each (unit limit-name) failure)
   =/  inspect
     |=  [sam=vase bounds=limits]
@@ -226,7 +231,7 @@
     =/  text  (crip ~(ram re (sell sam)))
     ?:  (gth (met 3 text) rendered-bytes.bounds)  `%rendered-bytes
     ~
-  =/  checked  (sandbox call-time.bounds inspect [sam bounds])
+  =/  checked  (sandbox time inspect [sam bounds])
   ?:  ?=(%0 -.checked)  [%.y ;;((unit limit-name) p.checked)]
   =/  why  (classify checked)
   ?>  ?=(^ why)
@@ -274,7 +279,7 @@
     ~
   ?^  budget
     s(shrink ~, result `[%limited u.budget `evidence])
-  =/  time  call-time.bounds.config.s
+  =/  time  time.s
   =/  pending  pending.work
   ?~  pending
     =/  made  (alternatives time shrunk.evidence alts.compiled.s)
@@ -292,7 +297,7 @@
   =/  sam  i.candidates
   =.  work  work(pending `t.candidates)
   =.  shrink-tried.counts.s  +(shrink-tried.counts.s)
-  =/  capped  (sample-limit sam bounds.config.s)
+  =/  capped  (sample-limit time sam bounds.config.s)
   ?:  ?=(%.n -.capped)  (stop-error s %alts p.capped `evidence)
   =/  limit  p.capped
   ?^  limit

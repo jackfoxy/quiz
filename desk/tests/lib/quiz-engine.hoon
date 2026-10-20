@@ -278,10 +278,12 @@
 ++  test-call-time-default
   ::  Every user call runs under %jinx; a returning call is unaffected.
   ^-  tang
-  =/  limit  call-time.bounds:defaults:engine
+  =/  limit  call-time:engine
   =/  crashed  (sandbox:engine limit |=(n=@ud !!) 0)
+  =/  fresh  (start !>(|=(n=@ud &)) ~)
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
+    (expect-eq !>(limit) !>(time.fresh))
     (expect-eq !>(%quiz-engine-2) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))

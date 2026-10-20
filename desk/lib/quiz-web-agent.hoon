@@ -1,6 +1,6 @@
 /-  app=quiz-app
 /+  default-agent, web=quiz-web, codec=quiz-json, build=quiz-build
-/+  suite=quiz-suite, engine=quiz-engine
+/+  suite=quiz-suite, engine=quiz-engine, job=quiz-job
 /+  uhttp=urui-http, ufiles=urui-files, qfiles=quiz-files
 /*  docs-toc  %toc  /doc/toc
 /*  favicon  %png  /favicon/png
@@ -28,7 +28,9 @@
   ==
 +$  pending  [id=@ta until=@da task=task]
 +$  state
-  [files=(unit pending:ufiles) api=(unit pending)]
+  ::  `limits` mirrors %quiz's ship-wide timeouts through a subscription.
+  $~  [~ ~ default-timeouts:job]
+  [files=(unit pending:ufiles) api=(unit pending) limits=timeouts:app]
 ::
 ++  assets
   ^-  (list [suffix=@t asset=asset:uhttp])
@@ -97,6 +99,11 @@
   (weld kicks cards)
 
 ::
+++  watch-limits
+  |=  bol=bowl:gall
+  ^-  card
+  [%pass /quiz-timeouts %agent [our.bol %quiz] %watch /timeouts]
+::
 ++  conf-response
   |=  [id=@ta got=result:build]
   ^-  (list card)
@@ -119,7 +126,10 @@
 ::
 ++  on-init
   ^-  (quip card _this)
-  [~[[%pass /eyre/connect %arvo %e %connect `/apps/quiz dap.bowl]] this]
+  :_  this
+  :~  [%pass /eyre/connect %arvo %e %connect `/apps/quiz dap.bowl]
+      (watch-limits bowl)
+  ==
 ::
 ++  on-save
   ::  Neither Clay requests nor HTTP response ducts survive reload.
@@ -130,7 +140,11 @@
   |=  old=vase
   ^-  (quip card _this)
   =/  saved  !<([%0 ~] old)
-  on-init:this(state [~ ~])
+  =/  init  on-init:this(state [~ ~ default-timeouts:job])
+  ::  Renew the limits subscription, so its first fact refreshes `limits`.
+  ?.  (~(has by wex.bowl) [/quiz-timeouts our.bowl %quiz])  init
+  :_  +.init
+  [[%pass /quiz-timeouts %agent [our.bowl %quiz] %leave ~] -.init]
 ::
 ++  on-poke
   |=  [mark=mark vase=vase]
@@ -211,6 +225,9 @@
         /(scot %p our.bowl)/quiz/(scot %da now.bowl)/run/(scot %ud id.cmd)/noun
       [(reply id 200 (record-out:codec .^(record:app %gx path))) this]
     %cancel  (submit id [%cancel id.cmd])
+    %timeouts
+      [(reply id 200 (timeouts-out:codec limits.state)) this]
+    %set-timeouts  (submit id [%timeouts +.cmd])
     %replay
       =/  req=request:app
         [[%draft ''] %quiz [%ud 1] ~ ~ `id.cmd]
@@ -233,7 +250,8 @@
       =/  todo=(list [ship desk (unit rave:clay)])
         ?:(saved ~[(saved-request:build p.doc)] (draft-requests:build p.doc))
       ?~  todo
-        [(conf-response id (draft:build p.doc ~)) this]
+        =/  limit  build.limits.state
+        [(conf-response id ~>(%jinx.limit (draft:build p.doc ~))) this]
       =/  until  (add now.bowl ~s30)
       :_  this(api.state `[id until [%conf p.doc saved t.todo ~]])
       :~  [%pass /quiz-http/[id] %arvo %c %warp i.todo]
@@ -294,6 +312,14 @@
 ++  on-agent
   |=  [wire=wire sign=sign:agent:gall]
   ^-  (quip card _this)
+  ?:  ?=([%quiz-timeouts ~] wire)
+    ?+  -.sign  `this
+      %kick  [~[(watch-limits bowl)] this]
+      %fact
+        =/  got  !<(update:app q.cage.sign)
+        ?.  ?=(%timeouts -.got)  `this
+        `this(limits.state +.got)
+    ==
   =/  current  api.state
   ?~  current  `this
   =/  pending  u.current
@@ -339,7 +365,9 @@
       =/  next  work(todo t.todo, replies replies)
       :_  this(api.state `[id.pending until.pending next])
       ~[[%pass wire %arvo %c %warp i.todo]]
+    =/  limit  build.limits.state
     =/  got
+      ~>  %jinx.limit
       ?:  saved.work  (take-saved:build doc.work +>.sign)
       (draft:build doc.work replies)
     :_  this(api.state ~)

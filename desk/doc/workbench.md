@@ -4,6 +4,12 @@ Open `/apps/quiz/` after signing in to your ship. Use **+** for a new
 property document. The Hoon editor provides syntax highlighting, search,
 undo and redo; Settings also offers Vim keys.
 
+**Settings** also holds **Quiz CPU time limits**, in seconds: **Property call**
+(default 10), **Draft build** (30) and **Suite arm** (60). They are ship-wide,
+stored by `%quiz`, and apply to every run from the next slice, build or arm.
+Choose **Save limits** to apply them. A call that exceeds its limit ends the
+run as **interrupted**.
+
 **My documents** stores your Hoon and Markdown files under `/data/quiz` on
 the installed desk. **Open**, **Save**, and **Save As** use the file chooser;
 choose `hoon` or `md` when saving. Ctrl-S, Ctrl-Shift-S and Ctrl-O invoke
