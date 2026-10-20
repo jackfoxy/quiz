@@ -2,7 +2,9 @@
 |%
   ::  Resumable app engine. The legacy runner remains frozen.
   ::  One step generates at most one sample and evaluates at most one fate.
-  ::  Virtualization catches crashes/scries; it cannot preempt a looping gate.
+  ::  Virtualization catches crashes/scries. Each user call also runs under
+  ::  a %jinx CPU limit: a timeout bails the whole Gall event, uncatchably,
+  ::  and the Gall adapter records that event's job as interrupted.
   ::
 ::  Source/retention/slice limits are consumed by later app layers.
 +$  limits
@@ -16,6 +18,7 @@
       alts-bytes=@ud
       retained-runs=@ud
       samples-per-slice=@ud
+      call-time=@dr
   ==
 ::
 +$  conf
@@ -87,12 +90,12 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-1
+  %quiz-engine-2
 ::
 ++  defaults
   ^-  conf
   :*  100  10.000  1.000  1.000
-      [262.144 10.000 1.000 100 65.536 16.384 16.384 262.144 100 25]
+      [262.144 10.000 1.000 100 65.536 16.384 16.384 262.144 100 25 ~s10]
   ==
 ::
 ++  init
@@ -121,7 +124,7 @@
 ::
 ++  generate
   ::  Both default fill and the custom norn execute inside the same sandbox.
-  |=  [size=@ud rng=_og sample=vase custom=(unit vase)]
+  |=  [time=@dr size=@ud rng=_og sample=vase custom=(unit vase)]
   ^-  toon
   =/  maker
     |=  [size=@ud rng=_og sample=vase custom=(unit vase)]
@@ -129,7 +132,7 @@
     ?~  custom
       (~(fill quiz:legacy [size rng]) sample)
     [p.sample (slum q.u.custom [size rng])]
-  (mong [maker [size rng sample custom]] |=(^ ~))
+  (sandbox time maker [size rng sample custom])
 ::
 ++  finish
   ::  Completion wins when the last accepted sample also hits a budget.
@@ -164,7 +167,8 @@
   ?:  !=(~ result.s)  s
   ?:  !=(~ shrink.s)  (shrink-step s)
   =/  [fill-rng=_og next-rng=_og]  (split-rng:legacy rng.s)
-  =/  made  (generate size.s fill-rng sample.s norn.compiled.s)
+  =/  time  call-time.bounds.config.s
+  =/  made  (generate time size.s fill-rng sample.s norn.compiled.s)
   ?.  ?=(%0 -.made)
     =/  why  (classify made)
     ?>  ?=(^ why)
@@ -186,7 +190,7 @@
   ?:  (~(has in seen.s) hash)
     (finish s(duplicate.counts +(duplicate.counts.s)))
   =.  seen.s  (~(put in seen.s) hash)
-  =/  found  (classify (mong [q.fate.compiled.s q.sam] |=(^ ~)))
+  =/  found  (classify (sandbox time q.fate.compiled.s q.sam))
   ?-  found
     %pass  (finish s(accepted.counts +(accepted.counts.s)))
     %drop  (finish s(dropped.counts +(dropped.counts.s)))
@@ -202,6 +206,14 @@
   ^-  ?
   (lte (met 3 (jam value)) maximum)
 ::
+++  sandbox
+  ::  Virtualize a user call under a %jinx CPU limit. A crash or scry
+  ::  returns a toon; a timeout aborts the event and never returns here.
+  |=  [time=@dr gate=* sample=*]
+  ^-  toon
+  ~>  %jinx.time
+  (mong [gate sample] |=(^ ~))
+::
 ++  sample-limit
   ::  A vase returned by alts can have a valid type but an invalid value.
   ::  Keep rendering inside virtualization so such products become errors.
@@ -214,7 +226,7 @@
     =/  text  (crip ~(ram re (sell sam)))
     ?:  (gth (met 3 text) rendered-bytes.bounds)  `%rendered-bytes
     ~
-  =/  checked  (mong [inspect [sam bounds]] |=(^ ~))
+  =/  checked  (sandbox call-time.bounds inspect [sam bounds])
   ?:  ?=(%0 -.checked)  [%.y ;;((unit limit-name) p.checked)]
   =/  why  (classify checked)
   ?>  ?=(^ why)
@@ -237,14 +249,14 @@
 ::
 ++  alternatives
   ::  Default/custom alts and product validation share the refusing sandbox.
-  |=  [sam=vase custom=(unit vase)]
+  |=  [time=@dr sam=vase custom=(unit vase)]
   ^-  toon
   =/  maker
     |=  [sam=vase custom=(unit vase)]
     ^-  (list vase)
     ?~  custom  (sink:legacy sam)
     ;;((list vase) (slum q.u.custom sam))
-  (mong [maker [sam custom]] |=(^ ~))
+  (sandbox time maker [sam custom])
 ::
 ++  shrink-step
   |=  s=state
@@ -262,9 +274,10 @@
     ~
   ?^  budget
     s(shrink ~, result `[%limited u.budget `evidence])
+  =/  time  call-time.bounds.config.s
   =/  pending  pending.work
   ?~  pending
-    =/  made  (alternatives shrunk.evidence alts.compiled.s)
+    =/  made  (alternatives time shrunk.evidence alts.compiled.s)
     ?.  ?=(%0 -.made)
       =/  why  (classify made)
       ?>  ?=(^ why)
@@ -288,7 +301,7 @@
   ?:  (~(has in visited.work) hash)  s(shrink `work)
   =.  visited.work  (~(put in visited.work) hash)
   ?.  (lth (weight q.sam) (weight q.shrunk.evidence))  s(shrink `work)
-  =/  found  (classify (mong [q.fate.compiled.s q.sam] |=(^ ~)))
+  =/  found  (classify (sandbox time q.fate.compiled.s q.sam))
   ?@  found  s(shrink `work)
   ?.  (fits diagnostics-bytes.bounds.config.s found)
     s(shrink ~, result `[%limited %diagnostics-bytes `evidence])

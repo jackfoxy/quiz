@@ -274,4 +274,17 @@
     (expect !>(?=([~ %limited %sample-bytes ~] result.done)))
     (expect-eq !>(`counters:engine`[1 0 0 0 0 0]) !>(counts.done))
   ==
+::
+++  test-call-time-default
+  ::  Every user call runs under %jinx; a returning call is unaffected.
+  ^-  tang
+  =/  limit  call-time.bounds:defaults:engine
+  =/  crashed  (sandbox:engine limit |=(n=@ud !!) 0)
+  ;:  weld
+    (expect-eq !>(~s10) !>(limit))
+    (expect-eq !>(%quiz-engine-2) !>(version:engine))
+    %+  expect-eq  !>(`toon`[%0 42])
+    !>((sandbox:engine limit |=(n=@ud +(n)) 41))
+    (expect !>(?=(%2 -.crashed)))
+  ==
 --

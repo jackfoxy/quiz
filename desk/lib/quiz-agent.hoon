@@ -226,9 +226,14 @@
     ?.  =((scot %ud token.u.timer) i.t.t.wire)  `this
     ?.  ?=([%behn %wake *] sign-arvo)  `this
     =/  next=state:job  state(timer ~)
-    ::  A failed wake is retried without consuming a slice.
-    ?^  +>.sign-arvo  (publish:ops saved.state next ~)
-    =.  next  (advance:job next now.bowl)
+    ::  An error wake means the runtime aborted this tick's previous event.
+    ?^  +>.sign-arvo
+      (publish:ops saved.state (interrupt:job next now.bowl) ~)
+    ::  One kind of work per tick, so an aborted tick has one culprit:
+    ::  a slice of the active job, or the start of the next queued job.
+    =/  working  active.next
+    ?:  ?&(?=(^ working) !?=(%waiting -.work.u.working))
+      (publish:ops saved.state (advance:job next now.bowl) ~)
     =.  next  (activate:job next now.bowl)
     =/  current  active.next
     ?:  ?&(?=(^ current) ?=(%waiting -.work.u.current))

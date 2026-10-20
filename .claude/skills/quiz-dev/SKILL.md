@@ -88,18 +88,29 @@ desk/revision/path. Check the request that `quiz-build` produced.
 
 Exactly one job is active at a time, and every other job waits behind it.
 Progress depends on a self-addressed Behn wake: `publish` arms the next wake
-only when `timer` is empty. If a tick event crashes, Gall rolls it back.
-`timer` then still holds a token whose wake was consumed, so the queue
-stops. Look for a crash trace in the terminal. Reloading the agent clears
-the timer and cancels the interrupted job with `%reload`. A recommit that
-rebuilds the agent does this. The stalled-timer path is inferred from the
-code; no test exercises it.
+only when `timer` is empty. A runtime abort (`%jinx` timeout, Ctrl-C or loom
+exhaustion) does not stall this. Vere turns the aborted event into an error
+wake, `[%behn %wake [~ tang]]`, on the same tick wire, and `interrupt:quiz-job`
+finishes the culprit job as `%interrupted`. If the queue does stop, look for
+a crash in code outside any sandbox. Reloading the agent clears the timer
+and cancels unfinished jobs with `%reload`; a recommit that rebuilds the
+agent does this.
 
-**The ship stops responding during a run.** A fate, norn, alts, compile
-step or suite arm never returned. Nothing can preempt it (see the
-containment rule in AGENTS.md). Interrupt or kill the Vere process. If
-replaying the event hangs again, fix or delete the offending source before
-restarting. Only run experiments on a disposable ship.
+**The ship stops responding during a run.** Some call is running up to its
+CPU limit (`call-time` 10 s, build 30 s, suite arm 1 min). Wait, or press
+Ctrl-C in the Vere terminal: the terminal prints `recover: dig: alrm`,
+`intr` or `meme`, and the run ends `%interrupted`. A Clay build of a saved
+file or suite has no CPU limit; use Ctrl-C. Only run experiments on a
+disposable ship.
+
+**`%interrupted`.** `during` gives the stage. `arm` names the suite arm, and
+`proof` holds the best counterexample committed before the abort. The
+aborted slice's work is lost. To narrow a hang to one sample, rerun with the
+same seed and `samples-per-slice` 1. The hung sample is number `attempted`+1;
+its value is not recorded. A unit test can't
+reproduce an abort: `%jinx` would abort the `-test` event itself. Test the
+recovery path with a synthetic error wake, as `tests/app/quiz.hoon` does, and
+check real aborts on the fake ship.
 
 **`%exhausted` or `%limited` when you expected a pass.** This is usually
 correct engine behaviour. Check the property with

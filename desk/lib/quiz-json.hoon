@@ -2,7 +2,7 @@
 /+  engine=quiz-engine, build=quiz-build, suite=quiz-suite
 |%
   ::  HTTP codec. Decode under mule; never expose a parser crash to Eyre.
-  ::  IDs are decimal strings; seeds and dates use Hoon aura strings.
+  ::  IDs are decimal strings; seeds, dates and durations use Hoon aura strings.
   ::
 +$  command
   $%  [%run request:app]
@@ -207,6 +207,11 @@
     %passed  ~
     %failed  ~[['evidence' (evidence-out +.value)]]
     %cancelled  ~[['reason' s+reason.value]]
+    %interrupted
+      :~  ['during' s+during.value]
+          ['evidence' ?~(proof.value ~ (evidence-out u.proof.value))]
+          ['arm' ?~(arm.value ~ s+u.arm.value)]
+      ==
     %invalid  ~[['diagnostic' (diagnostic-out +.value)]]
     %exhausted
       ~[['budget' s+budget.value] ['all-dropped' b+all-dropped.value]]
@@ -324,6 +329,7 @@
             (natural (field bounds 'alts-bytes'))
             (natural (field bounds 'retained-runs'))
             (natural (field bounds 'samples-per-slice'))
+            (slav %dr (text (field bounds 'call-time')))
         ==
     ==
   ?>  (valid-config:build cfg)
@@ -354,6 +360,7 @@
       ['alts-bytes' (numb:enjs:format alts-bytes.value)]
       ['retained-runs' (numb:enjs:format retained-runs.value)]
       ['samples-per-slice' (numb:enjs:format samples-per-slice.value)]
+      ['call-time' s+(scot %dr call-time.value)]
   ==
 ::
 ++  property-counts

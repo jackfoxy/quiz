@@ -3,7 +3,7 @@
 Quiz checks a claim against generated inputs, then tries to simplify a failing
 input. A passing run is evidence about the inputs checked, not a proof. This
 walkthrough uses the shipped examples, seed `0v123`, and blank panel overrides.
-The displayed results below were recorded on `%zuse 408`, `%quiz-engine-1`.
+The displayed results below were recorded on `%zuse 408`, `%quiz-engine-2`.
 The [reference](reference.md) defines the exact contracts and limits.
 
 ## 1. Install, open and run an example
@@ -275,8 +275,9 @@ candidate, decreases it by two, and stops at two. The candidate 500 passes and
 is rejected as a counterexample. The assertion in `fate` checks that the even,
 positive domain is preserved. Default shrinking could leave that domain.
 
-A finite candidate list and a decreasing measure make this shrinker terminate;
-engine limits do not interrupt a looping alts call. Domain-aware generation and
+A finite candidate list and a decreasing measure make this shrinker terminate.
+An alts call that loops is stopped by its CPU limit, `call-time`, and the run
+ends **interrupted**, keeping the best counterexample found so far. Domain-aware generation and
 shrinking are paired design responsibilities. [FsCheck Test Data](https://fscheck.github.io/FsCheck/TestData.html).
 
 ## 6. Replay and turn evidence into a regression

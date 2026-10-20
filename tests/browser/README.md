@@ -26,7 +26,8 @@ Traces/screenshots are under ignored `test-results/`.
 Quiz execution doubles also cover correlated IDs beyond JavaScript's exact
 integer range, a concurrent producer, per-tab settings, full configuration
 preservation, stale snapshots, cancellation/replay/rerun, unavailable suite
-metrics, empty history, rejection, reload cancellation and network failures.
+metrics, empty history, rejection, reload cancellation, interrupted runs
+and network failures.
 The Playwright run suite exercises document configuration, real draft failure
 and shrinking, replay, rerun, session restoration, saved Clay suites,
 cancellation, compilation diagnostics and disconnected progress. Server run

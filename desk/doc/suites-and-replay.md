@@ -54,9 +54,12 @@ bundled example suites have the same 19 passing arm outcomes in both runners:
 -test /=quiz=/tests/examples ~
 ```
 
-An individual test, build, or compiler invocation can still block the ship.
-Scheduling one arm per slice provides a cancellation boundary between returning
-arms, not a hard timeout or memory sandbox.
+Each arm's compile and run has a fixed 1-minute CPU limit (`arm-time`). An arm
+that exceeds it, is stopped with Ctrl-C, or exhausts memory ends the suite as
+`%interrupted` with `arm` naming it. Earlier arms' counts are kept; their
+individual results are not. The Clay build of the suite file has no CPU limit,
+but can be interrupted. Scheduling one arm per slice also gives a cancellation
+boundary between returning arms.
 
 ## Property replay
 
@@ -70,7 +73,7 @@ Its `record` contains:
 | `source`, `source-hash` | Exact text and its `shax` digest |
 | `seed` | Resolved `@uv` seed, including an explicit zero |
 | `config` | Effective engine config after all overrides |
-| `engine-version` | `version:quiz-engine`, currently `%quiz-engine-1` |
+| `engine-version` | `version:quiz-engine`, currently `%quiz-engine-2` |
 
 `capture:replay [doc seed config]` validates and creates a record. Call it with
 the source and effective settings used by the original run. It stores no vases,

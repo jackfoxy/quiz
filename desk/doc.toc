@@ -6,5 +6,6 @@
 /suites-and-replay/md      Suites and Replay
 /agent-api/md              Agent API
 /http-api/md               HTTP API
+/limitations/md            Limitations
 /keyboard-shortcuts/md     Keyboard Shortcuts
 /about/md                  About Quiz

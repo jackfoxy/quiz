@@ -40,6 +40,11 @@
       [%exhausted budget=?(%attempts %drops %duplicates) all-dropped=?]
       [%invalid diagnostic:build]
       [%cancelled reason=?(%request %reload)]
+      $:  %interrupted
+          during=?(%building %running %shrinking)
+          proof=(unit evidence)
+          arm=(unit term)
+      ==
       [%suite outcome:suite]
   ==
 ::

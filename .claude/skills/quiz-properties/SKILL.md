@@ -126,7 +126,8 @@ not necessarily the global minimum.
 Write a custom `alts` when the default would leave the domain. Example: a
 domain of positive even numbers, where halving gives odd values. Rules:
 
-1. Return a short, finite list. The engine cannot interrupt a looping alts.
+1. Return a short, finite list. An alts call that loops runs until its CPU
+   limit, then the run ends `interrupted` with the best counterexample so far.
 2. Make each candidate smaller, and return `~` at the floor.
 3. Keep every candidate inside the domain the fate assumes.
 
@@ -157,6 +158,7 @@ Model: [09-custom-alts](../../../desk/examples/failing/09-custom-alts.hoon).
 | `error` | The norn, default generation or alts crashed. The stage says which. |
 | `invalid` | Source, import, arm type, context or conf problem. Use the code and line. |
 | `cancelled` | Cancelled by request, or by an agent reload. |
+| `interrupted` | A call exceeded its CPU limit (`call-time`, default 10 s), was stopped with Ctrl-C, or exhausted memory. `during` gives the stage, `arm` the suite arm, and `proof` the best counterexample so far. Look for a loop or runaway allocation. |
 
 Counter definitions:
 [counters, status and outcomes](../../../desk/doc/reference.md#counters-status-and-outcomes).

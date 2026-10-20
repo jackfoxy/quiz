@@ -147,7 +147,11 @@
       });
       let result;
       try { result = await response.json(); }
-      catch { throw new Error(`Unexpected server response (${response.status}).`); }
+      catch {
+        throw new Error(response.status === 500
+          ? 'The ship aborted this request (500). A build may have exceeded its CPU time or memory.'
+          : `Unexpected server response (${response.status}).`);
+      }
       if (!response.ok || result.ok === false) {
         const reason = typeof result.error === 'string' ? result.error : result.error?.message;
         const error = new Error(reason || result.code || `Request failed (${response.status})`);

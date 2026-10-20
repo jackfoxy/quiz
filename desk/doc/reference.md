@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-1`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-2`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -185,8 +185,9 @@ Do not interpret its `runs` field as the app's `accepted` or `attempted` count.
 An alts gate takes a **vase** and returns a finite `(list vase)` of candidates.
 Preserve the fate's input type and its semantic domain. The builder checks the
 alts gate's declared product, but cannot prove every dynamically returned vase
-is semantically valid for the fate. Terminate every alts invocation; limiting
-how many candidates the engine considers cannot interrupt its construction.
+is semantically valid for the fate. Terminate every alts invocation. Limiting
+how many candidates the engine considers cannot stop one call that never
+returns; that call hits `call-time` and the run ends `%interrupted`.
 
 The default `sink` tries halving and decrementing nonzero atoms, subtrees for
 noun cells, and combinations of cell component candidates. It preserves
@@ -236,9 +237,11 @@ All other fields can be lowered but not raised above their engine defaults.
 | `bounds.alts-bytes` | 262,144 | Jammed candidate-list bytes |
 | `bounds.retained-runs` | 100 | Completed records retained after this property finishes |
 | `bounds.samples-per-slice` | 25 | Engine steps per scheduling slice, including shrink work |
+| `bounds.call-time` | `~s10` | CPU time for one fate, norn, alts or rendering call (`@dr`); enforced by `%jinx` |
 
 Requested, attempt, drop, duplicate, shrink-candidate and shrink-depth limits
-may be zero. Byte caps, retained-runs and samples-per-slice must be positive.
+may be zero. Byte caps, retained-runs, samples-per-slice and call-time must be
+positive.
 Requested-max may be zero when requested is also zero.
 Requested must fit requested-max. Reaching the requested accepted
 count wins over budgets reached on the same step. Otherwise, budget ties use
@@ -250,13 +253,21 @@ suite arms; HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
 pending API mutation/discovery/configuration inspection at a time and times it
 out after 30 seconds. The file wire permits one pending write and verifies it
 with a 10-second timeout. These are request timers, not Hoon execution limits.
+Fixed CPU limits: draft compilation and each document arm check get 30 s
+(`build-time:quiz-build`); each suite arm's compile and run gets 1 minute
+(`arm-time:quiz-suite`).
 
 Byte limits apply after generation, rendering or list construction as relevant;
-`jam` also allocates. Build and suite diagnostics use the default diagnostic cap; the configurable
-property cap applies inside the engine. Compilation, a fate, norn, alts or suite arm can block the
-ship if it never returns. There is no hard execution timeout, memory isolation
-or safe untrusted-code sandbox. Use a disposable development ship for examples
-and experimental properties.
+`jam` also allocates. Build and suite diagnostics use the default diagnostic
+cap; the configurable property cap applies inside the engine.
+
+CPU limits are enforced by Vere's `%jinx` hint. A call that exceeds its limit,
+a Ctrl-C in the Vere terminal, or loom exhaustion aborts the whole Gall event.
+The run is then recorded as `%interrupted` (see below), and the queue
+continues. Clay builds of saved files and suites have no CPU limit; interrupt
+them with Ctrl-C. There is no per-run memory limit below the loom, and no
+sandbox that isolates the ship from the code it runs. Use a disposable
+development ship for examples and experimental properties.
 
 ### Counters, status and outcomes
 
@@ -287,6 +298,7 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 | `exhausted` | Budget `attempts`, `drops` or `duplicates`, plus `all-dropped` |
 | `invalid` | Located build/configuration diagnostic |
 | `cancelled` | Reason `request` or `reload` |
+| `interrupted` | The runtime aborted the run's event: a CPU limit, Ctrl-C or memory exhaustion. `during` (`building`, `running`, `shrinking`), optional best evidence, optional suite arm |
 | `suite` | Aggregate status, arm counters and per-arm outcomes |
 
 The durable Hoon [record](../sur/quiz-app.hoon) contains `id`, `request`, nullable
@@ -376,15 +388,19 @@ There is no HTTP delete/clear operation or automatic mutation retry.
 [HTTP fields/routes/errors](http-api.md) are the wire-format authority.
 
 One job runs at a time with a FIFO queue. Property slices execute bounded
-engine steps; suite slices execute one arm. Cancellation takes effect at a
-boundary between returning calls; queued work can cancel immediately. History
+engine steps; suite slices execute one arm. A property slice also ends when it
+first finds a counterexample. Cancellation takes effect at a boundary between
+returning calls; queued work can cancel immediately. An event aborted by a CPU
+limit, Ctrl-C or memory exhaustion finishes the job it was running as
+`%interrupted` and is never retried
+([details](agent-api.md#aborted-events-and-interrupted)). History
 pruning removes oldest submitted completed records and preserves pending work.
 The effective retention cap applies when its property finishes; suites/reload
 use the default. IDs remain monotonic across delete/clear.
 
 `on-save` persists `[%0 state-0]` with records, IDs and queue metadata. It omits
 compiled gates, RNGs, timers and pending build replies. Agent reload preserves
-completed records and cancels all interrupted jobs with reason `reload`; it
+completed records and cancels all unfinished jobs with reason `reload`; it
 never resumes partially executed work. Web pending requests are transient.
 Browser local storage separately retains editable buffers, controls, tab links,
 selection and layout. Clearing it loses unsaved buffers, not server history.
@@ -434,7 +450,9 @@ The [workbench guide](workbench.md) describes editing and dirty protection.
 | Replay unavailable | Preserve the original record and its Clay revision; inspect the specific version/hash/context error. |
 | HTTP 401 / disconnected | Sign in to this ship; refresh confirmed history before resubmitting an uncertain mutation. |
 | HTTP 503 / 504 | Another request is pending or a response timed out; inspect history before retrying. |
-| Cancellation cannot interrupt a call | Cooperative boundaries require the current Hoon call to return. |
+| Cancellation cannot interrupt a call | Cooperative cancellation waits for the current call to return. Wait for its CPU limit, or press Ctrl-C in the Vere terminal; either way the run ends `%interrupted`. |
+| `%interrupted` | A call exceeded `call-time` (or a build or arm limit), was stopped with Ctrl-C, or exhausted memory. Fix the non-terminating or oversized code. `call-time` can be lowered for faster detection but not raised above 10 s. `during` and `arm` locate the stage. |
+| HTTP 500 `crud!` | The ship aborted a configuration inspection or suite discovery event, usually a build that exceeded its CPU limit or memory. Run the document as a draft to see the result. |
 
 ## Internal implementation map
 
@@ -459,7 +477,8 @@ already checked parts/configuration and own scheduling and persistence.
 | [quiz-web](../lib/quiz-web.hoon) | Compiled urui configuration, shell, help and assets |
 | [quiz-runs.js](../web/quiz-runs.js), [quiz.js](../web/quiz.js) | Quiz controls/results and document integration; shared urui owns editor/file/dialog/session machinery |
 
-Generation and fate/shrinker execution use virtualization with refused scries.
+Generation and fate/shrinker execution use virtualization with refused scries,
+inside `sandbox:quiz-engine`, which adds the `%jinx` CPU limit.
 Dependency builds use asynchronous Clay `%warp` requests (`%a` for builds, `%x`
 for raw reads), because a failed build scry can escape Gall virtualization.
 Each request is pinned; stale job wires are ignored. App-only `%quiz-submit`

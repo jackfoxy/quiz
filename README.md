@@ -57,8 +57,10 @@ Documentation file browser remain available.
 The [user's guide](desk/doc/users-guide.md) teaches domain guards, norns,
 shrinking, replay and ordinary regression tests with executable examples.
 Passing randomized checks are evidence, not proof. App drops and duplicates
-never count as accepted; exhaustion is a distinct outcome. Individual Hoon
-calls have no hard execution timeout, so use a disposable ship for experiments.
+never count as accepted; exhaustion is a distinct outcome. Each Hoon call has a
+CPU time limit, and a stuck run can also be stopped with Ctrl-C. Either way it
+is recorded as interrupted. There is no memory isolation, so use a disposable
+ship for experiments. See [limitations](desk/doc/limitations.md).
 
 ## Library-only use
 

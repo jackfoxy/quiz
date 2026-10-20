@@ -93,6 +93,18 @@ async function scenario(env, mock, name) {
     mock.records.get(id).outcome={kind:'cancelled',reason:'reload'};
     await runs.refresh();
     assert.match(env.descendants(el('run-detail')).map(n=>n.textContent).join(' '), /reload/);
+    await runs.run();
+    const aborted = tab.runIds[0];
+    assert.notEqual(aborted, id);
+    mock.records.get(aborted).status='done';
+    mock.records.get(aborted).outcome={kind:'interrupted',during:'shrinking',arm:null,
+      evidence:{why:{kind:'false'},original:{text:'n=9'},shrunk:{text:'n=5'}}};
+    await runs.refresh();
+    const interrupted = env.descendants(el('run-detail')).map(n=>n.textContent).join(' ');
+    assert.match(interrupted, /Interrupted during/);
+    assert.match(interrupted, /shrinking/);
+    assert.match(interrupted, /CPU time limit/);
+    assert.equal(el('run-shrunk').textContent,'n=5');
   } else {
     docs.editor('property').setSource('changed', {history:'reset'});
     assert.match(el('run-stale').textContent, /Stale:/);

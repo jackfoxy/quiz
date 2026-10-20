@@ -83,7 +83,7 @@ Scries return `%noun` cages:
 | `/x/run/<id>` | `record:quiz-app`; known path with absent ID returns no value |
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
-| `/x/version` | Engine semantics version (`%quiz-engine-1`) |
+| `/x/version` | Engine semantics version (`%quiz-engine-2`) |
 
 The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:
 
@@ -108,8 +108,11 @@ all discovered arms. Numeric filenames need cord path components, for example
 
 There is one active job and a FIFO queue of at most 100 waiting jobs. Property
 slices perform at most `samples-per-slice` engine steps (default 25); shrinking
-steps use the same budget. Suites run one arm per slice. A self-addressed Behn
-wake yields between slices, with a nominal 10 ms delay. Tokens are monotonic
+steps use the same budget. A slice also ends when it first finds a
+counterexample, so that evidence is committed before any alts call. Suites run
+one arm per slice. A self-addressed Behn wake yields between slices, with a
+nominal 10 ms delay. Each wake does one kind of work: it either advances the
+active job by one slice or starts the next queued job (pin, read and build). Tokens are monotonic
 and saved; duplicate, late, wrong-kind, and pre-reload replies are ignored.
 Cancellation of active work first publishes `%cancelling`; the next slice
 publishes `%done` with `[%cancelled %request]`, without another evaluation.
@@ -127,10 +130,39 @@ failures after admission are recorded as `%invalid` runs.
 settings, timestamps, progress, and durable outcomes. It excludes pending Clay
 replies, compiled gates, suite cores, RNGs, and timer state. Counterexamples
 contain only their noun values and bounded rendered text, without vase types.
-`on-load` preserves completed records and marks every interrupted queued,
+`on-load` preserves completed records and marks every unfinished queued,
 building, running, shrinking, or cancelling record `%cancelled` with reason
 `%reload`. It never resumes old execution or substitutes new replay inputs.
 
-The limits are cooperative and checked between calls. A non-returning property,
-compiler, generator, shrinker, or suite arm can still block the ship; size caps
-apply after allocation. There is no hard execution or memory isolation.
+## Aborted events and `%interrupted`
+
+Every fate, norn, alts and sample-rendering call runs under a Vere `%jinx`
+CPU-time limit, `call-time` (default 10 s). Draft compilation and document arm
+checks use a fixed 30 s limit, and each suite arm a fixed 1 minute. When a
+limit expires the runtime aborts the **whole Gall event**; `mule` and `mong`
+cannot catch it. The same happens when the operator presses Ctrl-C in the Vere
+terminal, or when the computation exhausts the ship's memory (loom).
+
+The aborted event rolls back. Vere then delivers the tick's Behn wake again,
+this time with an error: `[%behn %wake [~ tang]]`. On that error wake `%quiz`
+finishes the job that tick was working on as:
+
+```hoon
+[%interrupted during=?(%building %running %shrinking) proof=(unit evidence) arm=(unit term)]
+```
+
+- If a job was active, that job is blamed. `during` comes from its status,
+  `proof` is the best counterexample committed before the abort, and `arm` is
+  the suite arm that was executing.
+- Otherwise the head of the queue is blamed, with `during=%building`. Its
+  source snapshot is absent, because recording it was rolled back with the
+  event.
+
+The job is never retried, because deterministic work would hang again. The
+next wake continues the queue. The tang does not identify the cause, so a
+timeout, a Ctrl-C and memory exhaustion produce the same outcome. Clay builds
+of saved files and suites run inside Clay and have no CPU limit. They can
+still be interrupted with Ctrl-C.
+
+Byte caps apply after allocation. There is no per-run memory limit below the
+loom size, and no isolation of the ship from the code it runs.

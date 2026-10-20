@@ -1,7 +1,8 @@
 /+  engine=quiz-engine
 |%
   ::  Restricted Ford documents, pinned Clay reads, and checked engine parts.
-  ::  Compilation/arm evaluation are virtualized; individual calls may hang.
+  ::  Compilation and arm evaluation are virtualized and run under the
+  ::  build-time %jinx CPU limit. Clay builds of saved files are not.
   ::
 +$  context  [our=ship desk=@tas revision=@ud]
 ::
@@ -19,6 +20,10 @@
 +$  product  [where=context settings=document-conf parts=parts:engine]
 ::
 +$  result  $%([%ready product] [%invalid diagnostic])
+::
+++  build-time
+  ::  Fixed: no document conf exists until the document has compiled.
+  ~s30
 ::
 ++  issue
   ::  Compiler traces include exact spans; at anchors the source/arm/import.
@@ -215,6 +220,7 @@
       (lte alts-bytes.bounds.cfg alts-bytes.bounds.max)
       (lte retained-runs.bounds.cfg retained-runs.bounds.max)
       (lte samples-per-slice.bounds.cfg samples-per-slice.bounds.max)
+      (lte call-time.bounds.cfg call-time.bounds.max)
       (gth source-bytes.bounds.cfg 0)
       (gth sample-bytes.bounds.cfg 0)
       (gth rendered-bytes.bounds.cfg 0)
@@ -222,6 +228,7 @@
       (gth alts-bytes.bounds.cfg 0)
       (gth retained-runs.bounds.cfg 0)
       (gth samples-per-slice.bounds.cfg 0)
+      (gth call-time.bounds.cfg 0)
   ==
 ::
 ++  inspect-gate
@@ -252,7 +259,9 @@
   =/  rest  t.wanted
   ?.  (~(has in (silt names)) arm)  $(wanted rest)
   =/  at  (arm-at source.doc arm)
-  =/  got  (~(mule vi |) |.((slap core [%limb arm])))
+  =/  got
+    ~>  %jinx.build-time
+    (~(mule vi |) |.((slap core [%limb arm])))
   ?:  ?=(%.n -.got)
     [%invalid (issue %arm path.doc at `arm p.got)]
   =/  value  p.got
@@ -275,7 +284,9 @@
       %norn  p:(slot 6 fate.parts)
       %alts  p:!>(*(list vase))
     ==
-  =/  check  (mule |.((inspect-gate value input output)))
+  =/  check
+    ~>  %jinx.build-time
+    (mule |.((inspect-gate value input output)))
   ?:  |(?=(%.n -.check) =(p.check %.n))
     =/  code  ?-(arm %fate %fate-type, %norn %norn-type, %alts %alts-type)
     [%invalid (issue code path.doc at `arm ?:(?=(%.n -.check) p.check ~))]
@@ -297,7 +308,9 @@
   =/  deps  deps.doc
   |-
   ?~  deps
-    =/  got  (~(mule vi |) |.((slap subject code.doc)))
+    =/  got
+      ~>  %jinx.build-time
+      (~(mule vi |) |.((slap subject code.doc)))
     ?:  ?=(%.n -.got)
       [%invalid (issue %compile path.doc [1 1] ~ p.got)]
     (check-core doc p.got)

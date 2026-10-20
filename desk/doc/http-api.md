@@ -42,7 +42,8 @@ IDs and immutable revision numbers are decimal strings, without separators,
 so clients can retain integers larger than JavaScript's safe integer range.
 The decoder also accepts nonnegative integer JSON tokens; clients should use
 strings for large values. Seeds are Hoon `@uv` strings, including `"0v0"`.
-Dates are Hoon `@da` strings. Paths are arrays of Clay segments ending with
+Dates are Hoon `@da` strings. The `bounds.call-time` configuration field is a
+Hoon `@dr` string, for example `"~s10"`. Paths are arrays of Clay segments ending with
 `"hoon"`; they are not URL paths. Optional configuration/seed fields may be
 omitted or null. Unknown object fields are ignored. Invalid required fields,
 invalid desk/path syntax, and unsupported revision kinds are refused.
@@ -74,10 +75,12 @@ immutable `revision`), `defaults` (the complete engine configuration), and
 `engine-version`. Configuration has `requested`, `attempts-max`, `drops-max`,
 `duplicates-max`, and `bounds`. Bounds are `source-bytes`, `requested-max`,
 `shrink-candidates`, `shrink-depth`, `sample-bytes`, `rendered-bytes`,
-`diagnostics-bytes`, `alts-bytes`, `retained-runs`, `samples-per-slice`.
-All configuration values are JSON integers. `requested` may be raised up to
+`diagnostics-bytes`, `alts-bytes`, `retained-runs`, `samples-per-slice`,
+`call-time`. Configuration values are JSON integers, except `call-time`, which
+is a Hoon `@dr` string such as `"~s10"`. `requested` may be raised up to
 `requested-max`; attempts, drop/duplicate budgets, and bounds cannot exceed
-their engine defaults. Size, retention, and slice bounds must stay positive.
+their engine defaults. Size, retention, slice and call-time bounds must stay
+positive.
 
 ### Run and replay
 
@@ -128,7 +131,12 @@ and nullable `seed` from the compiled document's `conf` or engine defaults.
 This operation compiles the source and evaluates its configuration; it does
 not enqueue a run or apply request overrides. Invalid source/context/imports
 return 422 with a located diagnostic. Reads use the same pinned asynchronous
-Clay build paths as execution.
+Clay build paths as execution. If the runtime aborts the inspection, because
+compilation or `conf` evaluation exceeded the 30-second build limit,
+exhausted memory or was interrupted, the event rolls back and Eyre answers
+500 with the body `crud!`. No pending API request remains. `suite-arms`
+discovery behaves the same way when interrupted; its Clay build has no CPU
+limit.
 
 The workbench uses this operation when overriding requested checks: it copies
 the document's full configuration and changes only `requested`, preserving
@@ -162,7 +170,7 @@ Property counts are `attempted`, `accepted`, `dropped`, `duplicate`,
 `failed`, `crashed`, `invalid`. A suite never synthesizes property counters.
 
 Outcome `kind` is `passed`, `failed`, `error`, `limited`, `exhausted`, `invalid`,
-`cancelled`, or `suite`. Additional fields follow the typed result:
+`cancelled`, `interrupted`, or `suite`. Additional fields follow the typed result:
 
 - `failed`: `evidence` with `why`, `original`, `shrunk`.
 - `error`: `stage`, `why`, nullable `evidence`.
@@ -171,6 +179,9 @@ Outcome `kind` is `passed`, `failed`, `error`, `limited`, `exhausted`, `invalid`
 - `invalid`: `diagnostic` with `code`, `path`, `line`, `column`, nullable `arm`,
   `trace` (rendered lines), and `clipped`.
 - `cancelled`: `reason` (`request` or `reload`).
+- `interrupted`: `during` (`building`, `running` or `shrinking`), nullable
+  `evidence` (the best counterexample committed before the abort), and
+  nullable `arm` (the suite arm that was executing).
 - `suite`: aggregate `status`, `counts`, `sample-metrics: "unavailable"`, and
   `arms` with `name`, `status`, `trace`, `clipped`.
 

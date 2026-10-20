@@ -144,6 +144,34 @@
   =.  rec  rec(status %cancelling, updated now)
   s(records.saved (~(put by records.saved.s) id rec))
 ::
+++  interrupt
+  ::  The runtime aborted the previous tick's event: a %jinx CPU limit,
+  ::  operator interrupt or memory exhaustion. The event rolled back, so
+  ::  blame what that tick ran: the active job's slice, or else the build
+  ::  of the queue head. Never retry: deterministic work would hang again.
+  |=  [s=state now=@da]
+  ^-  state
+  =/  current  active.s
+  ?~  current
+    =/  todo  queue.saved.s
+    ?~  todo  s
+    (finish s i.todo [%interrupted %building ~ ~] now)
+  =/  id  id.u.current
+  =/  rec  (~(got by records.saved.s) id)
+  =/  during=?(%building %running %shrinking)
+    ?:(?=(?(%running %shrinking) status.rec) status.rec %building)
+  =/  work  work.u.current
+  =/  proof=(unit evidence:app)
+    ?.  ?=(%property -.work)  ~
+    =/  shrink  shrink.work
+    ?~  shrink  ~
+    `(persist-evidence evidence.u.shrink)
+  =/  arm=(unit term)
+    ?.  ?=(%suite -.work)  ~
+    =/  todo  remaining.work
+    ?~(todo ~ `i.todo)
+  (finish s id [%interrupted during proof arm] now)
+::
 ++  delete
   ::  Missing or unfinished IDs are no-ops; clear uses the same rule.
   |=  [s=state id=run-id:app]
@@ -194,6 +222,8 @@
 ::
 ++  advance
   ::  A property slice consumes at most the configured number of steps.
+  ::  It also ends when a counterexample is first found, so the evidence
+  ::  is committed before any alts call can abort the event.
   ::  A suite slice always consumes one arm. Cancellation precedes all work.
   |=  [s=state now=@da]
   ^-  state
@@ -207,10 +237,13 @@
     %property
       =/  running  +.work
       =/  left  samples-per-slice.bounds.config.running
+      =/  shrinking  !=(~ shrink.running)
       =.  running
         |-  ^-  state:engine
         ?:  |(=(left 0) !=(~ result.running))  running
-        $(running (step:engine running), left (dec left))
+        =/  next  (step:engine running)
+        ?:  &(!shrinking !=(~ shrink.next))  next
+        $(running next, left (dec left))
       =.  rec
         %=  rec
           counts  [%property counts.running]

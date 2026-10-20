@@ -2,6 +2,7 @@
 |%
   ::  Clay test cores, using -test's test-* discovery and tang contract.
   ::  One step runs one arm. Sample-level legacy metrics are unavailable.
+  ::  Each arm's compile and run is bounded by the arm-time %jinx CPU limit.
   ::
 +$  document
   [where=context:build path=path source=@t selected=(list term)]
@@ -30,6 +31,10 @@
   ==
 ::
 +$  result  $%([%ready state] [%invalid diagnostic:build])
+::
+++  arm-time
+  ::  Fixed: suites have no conf. Legacy property arms can run many checks.
+  ~m1
 ::
 ++  prepare
   ::  Suites use ordinary Ford, not the property document prelude parser.
@@ -114,11 +119,14 @@
   |=  [core=vase name=term]
   ^-  arm-result
   =/  compiled
+    ~>  %jinx.arm-time
     %-  ~(mule vi |)
     |.  q:(~(mint ut p.core) p:!>(*tang) [%limb name])
   =/  verdict=[status=?(%passed %failed %crashed %invalid) trace=tang]
     ?:  ?=(%.n -.compiled)  [%invalid p.compiled]
-    =/  ran  (~(mule vi |) |.(;;(tang .*(q.core p.compiled))))
+    =/  ran
+      ~>  %jinx.arm-time
+      (~(mule vi |) |.(;;(tang .*(q.core p.compiled))))
     ?:  ?=(%.n -.ran)  [%crashed p.ran]
     [?:(=(~ p.ran) %passed %failed) p.ran]
   =/  cap  diagnostics-bytes.bounds:defaults:engine

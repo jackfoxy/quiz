@@ -127,6 +127,8 @@
         [%limited %shrink-depth `proof]
         [%exhausted %drops &]
         [%cancelled %reload]
+        [%interrupted %shrinking `proof ~]
+        [%interrupted %running ~ `%test-loop]
     ==
   %-  zing
   %+  turn  outcomes
@@ -150,4 +152,10 @@
     %+  expect-eq  !>((request-out:codec request))
     !>((field:codec fields 'request'))
   ==
+::
+++  test-call-time-encodes-as-duration
+  ^-  tang
+  =/  jon  (bounds-out:codec bounds:defaults:engine)
+  =/  fields  (object:codec jon)
+  (expect-eq !>(s+'~s10') !>((field:codec fields 'call-time')))
 --

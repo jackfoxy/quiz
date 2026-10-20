@@ -3,7 +3,7 @@
 Quiz 0.1.0 provides randomized property testing for Hoon and a document
 workbench for authoring properties and running existing Clay suites.
 The `%quiz` agent owns execution and history; `%quiz-web` serves the workbench.
-The desk targets `%zuse 408`. Its application engine is `%quiz-engine-1`.
+The desk targets `%zuse 408`. Its application engine is `%quiz-engine-2`.
 
 Copyright 2026 Jack Fox. Quiz uses the **MIT+n** license; read the
 [complete license](https://github.com/jackfoxy/quiz/blob/dev/LICENSE) for its

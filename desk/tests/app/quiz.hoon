@@ -509,5 +509,125 @@
   =/  bowl  bol
   %-  expect-fail
   |.  (on-poke:~(. agent bowl(src ~nec)) %quiz-submit !>(['x' request]))
-
+::
+++  test-interrupt-running
+  ^-  tang
+  =/  s  (running 2 5)
+  =/  got  (interrupt:job s now:bol)
+  =/  rec  (get-record got 1)
+  ;:  weld
+    (expect !>(?=([~ %interrupted %running ~ ~] result.rec)))
+    (expect !>(=(counts:(get-record s 1) counts.rec)))
+    (expect !>(=(~ active.got)))
+    (expect-eq !>(~[2]) !>(queue.saved.got))
+  ==
+::
+++  test-interrupt-shrinking-keeps-evidence
+  ^-  tang
+  =/  s  (running 1 5)
+  =/  current  (need active.s)
+  ?>  ?=(%property -.work.current)
+  =/  run=state:engine  +.work.current
+  =/  best=counterexample:engine
+    [[%false ~] !>(`@ud`9) !>(`@ud`5)]
+  =.  shrink.run  `[best ~ ~]
+  =/  rec  (get-record s 1)
+  =.  s
+    %=  s
+      active  `[1 [%property run]]
+      records.saved  (~(put by records.saved.s) 1 rec(status %shrinking))
+    ==
+  =/  got  (get-record (interrupt:job s now:bol) 1)
+  ?>  ?=([~ %interrupted %shrinking [~ *] ~] result.got)
+  =/  proof  (need proof.u.result.got)
+  ;:  weld
+    (expect-eq !>(9) !>(value.original.proof))
+    (expect-eq !>(5) !>(value.shrunk.proof))
+    (expect-eq !>('5') !>(text.shrunk.proof))
+  ==
+::
+++  test-interrupt-suite-names-arm
+  ^-  tang
+  =/  doc=document:suite  [[~zod %quiz 1] /tests/demo/hoon '' ~]
+  =/  core  |%  ++  test-one  *tang  ++  test-two  *tang  --
+  =/  built  (discover:suite doc !>(core))
+  ?>  ?=(%ready -.built)
+  =/  s  (activate:job (queued 1) now:bol)
+  =.  s  s(active `[1 [%suite +.built]])
+  =/  first  (advance:job s now:bol)
+  =/  current  (need active.first)
+  ?>  ?=(%suite -.work.current)
+  =/  next  (snag 0 remaining.+.work.current)
+  =/  rec  (get-record (interrupt:job first now:bol) 1)
+  (expect !>(=(result.rec `[%interrupted %running ~ `next])))
+::
+++  test-interrupt-blames-queue-head
+  ^-  tang
+  =/  s  (queued 2)
+  =/  got  (interrupt:job s now:bol)
+  =/  head  (get-record got 1)
+  ;:  weld
+    (expect !>(=(result.head `[%interrupted %building ~ ~])))
+    (expect !>(=(%queued status:(get-record got 2))))
+    (expect-eq !>(~[2]) !>(queue.saved.got))
+    (expect !>(=(initial:job (interrupt:job initial:job now:bol))))
+  ==
+::
+++  test-error-wake-interrupts-and-continues
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =/  s  (running 2 0)
+  =.  a  a(state s(timer `[10 now:bol], next-token.saved 11))
+  =/  error=(unit tang)  `~[leaf+"aborted"]
+  =/  got  (on-arvo.a /quiz/tick/10 [%behn %wake error])
+  =/  next  state:+.got
+  =/  rec  (get-record next 1)
+  =/  wake=card:agent:gall
+    [%pass /quiz/tick/11 %arvo %b %wait (add now:bol (div ~s1 100))]
+  ;:  weld
+    (expect !>(?=([~ %interrupted %running ~ ~] result.rec)))
+    (expect !>(=(%queued status:(get-record next 2))))
+    (expect-eq !>(11) !>(token:(need timer.next)))
+    (expect !>(=(wake (rear -.got))))
+  ==
+::
+++  test-tick-finishes-before-starting
+  ::  Separate ticks give an aborted event exactly one culprit.
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =/  s  (running 2 99)
+  =.  a  a(state s(timer `[10 now:bol], next-token.saved 11))
+  =/  got  (on-arvo.a /quiz/tick/10 [%behn %wake ~])
+  =/  next  state:+.got
+  =/  done  (get-record next 1)
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.done)))
+    (expect !>(=(~ active.next)))
+    (expect !>(=(%queued status:(get-record next 2))))
+    (expect-eq !>(11) !>(token:(need timer.next)))
+  ==
+::
+++  test-slice-commits-new-counterexample
+  ::  The slice stops at the first failure, before any alts call.
+  ^-  tang
+  =/  s  (activate:job (queued 1) now:bol)
+  =/  cfg  defaults:engine
+  =/  parts=parts:engine  [!>(|=(n=@ud |)) ~ ~]
+  =/  run  (init:engine 0v123 cfg parts)
+  =/  rec  (get-record s 1)
+  =.  s
+    %=  s
+      active  `[1 [%property run]]
+      records.saved  (~(put by records.saved.s) 1 rec(status %running))
+    ==
+  =/  first  (advance:job s now:bol)
+  =/  done  (get-record first 1)
+  =/  stopped  (get-record (interrupt:job first now:bol) 1)
+  ?>  ?=(%property -.counts.done)
+  ;:  weld
+    (expect !>(=(%shrinking status.done)))
+    (expect-eq !>(1) !>(attempted.counts.done))
+    (expect-eq !>(0) !>(shrink-tried.counts.done))
+    (expect !>(?=([~ %interrupted %shrinking [~ *] ~] result.stopped)))
+  ==
 --

@@ -343,6 +343,12 @@
       const outcome = rec.outcome;
       if (outcome?.kind === 'passed') line(detail, 'Meaning', 'Requested checks passed; this is not a proof.');
       if (outcome?.kind === 'cancelled') line(detail, 'Cancellation reason', outcome.reason);
+      if (outcome?.kind === 'interrupted') {
+        line(detail, 'Meaning', 'The runtime aborted this run: a call exceeded its CPU time limit, the operator pressed Ctrl-C, or memory ran out.');
+        line(detail, 'Interrupted during', outcome.during);
+        if (outcome.arm) line(detail, 'Interrupted arm', outcome.arm);
+        if (outcome.evidence) line(detail, 'Evidence', 'Best counterexample found before the interruption.');
+      }
       if (outcome?.kind === 'limited') line(detail, 'Limit', outcome.which);
       if (outcome?.kind === 'exhausted') {
         line(detail, 'Exhausted budget', outcome.budget);

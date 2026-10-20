@@ -59,15 +59,18 @@ source. **Source tab** returns to the associated document; edits mark its
 results stale without changing their snapshots. Closed/unlinked tabs and
 pruned records are labelled explicitly. Per-tab controls, run associations and
 the selected result survive browser reload in local storage. The server owns
-retained history; interrupted work is cancelled on agent reload.
+retained history; unfinished work is cancelled on agent reload.
 
 Missing/deleted saved files, unavailable contexts and compile failures report
 diagnostics. Empty history explains how to start. A connection failure keeps
 last confirmed results and disables mutations until a successful refresh.
 Requests are never retried automatically: a lost admission reply may still
 have created a run, so inspect history before retrying. Polling continues after
-reconnection. Individually non-returning Hoon calls cannot be interrupted by
-these cooperative controls; see [engine limits](agent-api.md).
+reconnection. **Cancel** waits for the current Hoon call to return. A call
+that never returns hits its CPU limit, or can be stopped with Ctrl-C in the
+Vere terminal; the result shows **interrupted**, with the stage, any
+counterexample found so far, and the suite arm. See
+[aborted events](agent-api.md#aborted-events-and-interrupted).
 
 Help includes a short offline summary. Install `%docs` for the full help
 site and reference.

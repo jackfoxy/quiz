@@ -48,13 +48,21 @@ lists each module's entry points.
   shrinking or defaults must bump `++version` in `desk/lib/quiz-engine.hoon`.
   Replay refuses records from another version.
 - **Durable state.** `state-0` in `desk/sur/quiz-app.hoon` holds nouns and
-  text only, never vases, compiled gates or RNG cores. Changing `state-0` or
-  `record` needs a new versioned state and an `on-load` migration; none exists
-  yet.
-- **Containment.** Evaluated user code runs under `mong` with a refusing scry
-  gate. Dependency reads use asynchronous `%warp`, not build scries: a failed
-  `%ca` scry can escape Gall's virtualization. There is no hard timeout; do not
-  claim one.
+  text only, never vases, compiled gates or RNG cores. Migrations will be
+  supported later. For now `state-0` changes in place. Its records include
+  `conf:quiz-engine`, so changing `limits` changes the state too. A ship
+  holding older state refuses the commit (`%load-failed`); run `|nuke %quiz`
+  and commit again, which is safe for now. Do not add a fallback that
+  silently discards state in `on-load`.
+- **Containment.** Evaluated user code runs under `sandbox:quiz-engine`: `mong`
+  with a refusing scry gate, inside a `%jinx` CPU limit. Draft builds and
+  suite arms have their own `%jinx` limits. A timeout, Ctrl-C or loom
+  exhaustion aborts the whole Gall event and cannot be caught. `%quiz` learns
+  of it from the error wake on its tick wire and records `%interrupted`.
+  Keep one kind of work per tick, so that every abort has exactly one culprit.
+  Dependency reads use asynchronous `%warp`, not build scries: a failed `%ca`
+  scry can escape Gall's virtualization. There is no memory isolation; do not
+  claim any.
 - **urui copies.** Never edit a urui copy here. Make the change in the urui
   repository, test it there, re-copy every changed file by hand, and update the
   pinned revision below. There is no sync manifest.

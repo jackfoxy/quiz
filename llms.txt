@@ -4,14 +4,15 @@
 > and generator, plus an Urbit Gall application: `%quiz` runs property
 > documents and existing Clay `test-*` suites as bounded, replayable jobs, and
 > `%quiz-web` serves a browser workbench at `/apps/quiz/`. Targets
-> `[%zuse 408]`. Random checks are evidence, not proof; there is no hard
-> execution timeout.
+> `[%zuse 408]`. Random checks are evidence, not proof. Each user call has a
+> `%jinx` CPU limit; there is no memory isolation.
 
 ## Start here
 
 - [README](README.md): installation, quick start, library-only use
 - [User's guide](desk/doc/users-guide.md): seven-step tutorial, property-design advice, blog corrections
 - [Reference](desk/doc/reference.md): public contracts, limits, outcomes, troubleshooting
+- [Limitations](desk/doc/limitations.md): safety boundaries, unsupported behavior, operational caveats
 - [Examples catalog](desk/doc/examples.md): bundled examples with recorded results
 
 ## Contracts
