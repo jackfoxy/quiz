@@ -249,6 +249,14 @@
   :~  (compose:ucss ~[%tokens %controls %shell %explorer %tabs %dialogs])
       '''
       #result-pane { flex-direction: column; }
+      #result-pane > .pane-header {
+        flex: 0 0 2.55rem;
+        flex-wrap: nowrap;
+        height: 2.55rem;
+        min-height: 2.55rem;
+        padding: 0 .75rem;
+      }
+      #result-collapse { height: 2.25rem; width: 2.25rem; }
       #settings-modal .settings-card > .settings-field {
         margin-top: 1rem;
       }
