@@ -1,0 +1,9 @@
+{
+  "name": "quiz-browser-tests",
+  "private": true,
+  "scripts": {
+    "test:doubles": "node tests/browser/run-doubles.js",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {"@playwright/test": "1.62.1"}
+}
