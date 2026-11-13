@@ -115,7 +115,15 @@
   });
 
   // The shared explorer owns its panels; this view supplies Clay context.
+  //
+  //  urui seeds every view in the strip with a `{view}-tree` placeholder
+  //  that reads "Loading…" until its first browse answers, and it only
+  //  browses the views named in `files.trees`.  Clay source is not one
+  //  of them -- this view is filled from a desk and revision the user
+  //  picks, not from a store root -- so its placeholder would wait for
+  //  a response that never comes.  Drop it before building the panel.
   const panel = byId('clay-source-panel');
+  byId('clay-source-tree')?.remove();
   function control(tag, id, text) {
     const node = document.createElement(tag);
     node.id = id;
@@ -297,6 +305,14 @@
   });
   window.quiz = {runtime, documents: docs, editableCopy, browseClay, validContext, runs: runner,
     loadLimits, saveLimits};
+  //  F5 runs: the Run control is built by quiz-runs.js inside
+  //  #run-controls, so the chord goes through the button rather than
+  //  reaching into the runner.  urui registers no `run`, so this does
+  //  not race its own registrations in runtime.start.
+  runtime.shortcuts.register('run', () => {
+    const button = document.querySelector('#run-start');
+    if (button && !button.disabled) button.click();
+  });
   window.urui.boot({
     onReady() {
       runtime.start((saved) => {

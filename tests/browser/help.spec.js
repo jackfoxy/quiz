@@ -52,7 +52,7 @@ test('rendered help routes, repository links and restored tabs', async ({page}, 
   await page.waitForFunction(() => window.quiz?.ready);
   await page.evaluate(() => window.quiz.ready);
   await expect(page.locator('.docs-tab')).toHaveCount(3);
-  const restoredPanel = await page.locator('.docs-tab[data-doc-path="keyboard-shortcuts"]')
+  const restoredPanel = await page.locator('.docs-tab[data-doc-path="keyboard/quiz-keys"]')
     .getAttribute('aria-controls');
   await expect(page.frameLocator(`#${restoredPanel} iframe`).locator('main h1'))
     .toHaveText('Keyboard shortcuts');

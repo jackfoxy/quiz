@@ -2,8 +2,13 @@
   "name": "quiz-browser-tests",
   "private": true,
   "scripts": {
+    "test:sync": "bin/verify-sync.sh --strict --quiet",
+    "test:shortcuts": "node --test tests/browser/shortcut-conflicts.test.js",
     "test:doubles": "node tests/browser/run-doubles.js",
     "test:browser": "playwright test"
   },
-  "devDependencies": {"@playwright/test": "1.62.1"}
+  "devDependencies": {
+    "@playwright/test": "1.62.1"
+  },
+  "//": "No offline-compile suite: desk/lib/quiz-web.hoon pulls its client javascript in with /*, which `vere eval` cannot build, so the ship-based suites in tests/browser are the real-browser authority. See tests/browser/README.md."
 }

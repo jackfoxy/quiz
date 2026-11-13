@@ -12,10 +12,7 @@
   :*  [%quiz 'Quiz' '/apps/quiz' 'quiz.session' 2]
       [350 150 180 10 25 70 262.144]
       slots
-      :~  ['Ctrl-S' 'save:property' %always]
-          ['Ctrl-Shift-S' 'save-as:property' %always]
-          ['Ctrl-O' 'open:property' %always]
-      ==
+      shortcuts
       ~[[%ready 'Ready'] [%loading 'Loading'] [%failed 'Failed']]
       `'/docs/d/quiz/'
       :*  '/apps/quiz/ace'  'quizAceAssets'  '1.44.0'
@@ -26,6 +23,28 @@
           |
       ==
       %columns  &  `files  ~
+  ==
+::
+++  shortcuts
+  ::  F1 and F2 displace Ace's command palette and fold widget; the
+  ::  palette stays reachable at Ctrl-, and folds at Alt-F2.  F5 runs,
+  ::  as it does in obelisk.
+  ::
+  ::  The file chords are urui's, registered from the store's name.
+  ::  Alt-O rather than Ctrl-O for Open: Ctrl-O is free in Ace's
+  ::  Windows/Linux table but taken by Vim in both insert and normal
+  ::  mode, and the editor can be switched to Vim in Settings.  Alt-C
+  ::  rather than Ctrl-Shift-C for Copy, which Chromium keeps for its
+  ::  element inspector.  Both are %no-editor, so Ctrl-C and its
+  ::  neighbours keep their ordinary meaning while editing.
+  ^-  (list shortcut:urui)
+  :~  ['F1' 'help' %always %override `'Help']
+      ['F2' 'settings' %always %override `'Settings']
+      ['F5' 'run' %no-editor %free `'Run the selected property']
+      ['Ctrl-S' 'save:property' %always %free `'Save the document']
+      ['Ctrl-Shift-S' 'save-as:property' %always %free `'Save as a new file']
+      ['Alt-O' 'open:property' %no-editor %free `'Open a saved document']
+      ['Alt-C' 'copy:property' %no-editor %free `'Copy the document']
   ==
 ::
 ++  slots
@@ -57,7 +76,10 @@
 ++  files
   ^-  files:urui
   :*  '/apps/quiz/files'
-      :~  :*  %property  'Document'  'Untitled'  starter
+      :~  :*  name=%property
+              noun='Document'
+              untitled='Untitled'
+              starter=starter
               :~  [/work ~[%hoon %md] ~ &]
                   [/examples ~[%hoon] ~ |]
                   [/props ~[%hoon] ~ |]
@@ -65,7 +87,10 @@
                   [/docs ~[%md] ~ |]
                   [/clay ~[%hoon] ~ |]
               ==
-              ~  ~[%open %save %save-as %ref]  &  ~
+              preview=~
+              actions=~[%open %save %save-as %copy %ref]
+              refs=&
+              share=~
           ==
       ==
       :~  [%work-files %property ~[/work]]
@@ -177,8 +202,14 @@
         ;p: Replay keeps seed and context. Rerun repeats the request.
         ;p: Counters come from the ship; stale results retain their source.
         ;h2: Shortcuts
-        ;p: Ctrl-S saves; Ctrl-Shift-S saves as; Ctrl-O opens a document.
-        ;p: On macOS use Command. Run, replay and cancel have no shortcuts.
+        ::  from the same table the dispatcher reads, so the two cannot
+        ::  disagree
+        ;+  (shortcut-list:shell shortcuts)
+        ;p: On macOS use Command for Ctrl.
+        ;p
+          ; Replay and cancel have no chord: they act on a selected run,
+          ; not on the document.
+        ==
         ;p: Ace supports search, undo, redo and optional Vim keys in Settings.
       ==
       ;div#docs-help-content.docs-help-content(hidden "")
@@ -194,7 +225,11 @@
     "/apps/quiz/favicon.png?v={(trip (scot %uv (mug favicon)))}"
   :*  config
       ~[;h1.app-title:"Quiz"]
-      ~[;button#help(type "button", aria-expanded "false"):"Help"]
+      :~  ;nav.toolbar(aria-label "Quiz controls")
+            ;+  settings-button:shell
+            ;+  help-button:shell
+          ==
+      ==
       [reference-pane editor-pane result-pane]
       help  ~  ~[css]
       :~  '/apps/quiz/ace/ace.js'

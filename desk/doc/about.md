@@ -36,4 +36,4 @@ The editor bundles **Ace 1.44.0**, copyright 2010 Ajax.org B.V., under its BSD
 license. The [bundled Ace license](../web/ace/license.txt) also has a local
 application URL, `/apps/quiz/ace/license.txt`.
 Settings selects the default or Vim keymap; see
-[Keyboard shortcuts](keyboard-shortcuts.md).
+[Keyboard shortcuts](keyboard/quiz-keys.md).

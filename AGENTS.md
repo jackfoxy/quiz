@@ -22,7 +22,7 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 | `desk/lib/quiz-json.hoon`, `desk/lib/quiz-web-agent.hoon`, `desk/app/quiz-web.hoon` | HTTP codec and `%quiz-web` | quiz |
 | `desk/lib/quiz-web.hoon`, `desk/lib/quiz-files.hoon`, `desk/web/quiz*.js`, `desk/web/ace/mode-hoon.js` | Workbench config, file roots, client code, Hoon Ace mode | quiz |
 | `desk/sur/quiz-app.hoon`, `desk/mar/quiz/` | Public types and marks | quiz |
-| `desk/sur/urui.hoon`, `desk/lib/urui-*.hoon`, `desk/tests/lib/urui-files.hoon`, `desk/web/ace/` (except `mode-hoon.js`), `tests/browser/doubles/`, `tests/browser/ace-win-linux-shortcuts.json` | urui framework copies | **urui** |
+| `desk/sur/urui.hoon`, `desk/lib/urui-*.hoon`, `desk/tests/lib/urui-*.hoon`, `desk/doc/keyboard/{ace-keys,modal-keys,key-policy}.md`, `desk/web/ace/` (except `mode-hoon.js`), `tests/browser/doubles/`, `tests/browser/{chords.js,shortcut-conflicts.test.js,vim-chords.json,ace-win-linux-shortcuts.json}` | urui framework copies | **urui** |
 | `desk/lib/{default-agent,skeleton,dbug,server,docket,test}.hoon`, `desk/sur/docket.hoon`, most of `desk/mar/` | Vendored `%base`/neighbour support | vendored |
 | `desk/examples/props/`, `desk/examples/failing/` | Passing and intentionally failing property documents | quiz |
 | `desk/tests/examples/` | Original tutorial, boxcar and Euler suites (all pass) | quiz |
@@ -67,11 +67,12 @@ lists each module's entry points.
   claim any.
 - **urui copies.** Never edit a urui copy here. Make the change in the urui
   repository, test it there, re-copy every changed file by hand, and update the
-  pinned revision below. There is no sync manifest.
-  Pinned urui revision: **pending**. The copies match urui `960de94` plus an
-  uncommitted `settings` marl slot in `$shell-spec` (`sur/urui.hoon`,
-  `lib/urui-shell.hoon`). After that urui change is committed, put its hash
-  here and in the drift check below.
+  pin below.  `bin/verify-sync.sh` reports drift against the urui checkout.
+  Pinned source: **obelisk `47881e9`**, not the urui repository.  urui's own
+  working tree is *behind* its consumers -- it lacks dialog dragging,
+  `refresh-tree`, the conflict gate and the three shared key documents -- so
+  the shipped set is whatever obelisk, graph-viz and heathcliff carry, and
+  those three agree file for file.  Re-pin to urui once it catches up.
 - **No secrets or machine paths** in committed files. Use `<pier>`, `<vere>`
   and `QUIZ_*` environment variables as placeholders.
 - **Disposable ships only.** Develop and test on a fake ship. Never install on,
@@ -118,23 +119,28 @@ node --check desk/web/quiz-runs.js
 for f in tests/browser/*.js; do node --check "$f"; done
 ```
 
-urui drift check, with the urui repository checked out at `../urui`:
+urui drift check, against the pinned source rather than urui's working
+tree:
 
 ```sh
-rev=<pinned urui commit>   # see the pin above; pending a urui commit
-for f in desk/sur/urui.hoon desk/lib/urui-*.hoon \
-    desk/tests/lib/urui-files.hoon desk/web/ace/README.md \
-    desk/web/ace/license.txt desk/web/ace/ace.js desk/web/ace/ext-*.js \
-    desk/web/ace/keybinding-vim.js desk/web/ace/theme-*.js \
+npm run test:sync          # bin/verify-sync.sh --strict, vs ../urui
+for f in desk/sur/urui.hoon desk/lib/urui-*.hoon desk/tests/lib/urui-*.hoon \
+    desk/doc/keyboard/ace-keys.md desk/doc/keyboard/modal-keys.md \
+    desk/doc/keyboard/key-policy.md \
+    tests/browser/chords.js tests/browser/shortcut-conflicts.test.js \
+    tests/browser/vim-chords.json \
     tests/browser/ace-win-linux-shortcuts.json tests/browser/doubles/*; do
-  git -C ../urui show "$rev:$f" | cmp -s - "$f" || echo "drift: $f"
+  cmp -s "../obelisk/$f" "$f" || echo "drift: $f"
 done
 ```
 
-No output means all 27 copies match the pin. Once a pin is set, compare
-against it rather than the urui working tree, which may have moved ahead.
-While the pin is pending, compare against the working tree instead
-(`cmp ../urui/$f $f`).
+The second loop is the one that matters while the pin is a consumer:
+`npm run test:sync` compares against urui, which is behind, so it reports
+every file where urui has yet to catch up.  `tests/browser/chords.js` and
+`shortcut-conflicts.test.js` carry one quiz-driven change that is not yet
+upstream -- the conflict gate follows a web library's `/*` javascript
+imports, which only this desk uses -- so those two are expected to differ
+until the change lands in urui and the other three re-sync.
 
 Also run `git diff --check` and `find desk -type l` (expect no symlinks).
 
