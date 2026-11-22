@@ -374,14 +374,14 @@ The following are Quiz applications of general property-testing techniques;
 | Round trip | Tutorial `test-jam-cue` checks decoding an encoded noun. A broken pair can share a bug, so add known encodings or an independent model. |
 | Algebraic law | Tutorial `test-add-sub`, reverse-concatenation checks in `test-flop-2`, and the composed offset/sum document compare equivalent computations. |
 | Idempotence | **Conceptual:** normalizing an already normalized record should leave it unchanged. Add expected examples; a function returning a constant can satisfy this law. |
-| Simple model | **Conceptual:** compare a new optimized queue with a plain list model after each operation. Keep model logic independent from the optimized implementation. |
+| Simple model | `10-queue-model` compares a two-list queue with a plain list model after each command. Keep model logic independent from the optimized implementation. |
 | Avoid tautologies | The offset/sum example compares two computations. Comparing a value only with itself cannot find a bug; don't use that as a real specification. |
 | Avoid vacuity | `04-discards` still requires 20 accepted inputs; `05-duplicates` explicitly exhausts. An always-dropping generator establishes nothing. |
 | Boundaries | The regression above checks zero and one explicitly; boxcar checks four/five. **Conceptual:** add empty, singleton, repeated and very large structures appropriate to your own domain. |
 | Filtering | Compare `04-discards` with `07-positive`: construct the domain directly when most inputs would be dropped. |
-| Distribution | **Conceptual:** inspect generated case classes separately; Quiz has no built-in histogram/coverage threshold. |
+| Distribution | Quiz has no built-in histogram or coverage threshold; inspect generated case classes separately. Know the stock norns' shape first: a `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics](reference.md#measured-generator-characteristics). |
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
-| Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates. |
+| Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list. |
 
 These are design suggestions, informed by FsCheck's
 [Properties](https://fscheck.github.io/FsCheck/Properties.html),
@@ -389,12 +389,17 @@ These are design suggestions, informed by FsCheck's
 [Running Tests](https://fscheck.github.io/FsCheck/RunningTests.html), and
 [Tips and Tricks](https://fscheck.github.io/FsCheck/TipsAndTricks.html).
 
-**Conceptual command-sequence testing:** generate a finite list of commands and
-an initial pure state; fold both the implementation and a simple model over it,
+**Command-sequence testing:** generate a finite list of commands and an
+initial pure state; fold both the implementation and a simple model over it,
 checking each returned value and state. Every sample starts from fresh state.
-A sequence shrinker must preserve command preconditions, not just delete steps.
-This can be written as an ordinary fate; Quiz has no dedicated state-machine,
-external-system driver, parallel or asynchronous property API.
+[10-queue-model](../examples/props/10-queue-model.hoon) is the plain form.
+[11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) adds a
+precondition: its norn generates only valid sequences, and its `alts` deletes
+commands and shrinks values but keeps only valid candidates. The default
+shrinker cannot delete a command from a list. See the
+[queue examples](examples.md#model-based-queue-examples). This is an ordinary
+fate; Quiz has no dedicated state-machine, external-system driver, parallel or
+asynchronous property API.
 
 Other FsCheck facilities are **unsupported**: `Arbitrary` registration, automatic
 .NET derivation/reflection, generated functions and function shrinking, labels,

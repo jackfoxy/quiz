@@ -124,8 +124,9 @@ subtrees or independent subtrees. `cell` splits the RNG for its children.
 an empty list. Its distribution depends on size and is not a fixed geometric
 `2^(-1-n)` distribution. It does not enumerate every list or semantic domain.
 
-Use the [composed list/cell example](../examples/props/06-composed.hoon) and
-[positive custom norn](../examples/props/07-positive.hoon) as executable models.
+Use the [composed list/cell example](../examples/props/06-composed.hoon),
+[positive custom norn](../examples/props/07-positive.hoon) and
+[queue model](../examples/props/10-queue-model.hoon) as executable models.
 The composed example uses a noun boundary for its list and validates it
 inside the fate: a recursive sample type can retain a large compiler context,
 and the sample-byte cap includes that type even when the value is small.
@@ -159,6 +160,26 @@ can collide, so deduplication is approximate. Duplicate counts are cumulative
 for the run, not consecutive streaks; they do not reset after an accepted
 sample. A small finite generator cannot satisfy a request larger than its
 available distinct mugs.
+
+### Measured generator characteristics
+
+[`tests/lib/quiz-norns.hoon`](../tests/lib/quiz-norns.hoon) and
+[`tests/lib/quiz-sink.hoon`](../tests/lib/quiz-sink.hoon) pin these facts
+with fixed seeds. They describe the frozen library; they are not guarantees
+beyond it.
+
+| Facet | Measured behaviour |
+| --- | --- |
+| Size by sample | 1, 10, 33, 586, 55,946 at samples 1, 10, 20, 50, 100; drops and duplicates advance it too |
+| `atom` | Uniform over `[0, size)`; both ends reached; size 0 crashes |
+| `list` length | At most `xeb(size)-1`, so 0 at size 1 and 15 at sample 100; most draws are near that maximum and short lists are rare at large sizes; size 0 crashes |
+| `noun` | Depth at most `xeb(size)-1`; leaves below size |
+| `freq` and `pick` | Follow the weights; a zero weight is never chosen; an empty or all-zero list crashes |
+| `cell` and `split-rng` | Children draw independently of each other and of the parent; split paths are prefix-free |
+| `fill` on a union | Each branch is equally likely; `(unit a)` yields both `~` and values |
+| Small domains | A `?` sample yields at most two accepted checks before duplicates exhaust the run |
+| Default `sink` | An atom `n` gives `n/2` and `n-1`; a cell shrinks its children; a noun cell gives its two subtrees; every candidate weighs less than its parent |
+| `sink` on lists and unions | Nothing: a list's type is a fork. Write `alts` for lists, as in [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) |
 
 ### App and legacy semantics compared
 
@@ -213,6 +234,9 @@ reaches 501 under the recorded seed/configuration. This is a verified example,
 not a promise that every threshold property or shrinker always returns 501.
 The [custom alts example](../examples/failing/09-custom-alts.hoon) preserves
 positive even inputs and reaches 502, the smallest failure in that domain.
+The [queue model bug](../examples/failing/11-queue-model-bug.hoon) shrinks a
+command list: its alts deletes commands and shrinks pushed values, and keeps
+only sequences that satisfy the pop precondition.
 
 ### Configuration and limits
 

@@ -8,7 +8,8 @@ Clay paths linked below, not the workbench's virtual root names.
 
 Every property fixes seed `0v123` in its `conf`. Leave the panel overrides blank
 to reproduce its configuration. The ordinary target is 20 accepted checks;
-the duplicate example requests two and intentionally reaches its small budget.
+the duplicate example requests two and intentionally reaches its small budget,
+and the queue models request 100.
 The results below were checked through the browser/Gall application on
 `%zuse 408`, engine `%quiz-engine-2`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
@@ -24,6 +25,8 @@ settings, not universal outcomes of similar-looking properties.
 | [07-positive](../examples/props/07-positive.hoon) | Passed, 20 accepted, no drops | Generate positive values directly |
 | [08-seeded-threshold](../examples/failing/08-seeded-threshold.hoon) | Failed, false; 541 → 501 | Fixed-seed replay and default shrinking around 500 |
 | [09-custom-alts](../examples/failing/09-custom-alts.hoon) | Failed, false; best sample 502 | A terminating shrinker preserving positive even inputs |
+| [10-queue-model](../examples/props/10-queue-model.hoon) | Passed, 100 accepted | Model-based test: a two-list queue against a list model over generated command sequences |
+| [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) | Failed, false; 12 commands → 3 | A pop precondition kept by both the norn and a sequence shrinker |
 
 The composed example's list is generated as `(list @ud)` but enters its fate
 through a noun boundary and is checked there. Recursive vase types can include
@@ -44,9 +47,38 @@ reproduce both counterexamples and all counters. Editing the source tab marks
 the earlier result stale; replay still uses its recorded snapshot. See
 [replay semantics](reference.md#clay-context-seed-and-replay).
 
+## Model-based queue examples
+
+Both documents generate a list of `%push`, `%pop` and `%size` commands and
+fold a two-list queue and a plain list model over it from fresh state. After
+every command the fate compares the replies and the full contents. The sample
+is typed `*` for the reason above, so command tags render as numbers:
+`%push` 1.752.397.168, `%pop` 7.368.560, `%size` 1.702.521.203.
+
+In `10-queue-model`, pop on an empty queue replies `~`, so every sequence is
+valid. Its norn composes `freq`, `const`, `atom` and `list`. The stock list
+norn yields at most `xeb(size)-1` commands, 15 by the 100th sample; that is
+enough to reach the reversal. Fed a queue that forgets to reverse, this norn
+fails at sample 28. The default shrinker stops at
+`~[[%push 52] [%push 18] [%pop ~] [%pop ~]]`: it offers only the two subtrees
+of a noun, and a strict sublist is not one of them.
+
+In `11-queue-model-bug`, pop on an empty queue crashes, which gives the
+sequence a precondition. The norn draws a pop only while the model holds an
+item. The alts deletes one command, then halves or zeroes one pushed value,
+and keeps only candidates that satisfy the precondition. The fate also
+`%drop`s an invalid sequence, for replays and hand-written inputs. The
+12-command counterexample shrinks to
+`~[[%push 0] [%push 1] [%pop ~]]`: two different values, then one pop that
+returns the newer. The engine already rejects a candidate that fails in
+another category, such as a crash; filtering avoids spending the candidate
+budget on them.
+
 ## Recorded property counters
 
 Seed `0v123`, no UI overrides. Columns use the definitions in the reference.
+[`tests/lib/quiz-examples.hoon`](../tests/lib/quiz-examples.hoon) pins the
+queue rows in `-test`.
 
 | Document | Attempted | Accepted | Dropped | Duplicate | Shrink tried | Shrink steps | Original → shrunk |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -59,6 +91,8 @@ Seed `0v123`, no UI overrides. Columns use the definitions in the reference.
 | 07-positive | 32 | 20 | 0 | 12 | 0 | 0 | — |
 | 08-seeded-threshold | 1 | 0 | 0 | 0 | 82 | 40 | value=541 → value=501 |
 | 09-custom-alts | 1 | 0 | 0 | 0 | 5 | 4 | value=510 → value=502 |
+| 10-queue-model | 107 | 100 | 0 | 7 | 0 | 0 | — |
+| 11-queue-model-bug | 14 | 11 | 0 | 2 | 68 | 20 | 12 commands → `[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]` |
 
 ## Existing suites
 

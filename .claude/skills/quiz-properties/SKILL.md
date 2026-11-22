@@ -87,7 +87,10 @@ selected desk at the pinned revision. Full rules:
   [the examples](../../../desk/examples/props/).
 - **Keep it pure.** Fates run with scries refused and must not poke agents.
   For stateful code, fold the implementation and a pure model over a
-  generated command list from fresh state.
+  generated command list from fresh state. Models:
+  [10-queue-model](../../../desk/examples/props/10-queue-model.hoon), and
+  [11-queue-model-bug](../../../desk/examples/failing/11-queue-model-bug.hoon)
+  for a command precondition kept by both norn and alts.
 - **Add fixed examples too.** A unit assertion for a known case catches
   regressions that random inputs might miss.
 
@@ -114,6 +117,12 @@ Things that go wrong:
   [06-composed](../../../desk/examples/props/06-composed.hoon) does.
 - **`freq` and `pick` need a nonempty list** with a positive total weight.
   Otherwise generation crashes with an `%error`.
+- **`list` makes short lists.** At most `xeb(size)-1` elements: 15 by the
+  100th sample, and usually close to the maximum. For longer or evenly
+  spread lengths, draw a length with `rads:rng` in a custom norn, as
+  [11-queue-model-bug](../../../desk/examples/failing/11-queue-model-bug.hoon)
+  does. Measured shapes:
+  [generator characteristics](../../../desk/doc/reference.md#measured-generator-characteristics).
 
 ## Alts and shrinking
 
@@ -132,6 +141,12 @@ domain of positive even numbers, where halving gives odd values. Rules:
 3. Keep every candidate inside the domain the fate assumes.
 
 Model: [09-custom-alts](../../../desk/examples/failing/09-custom-alts.hoon).
+
+The default shrinker offers nothing for a typed list, and for a `*` sample
+only the two subtrees of a cell; it never deletes one element. For a list,
+write alts that delete one element at a time, then shrink element values,
+and filter out candidates that break a precondition. Model:
+[11-queue-model-bug](../../../desk/examples/failing/11-queue-model-bug.hoon).
 
 ## Running
 

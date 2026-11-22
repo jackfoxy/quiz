@@ -275,6 +275,35 @@
     (expect-eq !>(`counters:engine`[1 0 0 0 0 0]) !>(counts.done))
   ==
 ::
+++  test-duplicate-small-domain
+  ::  Mug deduplication exhausts a two-value domain long before ten passes.
+  ^-  tang
+  =/  s  (init:engine 0v1 (config 10 100 5 5) [!>(|=(? &)) ~ `no-alts])
+  =/  done  (complete s)
+  ;:  weld
+    (expect !>(?=([~ %exhausted %duplicates *] result.done)))
+    (expect !>((lte accepted.counts.done 2)))
+  ==
+::
+++  test-seen-matches-evaluated
+  ::  Each evaluated sample's mug is kept once; duplicates add none.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud ?:(=(0 (mod a 2)) & %drop)))
+  =/  s  (init:engine 0v1 (config 8 200 50 50) [fate ~ `no-alts])
+  =/  done
+    =/  left  200
+    |-  ^-  state:engine
+    ?:  !=(~ result.s)  s
+    ?>  (gth left 0)
+    $(s (step:engine s), left (dec left))
+  =/  counts  counts.done
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.done)))
+    (expect !>((gth duplicate.counts 0)))
+    %+  expect-eq  !>((add accepted.counts dropped.counts))
+    !>(~(wyt in seen.done))
+  ==
+::
 ++  test-call-time-default
   ::  Every user call runs under %jinx; a returning call is unaffected.
   ^-  tang

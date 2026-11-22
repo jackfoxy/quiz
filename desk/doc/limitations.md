@@ -48,6 +48,13 @@ authoritative behavior and recovery guidance.
   limited to property records with captured source, context, seed and
   configuration. See
   [Clay context, seed and replay](reference.md#clay-context-seed-and-replay).
+- **The stock generators are narrow and partial.** The `list` norn yields
+  at most `xeb(size)-1` elements, usually close to that, so short lists are
+  rare late in a run. `atom`, `list` and `noun` crash at size 0, and `freq`
+  or `pick` crash on an empty or all-zero list. The default `sink` offers
+  nothing for lists or unions, so list properties need custom `alts`. Mug
+  deduplication exhausts a small domain such as `?` before a larger request.
+  See [measured generator characteristics](reference.md#measured-generator-characteristics).
 - **Pinned source does not freeze the compiler.** Replay validates the engine
   version and pinned Clay source, but source pinning alone does not guarantee
   identical behavior across Kelvin or compiler changes. See

@@ -11,6 +11,8 @@ const examples = [
   ['props', '07-positive', 'passed'],
   ['failing', '08-seeded-threshold', 'failed', 'false'],
   ['failing', '09-custom-alts', 'failed', 'false'],
+  ['props', '10-queue-model', 'passed'],
+  ['failing', '11-queue-model-bug', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -53,9 +55,19 @@ for (const [root, name, outcome, why] of examples) {
       expect(got['sample-metrics']).toBe('unavailable');
     } else expect(got.seed).toBe('0v123');
     if (why) expect(got.outcome.evidence.why.kind).toBe(why);
-    if (outcome === 'passed') expect(got.counts.accepted).toBe(20);
+    if (outcome === 'passed')
+      expect(got.counts.accepted).toBe(name === '10-queue-model' ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
+    if (name === '10-queue-model') {
+      expect(got.counts).toMatchObject({attempted:107, dropped:0, duplicate:7});
+    }
+    if (name === '11-queue-model-bug') {
+      // ~[[%push 0] [%push 1] [%pop ~]], rendered through the `*` sample.
+      expect(got.outcome.evidence.shrunk.text)
+        .toBe('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
+      expect(got.counts).toMatchObject({'shrink-tried':68, 'shrink-steps':20});
+    }
     if (name === '05-duplicates') {
       expect(got.outcome.budget).toBe('duplicates');
       expect(got.counts).toMatchObject({attempted:4, accepted:1, duplicate:3});
