@@ -66,6 +66,6 @@ test('fallback help documents the configured commands', async ({page}) => {
   await page.locator('#help').click();
   await expect(page.locator('#fallback-help-content')).toBeVisible();
   const text = await page.locator('#fallback-help-content').innerText();
-  for (const key of ['Ctrl-S','Ctrl-Shift-S','Ctrl-O','Command']) expect(text).toContain(key);
+  for (const key of ['Ctrl-S','Ctrl-Shift-S','Alt-O','Command']) expect(text).toContain(key);
   expect(text).not.toContain('Heathcliff');
 });

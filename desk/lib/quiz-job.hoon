@@ -85,7 +85,7 @@
         %queued
         ?:  ?=(%suite -.source.req)
           [%suite *counters:suite %unavailable]
-        [%property *counters:engine]
+        [%property *counters:engine *distribution:engine]
         ~  now  now  ~
     ==
   :-  %.y
@@ -216,12 +216,23 @@
       [q.shrunk.proof (crip ~(ram re (sell shrunk.proof)))]
   ==
 ::
+++  persist-examples
+  ::  One rendered example per label, in label order.
+  |=  kept=(map @t vase)
+  ^-  examples:app
+  %+  turn  (sort ~(tap by kept) |=([a=[@t *] b=[@t *]] (aor -.a -.b)))
+  |=  [label=@t sam=vase]
+  [label q.sam (crip ~(ram re (sell sam)))]
+::
 ++  persist-outcome
-  |=  out=outcome:engine
+  |=  [out=outcome:engine kept=(map @t vase)]
   ^-  outcome:app
   ?-  -.out
-    ?(%passed %exhausted)  out
+    ?(%exhausted %passed-unexpectedly)  out
+    %passed     [%passed warnings.out (persist-examples kept)]
+    %uncovered  [%uncovered shortfalls.out (persist-examples kept)]
     %failed  [%failed (persist-evidence +.out)]
+    %failed-as-expected  [%failed-as-expected (persist-evidence +.out)]
     %error
       :*  %error  stage.out  why.out
           ?~(evidence.out ~ `(persist-evidence u.evidence.out))
@@ -260,7 +271,7 @@
         $(running next, left (dec left))
       =.  rec
         %=  rec
-          counts  [%property counts.running]
+          counts  [%property counts.running seen-tags.running]
           updated  now
           status  ?:(=(~ shrink.running) %running %shrinking)
         ==
@@ -271,7 +282,7 @@
         ==
       =/  result  result.running
       ?~  result  s
-      (finish s id (persist-outcome u.result) now)
+      (finish s id (persist-outcome u.result examples.running) now)
     %suite
       =/  running
         ~>  %jinx.arm.timeouts.saved.s

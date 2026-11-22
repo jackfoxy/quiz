@@ -19,6 +19,7 @@ a bowl.
 | Change | Edit | Tests |
 | --- | --- | --- |
 | Generation, classification, counters, shrinking, limits | `lib/quiz-engine.hoon` (bump `++version`) | `tests/lib/quiz-engine.hoon`, `tests/lib/quiz-shrink.hoon` |
+| Report combinators (`quiz-prop`): notes, expected/actual, labels | `lib/quiz-prop.hoon` (report type lives in the engine) | `tests/lib/quiz-prop.hoon`, `tests/lib/quiz-engine.hoon` |
 | Generator and default-shrinker characterization (frozen `lib/quiz.hoon`) | none: record surprises in the docs | `tests/lib/quiz-norns.hoon`, `tests/lib/quiz-sink.hoon` |
 | Bundled property examples | `examples/props/`, `examples/failing/` | `tests/lib/quiz-examples.hoon` (queue models), browser `examples.spec.js`; re-measure `doc/examples.md` |
 | Document format, prelude, arm type checks, context pinning | `lib/quiz-build.hoon` | `tests/lib/quiz-build.hoon` (fixtures in `fixtures/quiz-build/`) |

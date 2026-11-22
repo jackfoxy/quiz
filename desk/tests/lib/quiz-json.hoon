@@ -119,10 +119,20 @@
 ::
 ++  test-outcomes-encode
   ^-  tang
-  =/  proof=evidence:app  [[%false ~] [42 '42'] [1 '1']]
+  =/  proof=evidence:app  [[%false ~ ~] [42 '42'] [1 '1']]
+  =/  detailed=evidence:app
+    [[%false ~['too big' 'second'] `['1' '2']] [42 '42'] [1 '1']]
+  =/  short=(list shortfall:engine)  ~[['empty' 20 5]]
+  =/  examples=examples:app  ~[['small' [1 '1']] ['big' [99 '99']]]
   =/  outcomes=(list outcome:app)
-    :~  [%passed ~]
+    :~  [%passed ~ ~]
+        [%passed short examples]
+        [%uncovered short examples]
+        [%passed-unexpectedly ~]
         [%failed proof]
+        [%failed detailed]
+        [%failed-as-expected detailed]
+        [%limited %labels ~]
         [%error %alts [%crash ~[[%leaf "broken"]]] `proof]
         [%limited %shrink-depth `proof]
         [%exhausted %drops &]
@@ -172,4 +182,21 @@
     (expect-eq !>(n+'5') !>((field:codec (object:codec out) 'call-time')))
     (expect-eq !>(n+'60') !>((field:codec (object:codec out) 'arm-time')))
   ==
+::
+++  test-distribution-encodes
+  ^-  tang
+  =/  added  (admit:job initial:job request ~2026.10.15 0v0)
+  ?>  ?=(%.y -.added)
+  =/  rec  (~(got by records.saved.p.added) 1)
+  =/  labels  (malt `(list [@t @ud])`~[['even' 3]])
+  =/  rows  (malt `(list [@t (map @t @ud)])`~[['size' labels]])
+  =.  counts.rec  [%property *counters:engine labels rows]
+  =/  fields  (object:codec (record-out:codec rec))
+  =/  want=json
+    %-  pairs:enjs:format
+    :~  ['labels' (pairs:enjs:format ~[['even' n+'3']])]
+        :-  'tables'
+        (pairs:enjs:format ~[['size' (pairs:enjs:format ~[['even' n+'3']])]])
+    ==
+  (expect-eq !>(want) !>((field:codec fields 'distribution')))
 --

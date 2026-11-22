@@ -1,4 +1,4 @@
-/+  build=quiz-build, engine=quiz-engine, *test
+/+  build=quiz-build, engine=quiz-engine, prop=quiz-prop, *test
 |%
 ::
 ++  prepare
@@ -401,4 +401,33 @@
   =/  result  (draft:build p.parsed ~[`reply])
   ?>  ?=(%ready -.result)
   (expect !>(!<(? (slam fate.parts.result !>(`@ud`1)))))
+::
+++  test-report-product
+  ::  A report built by the document's own quiz-prop import nests under
+  ::  the builder's fate product type.
+  ^-  tang
+  =/  source
+    '/+  prop=quiz-prop  |%  ++  fate  |=(a=@ud (same:prop !>(a) !>(a)))  --'
+  =/  parsed  (prepare source)
+  ?>  ?=(%.y -.parsed)
+  =/  result  (compile:build p.parsed ~[!>(prop)])
+  (expect !>(?=(%ready -.result)))
+::
+++  test-cover-and-expect
+  ^-  tang
+  =/  fate  "|%  ++  fate  |=(@ud &)  "
+  =/  doc  |=(arms=tape (crip (weld fate (weld arms "  --"))))
+  =/  arms  "++  cover  [%check ~[['a' 50] ['b' 0]]]  ++  expect  %fail"
+  =/  good  (run (doc arms))
+  ?>  ?=(%ready -.good)
+  ;:  weld
+    %+  expect-eq  !>(`(unit cover:engine)``[%check ~[['a' 50] ['b' 0]]])
+    !>(cover.parts.good)
+    (expect-eq !>(`expectation:engine`%fail) !>(expect.parts.good))
+    (bad %cover-type (run (doc "++  cover  5")))
+    (bad %cover-range (run (doc "++  cover  [%warn ~[['a' 101]]]")))
+    (bad %cover-range (run (doc "++  cover  [%warn ~[['a' 1] ['a' 2]]]")))
+    (bad %cover-range (run (doc "++  cover  [%warn ~[['' 1]]]")))
+    (bad %expect-type (run (doc "++  expect  %maybe")))
+  ==
 --

@@ -12,7 +12,7 @@ run as **interrupted**.
 
 **My documents** stores your Hoon and Markdown files under `/data/quiz` on
 the installed desk. **Open**, **Save**, and **Save As** use the file chooser;
-choose `hoon` or `md` when saving. Ctrl-S, Ctrl-Shift-S and Ctrl-O invoke
+choose `hoon` or `md` when saving. Ctrl-S, Ctrl-Shift-S and Alt-O invoke
 these actions. Closing or reopening an edited tab asks before discarding
 changes. Leaving the page prompts when the browser permits it.
 

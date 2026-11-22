@@ -29,7 +29,41 @@
       bounds=limits
   ==
 ::
-+$  parts  [fate=vase norn=(unit vase) alts=(unit vase)]
++$  verdict-product  ?(? %drop)
+::
++$  detail
+  ::  Author-supplied explanation of a false verdict, rendered by the fate.
+  [notes=(list @t) compared=(unit [want=@t got=@t])]
+::
++$  report
+  ::  A fate may return this in place of a bare verdict; see quiz-prop.
+  $:  %report
+      ok=verdict-product
+      =detail
+      labels=(list @t)
+      tables=(list [table=@t value=@t])
+  ==
+::
++$  tags  [labels=(list @t) tables=(list [table=@t value=@t])]
+::
++$  cover
+  ::  Required share, in whole percent, of accepted samples per label.
+  [mode=?(%warn %check) rows=(list [label=@t percent=@ud])]
+::
++$  expectation  ?(%pass %fail)
+::
++$  parts
+  $:  fate=vase
+      norn=(unit vase)
+      alts=(unit vase)
+      cover=(unit cover)
+      expect=expectation
+  ==
+::
++$  distribution
+  [labels=(map @t @ud) tables=(map @t (map @t @ud))]
+::
++$  shortfall  [label=@t want=@ud got=@ud]
 ::
 +$  counters
   $:  attempted=@ud
@@ -41,7 +75,7 @@
   ==
 ::
 +$  failure
-  $%  [%false ~]
+  $%  [%false =detail]
       [%crash trace=tang]
       [%scry request=*]
       [%bad-product product=*]
@@ -53,7 +87,7 @@
 ::
 +$  limit-name
   $?  %requested  %shrink-candidates  %shrink-depth  %sample-bytes
-      %rendered-bytes  %diagnostics-bytes  %alts-bytes
+      %rendered-bytes  %diagnostics-bytes  %alts-bytes  %labels
   ==
 ::
 +$  shrinking
@@ -65,8 +99,11 @@
 +$  error-stage  ?(%norn %generate %alts)
 ::
 +$  outcome
-  $%  [%passed ~]
+  $%  [%passed warnings=(list shortfall)]
+      [%uncovered shortfalls=(list shortfall)]
+      [%passed-unexpectedly ~]
       [%failed counterexample]
+      [%failed-as-expected counterexample]
       $:  %error  stage=error-stage
           why=failure  evidence=(unit counterexample)
       ==
@@ -86,12 +123,14 @@
       shrink=(unit shrinking)
       result=(unit outcome)
       time=@dr
+      seen-tags=distribution
+      examples=(map @t vase)
   ==
 ::
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-2
+  %quiz-engine-3
 ::
 ++  defaults
   ^-  conf
@@ -103,6 +142,14 @@
   ::  Default CPU limit per user call; the app sets `time` from its settings.
   ~s10
 ::
+++  label-max
+  ::  Distinct labels, and distinct table rows, one run may record.
+  100
+::
+++  label-bytes
+  ::  Longest label, table name or table value, in bytes.
+  256
+::
 ++  init
   ::  Compiled parts must already be type-checked by the source builder.
   ::  Zero requested passes immediately; zero budgets stop before generation.
@@ -111,7 +158,7 @@
   ^-  state
   %-  finish
   :*  seed  config  compiled  (slot 6 fate.compiled)
-      1  ~(. og seed)  *(set @)  *counters  ~  ~  call-time
+      1  ~(. og seed)  *(set @)  *counters  ~  ~  call-time  [~ ~]  ~
   ==
 ::
 ++  classify
@@ -122,10 +169,24 @@
     %1  [%scry p.evaluated]
     %2  [%crash p.evaluated]
     %0  ?:  =(p.evaluated %.y)  %pass
-        ?:  =(p.evaluated %.n)  [%false ~]
+        ?:  =(p.evaluated %.n)  [%false ~ ~]
         ?:  =(p.evaluated %drop)  %drop
         [%bad-product p.evaluated]
   ==
+::
+++  judge
+  ::  Classify a fate product. A report is molded under virtualization, so
+  ::  a malformed one is a bad product. Only a report carries tags.
+  |=  evaluated=toon
+  ^-  [verdict tags]
+  ?.  ?=([%0 %report *] evaluated)  [(classify evaluated) ~ ~]
+  =/  got  (mole |.(;;(report p.evaluated)))
+  ?~  got  [[%bad-product p.evaluated] ~ ~]
+  =/  r=report  u.got
+  =/  =tags  [labels.r tables.r]
+  ?:  ?=(%drop ok.r)  [%drop tags]
+  ?:  ok.r  [%pass tags]
+  [[%false detail.r] tags]
 ::
 ++  generate
   ::  Both default fill and the custom norn execute inside the same sandbox.
@@ -149,7 +210,7 @@
   ?:  (gth requested.config.s requested-max.bounds.config.s)
     s(result `[%limited %requested ~])
   ?:  =(accepted.counts.s requested.config.s)
-    s(result `[%passed ~])
+    (conclude s)
   =/  budget=(unit ?(%attempts %drops %duplicates))
     ?:  (gte attempted.counts.s attempts-max.config.s)  `%attempts
     ?:  (gte dropped.counts.s drops-max.config.s)  `%drops
@@ -195,14 +256,84 @@
   ?:  (~(has in seen.s) hash)
     (finish s(duplicate.counts +(duplicate.counts.s)))
   =.  seen.s  (~(put in seen.s) hash)
-  =/  found  (classify (sandbox time q.fate.compiled.s q.sam))
+  =/  [found=verdict =tags]  (judge (sandbox time q.fate.compiled.s q.sam))
   ?-  found
-    %pass  (finish s(accepted.counts +(accepted.counts.s)))
+    %pass  (finish (tally s(accepted.counts +(accepted.counts.s)) sam tags))
     %drop  (finish s(dropped.counts +(dropped.counts.s)))
     ^      ?.  (fits diagnostics-bytes.bounds.config.s found)
              s(result `[%limited %diagnostics-bytes ~])
            s(shrink `[[found sam sam] (~(put in *(set @)) hash) ~])
   ==
+::
+++  tally
+  ::  Count a passing sample's labels, once each, and its table rows; keep
+  ::  the first sample per label as that label's example. An oversized tag
+  ::  or too many distinct labels or rows stops the run.
+  |=  [s=state sam=vase =tags]
+  ^-  state
+  =/  labels=(list @t)  ~(tap in (silt labels.tags))
+  =/  cells=(list (list @t))
+    (turn tables.tags |=([a=@t b=@t] `(list @t)`~[a b]))
+  =/  flat=(list @t)  (zing cells)
+  =/  texts=(list @t)  (weld labels flat)
+  ?:  (lien texts |=(t=@t (gth (met 3 t) label-bytes)))
+    s(result `[%limited %labels ~])
+  ::  Each fold starts from the run's totals through the gate's sample.
+  =/  count
+    |=  [label=@t seen=(map @t @ud)]
+    ^-  (map @t @ud)
+    (~(put by seen) label +((~(gut by seen) label 0)))
+  =/  counted  (roll labels count(seen labels.seen-tags.s))
+  =/  add-row
+    |=  [[table=@t value=@t] all=(map @t (map @t @ud))]
+    ^-  (map @t (map @t @ud))
+    (~(put by all) table (count value (~(gut by all) table ~)))
+  =/  rows  (roll tables.tags add-row(all tables.seen-tags.s))
+  =/  width=@ud
+    (roll (turn ~(val by rows) |=(m=(map @t @ud) ~(wyt by m))) add)
+  ?:  |((gth ~(wyt by counted) label-max) (gth width label-max))
+    s(result `[%limited %labels ~])
+  =/  keep
+    |=  [label=@t kept=(map @t vase)]
+    ^-  (map @t vase)
+    ?:((~(has by kept) label) kept (~(put by kept) label sam))
+  =/  kept  (roll labels keep(kept examples.s))
+  s(seen-tags [counted rows], examples kept)
+::
+++  shortfalls
+  ::  Rows below their required share. `got` is the floored percentage;
+  ::  the comparison itself is exact.
+  |=  s=state
+  ^-  (list shortfall)
+  =/  cover  cover.compiled.s
+  ?~  cover  ~
+  =/  total  accepted.counts.s
+  %+  murn  rows.u.cover
+  |=  [label=@t percent=@ud]
+  ^-  (unit shortfall)
+  =/  hits  (~(gut by labels.seen-tags.s) label 0)
+  ?:  (gte (mul 100 hits) (mul percent total))  ~
+  =/  got  ?:(=(0 total) 0 (div (mul 100 hits) total))
+  `[label percent got]
+::
+++  conclude
+  ::  The requested count was reached. Expected failure, then coverage.
+  |=  s=state
+  ^-  state
+  ?:  ?=(%fail expect.compiled.s)  s(result `[%passed-unexpectedly ~])
+  =/  short  (shortfalls s)
+  =/  cover  cover.compiled.s
+  ?:  &(?=(^ cover) ?=(%check mode.u.cover) ?=(^ short))
+    s(result `[%uncovered short])
+  s(result `[%passed short])
+::
+++  failed
+  ::  Shrinking ended. An expected failure is reported as such.
+  |=  [s=state evidence=counterexample]
+  ^-  state
+  ?:  ?=(%fail expect.compiled.s)
+    s(shrink ~, result `[%failed-as-expected evidence])
+  s(shrink ~, result `[%failed evidence])
 ::
 ++  fits
   ::  Encoded noun bytes, including vase type where applicable. Post-call cap;
@@ -270,7 +401,7 @@
   =/  evidence  evidence.work
   ::  A known empty list is complete even on the last allowed candidate.
   ?:  =([~ ~] pending.work)
-    s(shrink ~, result `[%failed evidence])
+    (failed s evidence)
   =/  budget=(unit limit-name)
     ?:  (gte shrink-tried.counts.s shrink-candidates.bounds.config.s)
       `%shrink-candidates
@@ -293,7 +424,7 @@
     s(shrink `work(pending `candidates))
   =/  candidates  u.pending
   ?~  candidates
-    s(shrink ~, result `[%failed evidence])
+    (failed s evidence)
   =/  sam  i.candidates
   =.  work  work(pending `t.candidates)
   =.  shrink-tried.counts.s  +(shrink-tried.counts.s)
@@ -306,11 +437,12 @@
   ?:  (~(has in visited.work) hash)  s(shrink `work)
   =.  visited.work  (~(put in visited.work) hash)
   ?.  (lth (weight q.sam) (weight q.shrunk.evidence))  s(shrink `work)
-  =/  found  (classify (sandbox time q.fate.compiled.s q.sam))
+  =/  found  -:(judge (sandbox time q.fate.compiled.s q.sam))
   ?@  found  s(shrink `work)
   ?.  (fits diagnostics-bytes.bounds.config.s found)
     s(shrink ~, result `[%limited %diagnostics-bytes `evidence])
   ?.  =(-.found -.why.evidence)  s(shrink `work)
   =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
-  s(shrink `work(shrunk.evidence sam, pending ~))
+  ::  The failure follows the shrunk sample, as its detail describes it.
+  s(shrink `work(shrunk.evidence sam, why.evidence found, pending ~))
 --

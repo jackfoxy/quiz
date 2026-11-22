@@ -200,12 +200,31 @@ its size at every recursive step. Reusing an unchanged RNG repeats a draw;
 thread or split it for independent choices. These design ideas are informed by
 [FsCheck Test Data](https://fscheck.github.io/FsCheck/TestData.html).
 
-Inspect the counts, not just the green result. The app has no sample histogram
-or classify/collect API. Distribution checks are **conceptual**: make a separate
-pure generator-inspection tool, count empty/singleton/large cases, and compare
-those frequencies with the domain you intended. Aggregate accepted/drop counts
-cannot establish coverage. FsCheck's observation facilities motivate that check,
-but are not implemented here. [FsCheck observation guidance](https://fscheck.github.io/FsCheck/Properties.html#Observing-Test-Case-Distribution).
+Inspect the distribution, not just the green result. Aggregate accepted and
+drop counts cannot establish coverage. Return a report from the fate with
+[`quiz-prop`](reference.md#reports-labels-and-coverage), label each sample's
+case, and require the cases you care about with `++cover`:
+
+```hoon
+/+  prop=quiz-prop
+|%
+++  fate
+  |=  items=(list @ud)
+  ^-  report:prop
+  %^  classify:prop  =(~ items)  'empty'
+  %^  classify:prop  ?=([* ~] items)  'singleton'
+  (same:prop !>(items) !>((flop (flop items))))
+++  cover  [%check ~[['empty' 5] ['singleton' 5]]]
+--
+```
+
+The run shows each label's count and share of accepted samples, plus the first
+example per label. Under `%check`, a run whose samples were too rarely empty
+ends `uncovered` even though every check passed. Open **props →
+12-labels-coverage** and **failing → 14-coverage-shortfall** for both
+outcomes. Coverage is a threshold at the final count, not a statistical test.
+These ideas follow [FsCheck observation guidance](https://fscheck.github.io/FsCheck/Properties.html#Observing-Test-Case-Distribution)
+and QuickCheck's `classify` and `cover`.
 
 ## 5. Observe shrinking and preserve constraints
 
@@ -379,7 +398,8 @@ The following are Quiz applications of general property-testing techniques;
 | Avoid vacuity | `04-discards` still requires 20 accepted inputs; `05-duplicates` explicitly exhausts. An always-dropping generator establishes nothing. |
 | Boundaries | The regression above checks zero and one explicitly; boxcar checks four/five. **Conceptual:** add empty, singleton, repeated and very large structures appropriate to your own domain. |
 | Filtering | Compare `04-discards` with `07-positive`: construct the domain directly when most inputs would be dropped. |
-| Distribution | Quiz has no built-in histogram or coverage threshold; inspect generated case classes separately. Know the stock norns' shape first: a `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics](reference.md#measured-generator-characteristics). |
+| Distribution | `12-labels-coverage` labels each list by length and requires short and long lists with `++cover`; `14-coverage-shortfall` shows a requirement the generator misses. Know the stock norns' shape first: a `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics](reference.md#measured-generator-characteristics). |
+| Readable failures | `13-expected-actual` uses `same` and `note`, so the run shows the expected and actual values, not just `false`. |
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list. |
 
@@ -401,10 +421,13 @@ shrinker cannot delete a command from a list. See the
 fate; Quiz has no dedicated state-machine, external-system driver, parallel or
 asynchronous property API.
 
-Other FsCheck facilities are **unsupported**: `Arbitrary` registration, automatic
-.NET derivation/reflection, generated functions and function shrinking, labels,
-classify/collect/trivial coverage, expected-exception combinators, nested property
-combinators, xUnit/NUnit adapters and `IRunner` callbacks. Do not paste FsCheck
+Labels, classify, collect, tabulate, threshold coverage, expected failure and
+conjunction/disjunction are available through
+[`quiz-prop`](reference.md#reports-labels-and-coverage). Other FsCheck
+facilities are **unsupported**: `Arbitrary` registration, automatic .NET
+derivation/reflection, generated functions and function shrinking, statistical
+coverage checks, expected-exception combinators, nested quantification inside
+a fate, xUnit/NUnit adapters and `IRunner` callbacks. Do not paste FsCheck
 API examples into Hoon. The [reference](reference.md) is the Quiz API authority.
 
 ## Corrections to the original blog

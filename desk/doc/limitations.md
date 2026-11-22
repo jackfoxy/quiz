@@ -55,6 +55,16 @@ authoritative behavior and recovery guidance.
   nothing for lists or unions, so list properties need custom `alts`. Mug
   deduplication exhausts a small domain such as `?` before a larger request.
   See [measured generator characteristics](reference.md#measured-generator-characteristics).
+- **Coverage is a threshold, not a statistical test.** `++cover` compares
+  each label's share at the final count. It does not keep running until the
+  share is known with confidence, as QuickCheck's `checkCoverage` does. Raise
+  `requested` for a tighter estimate. See
+  [reports, labels and coverage](reference.md#reports-labels-and-coverage).
+- **Labels are bounded and not shrunk per class.** At most 100 distinct labels
+  and 100 table rows of at most 256 bytes; the run otherwise ends
+  `%limited %labels`. Each label keeps its first passing example, unshrunk.
+- **`same` and `collect` need `!>` at the call site.** A wet gate cannot render
+  its argument with the caller's type, so these combinators take vases.
 - **Pinned source does not freeze the compiler.** Replay validates the engine
   version and pinned Clay source, but source pinning alone does not guarantee
   identical behavior across Kelvin or compiler changes. See

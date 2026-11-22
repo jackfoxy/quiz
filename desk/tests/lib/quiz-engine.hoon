@@ -13,7 +13,7 @@
 ++  start
   |=  [fate=vase norn=(unit vase)]
   ^-  state:engine
-  (init:engine 0v1 (config 3 10 5 5) [fate norn `no-alts])
+  (init:engine 0v1 (config 3 10 5 5) [fate norn `no-alts ~ %pass])
 ::
 ++  complete
   ::  A broken completion condition must fail instead of hanging the suite.
@@ -63,7 +63,7 @@
   =/  result  (need result.done)
   ?>  ?=(%failed -.result)
   ;:  weld
-    (expect-eq !>(`failure:engine`[%false ~]) !>(why.result))
+    (expect-eq !>(`failure:engine`[%false ~ ~]) !>(why.result))
     (expect-eq !>([p:(slot 6 fate) 3]) !>(original.result))
     (expect-eq !>(original.result) !>(shrunk.result))
     (expect-eq !>(`counters:engine`[3 1 1 0 0 0]) !>(counts.done))
@@ -198,7 +198,7 @@
 ::
 ++  test-zero-requested
   ^-  tang
-  =/  s  (init:engine 0v1 (config 0 0 0 0) [!>(|=(@ud !!)) ~ ~])
+  =/  s  (init:engine 0v1 (config 0 0 0 0) [!>(|=(@ud !!)) ~ ~ ~ %pass])
   ;:  weld
     (expect !>(?=([~ %passed ~] result.s)))
     (expect-eq !>(*counters:engine) !>(counts.s))
@@ -207,7 +207,7 @@
 ::
 ++  test-zero-budgets
   ^-  tang
-  =/  compiled=parts:engine  [!>(|=(@ud !!)) ~ ~]
+  =/  compiled=parts:engine  [!>(|=(@ud !!)) ~ ~ ~ %pass]
   =/  a  (init:engine 0v1 (config 1 0 5 5) compiled)
   =/  b  (init:engine 0v1 (config 1 5 0 5) compiled)
   =/  c  (init:engine 0v1 (config 1 5 5 0) compiled)
@@ -222,22 +222,22 @@
 ::
 ++  test-boundary-precedence
   ^-  tang
-  =/  compiled=parts:engine  [!>(|=(@ud &)) `sized `no-alts]
+  =/  compiled=parts:engine  [!>(|=(@ud &)) `sized `no-alts ~ %pass]
   =/  passed  (complete (init:engine 0v1 (config 1 1 1 1) compiled))
-  =/  drop-parts=parts:engine  [!>(|=(@ud %drop)) `sized `no-alts]
+  =/  drop-parts=parts:engine  [!>(|=(@ud %drop)) `sized `no-alts ~ %pass]
   =/  dropped  (complete (init:engine 0v1 (config 1 1 1 1) drop-parts))
-  =/  fail-parts=parts:engine  [!>(|=(@ud |)) `sized `no-alts]
+  =/  fail-parts=parts:engine  [!>(|=(@ud |)) `sized `no-alts ~ %pass]
   =/  failed  (complete (init:engine 0v1 (config 1 1 1 1) fail-parts))
   ;:  weld
     (expect !>(?=([~ %passed ~] result.passed)))
     (expect !>(?=([~ %exhausted %attempts %.y] result.dropped)))
-    (expect !>(?=([~ %failed [%false ~] * *] result.failed)))
+    (expect !>(?=([~ %failed [%false ~ ~] * *] result.failed)))
   ==
 ::
 ++  test-fixed-seed-resume
   ^-  tang
   =/  give  !>(|=([size=@ud rng=_og] (rad:rng 65.536)))
-  =/  compiled=parts:engine  [!>(|=(@ud &)) `give `no-alts]
+  =/  compiled=parts:engine  [!>(|=(@ud &)) `give `no-alts ~ %pass]
   =/  first  (init:engine 0v1a (config 3 10 5 5) compiled)
   =/  checkpoint  (step:engine (step:engine first))
   =/  done  (complete first)
@@ -252,7 +252,7 @@
 ++  test-fixed-seed-counterexample
   ^-  tang
   =/  give  !>(|=([size=@ud rng=_og] (rad:rng 65.536)))
-  =/  compiled=parts:engine  [!>(|=(@ud |)) `give `no-alts]
+  =/  compiled=parts:engine  [!>(|=(@ud |)) `give `no-alts ~ %pass]
   =/  a  (complete (init:engine 0v1a (config 3 10 5 5) compiled))
   =/  b  (complete (init:engine 0v1a (config 3 10 5 5) compiled))
   =/  c  (complete (init:engine 0v1b (config 3 10 5 5) compiled))
@@ -278,7 +278,7 @@
 ++  test-duplicate-small-domain
   ::  Mug deduplication exhausts a two-value domain long before ten passes.
   ^-  tang
-  =/  s  (init:engine 0v1 (config 10 100 5 5) [!>(|=(? &)) ~ `no-alts])
+  =/  s  (init:engine 0v1 (config 10 100 5 5) [!>(|=(? &)) ~ `no-alts ~ %pass])
   =/  done  (complete s)
   ;:  weld
     (expect !>(?=([~ %exhausted %duplicates *] result.done)))
@@ -289,7 +289,7 @@
   ::  Each evaluated sample's mug is kept once; duplicates add none.
   ^-  tang
   =/  fate  !>(|=(a=@ud ?:(=(0 (mod a 2)) & %drop)))
-  =/  s  (init:engine 0v1 (config 8 200 50 50) [fate ~ `no-alts])
+  =/  s  (init:engine 0v1 (config 8 200 50 50) [fate ~ `no-alts ~ %pass])
   =/  done
     =/  left  200
     |-  ^-  state:engine
@@ -304,6 +304,120 @@
     !>(~(wyt in seen.done))
   ==
 ::
+++  finished
+  ::  Run to completion with a generous bound for label and limit tests.
+  |=  [cfg=conf:engine =parts:engine]
+  ^-  state:engine
+  =/  s  (init:engine 0v1 cfg parts)
+  =/  left  400
+  |-
+  ?:  !=(~ result.s)  s
+  ?>  (gth left 0)
+  $(s (step:engine s), left (dec left))
+::
+++  parity
+  ::  Sizes 1 to 10 in order: five odd and five even samples.
+  !>  |=  n=@ud
+      ^-  report:engine
+      =/  tag  ?:(=(0 (mod n 2)) 'even' 'odd')
+      [%report & [~ ~] ~[tag tag] ~[['parity' tag] ['all' 'x']]]
+::
+++  test-report-tags
+  ::  Labels count once per sample; table rows count every value.
+  ^-  tang
+  =/  done  (finished (config 10 20 5 5) [parity `sized `no-alts ~ %pass])
+  =/  tables  tables.seen-tags.done
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.done)))
+    %+  expect-eq  !>((malt `(list [@t @ud])`~[['even' 5] ['odd' 5]]))
+    !>(labels.seen-tags.done)
+    %+  expect-eq  !>((malt `(list [@t @ud])`~[['x' 10]]))
+    !>((~(got by tables) 'all'))
+    (expect-eq !>(`*`1) !>(q:(~(got by examples.done) 'odd')))
+    (expect-eq !>(`*`2) !>(q:(~(got by examples.done) 'even')))
+  ==
+::
+++  test-report-verdicts
+  ::  A report's verdict maps like a bare one; only passes are tallied.
+  ^-  tang
+  =/  fate
+    !>  |=  n=@ud
+        ^-  report:engine
+        [%report ?:(=(0 (mod n 2)) & %drop) [~ ~] ~['seen'] ~]
+  =/  done  (finished (config 4 20 10 5) [fate `sized `no-alts ~ %pass])
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.done)))
+    (expect-eq !>(`@ud`4) !>(dropped.counts.done))
+    (expect-eq !>(`(unit @ud)``4) !>((~(get by labels.seen-tags.done) 'seen')))
+  ==
+::
+++  test-bad-report
+  ^-  tang
+  =/  fate  !>(|=(n=@ud [%report 7 ~]))
+  =/  done  (finished (config 3 10 5 5) [fate `sized `no-alts ~ %pass])
+  (expect !>(?=([~ %failed [%bad-product *] * *] result.done)))
+::
+++  test-label-limits
+  ::  An oversized label or too many distinct labels stops the run.
+  ^-  tang
+  =/  long  !>(|=(n=@ud [%report & [~ ~] ~[(fil 3 257 'a')] ~]))
+  =/  many  !>(|=(n=@ud [%report & [~ ~] ~[(scot %ud n)] ~]))
+  =/  cfg  (config 200 400 5 5)
+  =/  a  (finished cfg [long `sized `no-alts ~ %pass])
+  =/  b  (finished cfg [many `sized `no-alts ~ %pass])
+  ;:  weld
+    (expect !>(?=([~ %limited %labels ~] result.a)))
+    (expect !>(?=([~ %limited %labels ~] result.b)))
+    (expect-eq !>(`@ud`100) !>(~(wyt by labels.seen-tags.b)))
+  ==
+::
+++  test-coverage
+  ::  Half the samples are even: 50 percent is met, 60 percent is not.
+  ^-  tang
+  =/  cfg  (config 10 20 5 5)
+  =/  with
+    |=  =cover:engine
+    ^-  parts:engine
+    [parity `sized `no-alts `cover %pass]
+  =/  met  (finished cfg (with %check ~[['even' 50]]))
+  =/  warn  (finished cfg (with %warn ~[['even' 60]]))
+  =/  check  (finished cfg (with %check ~[['even' 60]]))
+  =/  short=(list shortfall:engine)  ~[['even' 60 50]]
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.met)))
+    (expect-eq !>(``outcome:engine`[%passed short]) !>(result.warn))
+    (expect-eq !>(``outcome:engine`[%uncovered short]) !>(result.check))
+  ==
+::
+++  test-expect-failure
+  ^-  tang
+  =/  cfg  (config 5 20 5 5)
+  =/  fails  !>(|=(n=@ud (lth n 3)))
+  =/  holds  !>(|=(n=@ud &))
+  =/  a  (finished cfg [fails `sized `no-alts ~ %fail])
+  =/  b  (finished cfg [holds `sized `no-alts ~ %fail])
+  ;:  weld
+    (expect !>(?=([~ %failed-as-expected *] result.a)))
+    (expect !>(?=([~ %passed-unexpectedly ~] result.b)))
+  ==
+::
+++  test-detail-follows-shrink
+  ::  The failure's notes describe the shrunk sample, not the original.
+  ^-  tang
+  =/  fate
+    !>  |=  n=@ud
+        ^-  report:engine
+        [%report (lte n 3) [~[(scot %ud n)] ~] ~ ~]
+  =/  eight  !>(|=([size=@ud rng=_og] 8))
+  =/  done  (finished (config 3 10 5 5) [fate `eight ~ ~ %pass])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  ;:  weld
+    (expect-eq !>(`*`8) !>(q.original.result))
+    (expect-eq !>(`*`4) !>(q.shrunk.result))
+    (expect-eq !>(`failure:engine`[%false ~['4'] ~]) !>(why.result))
+  ==
+::
 ++  test-call-time-default
   ::  Every user call runs under %jinx; a returning call is unaffected.
   ^-  tang
@@ -313,7 +427,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-2) !>(version:engine))
+    (expect-eq !>(%quiz-engine-3) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))

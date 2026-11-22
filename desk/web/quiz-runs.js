@@ -300,6 +300,40 @@
     const block = (parent, id, label, text) => {
       parent.append(node('h3', '', label), node('pre', id, String(text ?? 'Unavailable')));
     };
+    // Rows of [label, count] with their share of accepted samples.
+    const shares = (parent, id, title, counts, accepted) => {
+      const rows = Object.entries(counts || {}).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1));
+      if (!rows.length) return;
+      parent.append(node('h3', '', title));
+      const table = node('table', id);
+      for (const [label, count] of rows) {
+        const row = node('tr');
+        const share = accepted ? `${Math.floor(count * 100 / accepted)}%` : '—';
+        row.append(node('td', '', label), node('td', '', String(count)), node('td', '', share));
+        table.append(row);
+      }
+      parent.append(table);
+    };
+    const coverage = (parent, id, title, rows) => {
+      if (!rows?.length) return;
+      const list = node('ul', id);
+      for (const row of rows) list.append(node('li', '', `${row.label}: ${row.got}% of accepted samples, required ${row.want}%`));
+      parent.append(node('h3', '', title), list);
+    };
+    // A false verdict may carry the fate's notes and an expected/actual pair.
+    const failure = (parent, why) => {
+      const detail = why?.kind === 'false' ? why.detail : null;
+      if (!detail?.notes?.length && !detail?.compared) {
+        block(parent, 'run-failure', 'Failure', JSON.stringify(why, null, 2));
+        return;
+      }
+      line(parent, 'Failure', 'false');
+      if (detail.notes?.length) block(parent, 'run-notes', 'Notes', detail.notes.join('\n'));
+      if (detail.compared) {
+        block(parent, 'run-want', 'Expected', detail.compared.want);
+        block(parent, 'run-got', 'Actual', detail.compared.got);
+      }
+    };
     function renderDetail() {
       const id = selection(); const rec = records.get(id);
       const tab = linked(id);
@@ -340,8 +374,23 @@
         detail.append(node('p', 'run-unavailable', 'Property sample counts, controlled seed and counterexamples are unavailable for suites.'));
       }
       block(detail, 'run-counts', 'Confirmed counters', JSON.stringify(rec.counts, null, 2));
+      const spread = rec.distribution;
+      shares(detail, 'run-labels', 'Distribution', spread?.labels, rec.counts?.accepted);
+      for (const [name, counts] of Object.entries(spread?.tables || {})) {
+        shares(detail, '', `Table: ${name}`, counts, Object.values(counts).reduce((a, b) => a + b, 0));
+      }
       const outcome = rec.outcome;
       if (outcome?.kind === 'passed') line(detail, 'Meaning', 'Requested checks passed; this is not a proof.');
+      if (outcome?.kind === 'uncovered') line(detail, 'Meaning', 'Every check passed, but required labels were too rare.');
+      if (outcome?.kind === 'passed-unexpectedly') line(detail, 'Meaning', 'The document expects a failure, but every requested check passed.');
+      if (outcome?.kind === 'failed-as-expected') line(detail, 'Meaning', 'The document expects a failure, and one was found.');
+      coverage(detail, 'run-coverage-warnings', 'Coverage warnings', outcome?.warnings);
+      coverage(detail, 'run-coverage-shortfalls', 'Coverage shortfalls', outcome?.shortfalls);
+      if (outcome?.examples?.length) {
+        const list = node('ul', 'run-examples');
+        for (const item of outcome.examples) list.append(node('li', '', `${item.label}: ${item.sample.text}`));
+        detail.append(node('h3', '', 'First example per label'), list);
+      }
       if (outcome?.kind === 'cancelled') line(detail, 'Cancellation reason', outcome.reason);
       if (outcome?.kind === 'interrupted') {
         line(detail, 'Meaning', 'The runtime aborted this run: a call exceeded its CPU time limit, the operator pressed Ctrl-C, or memory ran out.');
@@ -360,8 +409,8 @@
       if (proof) {
         block(detail, 'run-original', 'Original counterexample', proof.original.text);
         block(detail, 'run-shrunk', 'Shrunk counterexample', proof.shrunk.text);
-        block(detail, 'run-failure', 'Failure', JSON.stringify(proof.why, null, 2));
-      } else if (outcome?.why) block(detail, 'run-failure', 'Failure', JSON.stringify(outcome.why, null, 2));
+        failure(detail, proof.why);
+      } else if (outcome?.why) failure(detail, outcome.why);
       if (outcome?.arms) {
         const list = node('ul', 'run-suite-arms');
         for (const arm of outcome.arms) {

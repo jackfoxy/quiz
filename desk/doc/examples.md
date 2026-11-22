@@ -9,9 +9,9 @@ Clay paths linked below, not the workbench's virtual root names.
 Every property fixes seed `0v123` in its `conf`. Leave the panel overrides blank
 to reproduce its configuration. The ordinary target is 20 accepted checks;
 the duplicate example requests two and intentionally reaches its small budget,
-and the queue models request 100.
+and the queue models and coverage examples request 100.
 The results below were checked through the browser/Gall application on
-`%zuse 408`, engine `%quiz-engine-2`. They describe these exact sources and
+`%zuse 408`, engine `%quiz-engine-3`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
 
 | Document | Expected outcome | What it demonstrates |
@@ -27,6 +27,10 @@ settings, not universal outcomes of similar-looking properties.
 | [09-custom-alts](../examples/failing/09-custom-alts.hoon) | Failed, false; best sample 502 | A terminating shrinker preserving positive even inputs |
 | [10-queue-model](../examples/props/10-queue-model.hoon) | Passed, 100 accepted | Model-based test: a two-list queue against a list model over generated command sequences |
 | [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) | Failed, false; 12 commands → 3 | A pop precondition kept by both the norn and a sequence shrinker |
+| [12-labels-coverage](../examples/props/12-labels-coverage.hoon) | Passed, 100 accepted; coverage met | `classify`, `tabulate` and `++cover`; the run shows the label distribution |
+| [13-expected-actual](../examples/failing/13-expected-actual.hoon) | Failed, false; expected 1, actual 0 | `same` and `note`: a failure that explains itself |
+| [14-coverage-shortfall](../examples/failing/14-coverage-shortfall.hoon) | Uncovered; empty 1% of 10% | Every check passes, but the generator misses a required case |
+| [15-expect-failure](../examples/props/15-expect-failure.hoon) | Failed as expected; 11 → 10 | `++expect %fail` for a claim known to be false |
 
 The composed example's list is generated as `(list @ud)` but enters its fate
 through a noun boundary and is checked there. Recursive vase types can include
@@ -74,11 +78,33 @@ returns the newer. The engine already rejects a candidate that fails in
 another category, such as a crash; filtering avoids spending the candidate
 budget on them.
 
+## Reports and coverage examples
+
+`12-labels-coverage` labels each list `empty`, `short` (1–3 elements) or
+`long`, tabulates its length, and checks a double reversal with `same`. Its
+`++cover` requires 5% short and 50% long lists, under `%check`. The recorded
+distribution is empty 1, short 15, long 84: the stock list norn makes lists
+near its `xeb(size)-1` maximum, so short and empty lists come from the first
+samples only.
+
+`14-coverage-shortfall` uses the same generator and requires 10% empty lists.
+Every check passes, but only 1% of samples were empty, so the run ends
+`uncovered` with the shortfall `empty: 1% of accepted samples, required 10%`.
+The fix belongs in the generator, not the requirement.
+
+`13-expected-actual` reports `same` on the value and its halved-and-doubled
+form, with a note. The shrunk failure shows expected `1`, actual `0`; the
+note and comparison follow the shrunk sample, not the original 3.
+
+`15-expect-failure` claims every value is below 10 and marks the document
+`++expect %fail`. The engine finds 11, shrinks it to 10, and reports
+`failed-as-expected`.
+
 ## Recorded property counters
 
 Seed `0v123`, no UI overrides. Columns use the definitions in the reference.
 [`tests/lib/quiz-examples.hoon`](../tests/lib/quiz-examples.hoon) pins the
-queue rows in `-test`.
+queue, report and coverage rows in `-test`.
 
 | Document | Attempted | Accepted | Dropped | Duplicate | Shrink tried | Shrink steps | Original → shrunk |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -93,6 +119,10 @@ queue rows in `-test`.
 | 09-custom-alts | 1 | 0 | 0 | 0 | 5 | 4 | value=510 → value=502 |
 | 10-queue-model | 107 | 100 | 0 | 7 | 0 | 0 | — |
 | 11-queue-model-bug | 14 | 11 | 0 | 2 | 68 | 20 | 12 commands → `[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]` |
+| 12-labels-coverage | 104 | 100 | 0 | 4 | 0 | 0 | — |
+| 13-expected-actual | 5 | 2 | 0 | 2 | 3 | 1 | value=3 → value=1 |
+| 14-coverage-shortfall | 104 | 100 | 0 | 4 | 0 | 0 | — |
+| 15-expect-failure | 13 | 6 | 0 | 6 | 4 | 1 | value=11 → value=10 |
 
 ## Existing suites
 

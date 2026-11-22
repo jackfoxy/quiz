@@ -13,6 +13,10 @@ const examples = [
   ['failing', '09-custom-alts', 'failed', 'false'],
   ['props', '10-queue-model', 'passed'],
   ['failing', '11-queue-model-bug', 'failed', 'false'],
+  ['props', '12-labels-coverage', 'passed'],
+  ['failing', '13-expected-actual', 'failed', 'false'],
+  ['failing', '14-coverage-shortfall', 'uncovered'],
+  ['props', '15-expect-failure', 'failed-as-expected', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -56,7 +60,7 @@ for (const [root, name, outcome, why] of examples) {
     } else expect(got.seed).toBe('0v123');
     if (why) expect(got.outcome.evidence.why.kind).toBe(why);
     if (outcome === 'passed')
-      expect(got.counts.accepted).toBe(name === '10-queue-model' ? 100 : 20);
+      expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -68,6 +72,21 @@ for (const [root, name, outcome, why] of examples) {
         .toBe('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
       expect(got.counts).toMatchObject({'shrink-tried':68, 'shrink-steps':20});
     }
+    if (name === '12-labels-coverage') {
+      expect(got.distribution.labels).toEqual({empty:1, short:15, long:84});
+      expect(got.outcome.warnings).toEqual([]);
+      await expect(page.locator('#run-labels')).toContainText('long');
+    }
+    if (name === '13-expected-actual') {
+      expect(got.outcome.evidence.why.detail.compared).toEqual({want:'1', got:'0'});
+      await expect(page.locator('#run-want')).toHaveText('1');
+      await expect(page.locator('#run-got')).toHaveText('0');
+    }
+    if (name === '14-coverage-shortfall') {
+      expect(got.outcome.shortfalls).toEqual([{label:'empty', want:10, got:1}]);
+      await expect(page.locator('#run-coverage-shortfalls')).toContainText('empty');
+    }
+    if (name === '15-expect-failure') expect(got.outcome.evidence.shrunk.text).toBe('value=10');
     if (name === '05-duplicates') {
       expect(got.outcome.budget).toBe('duplicates');
       expect(got.counts).toMatchObject({attempted:4, accepted:1, duplicate:3});

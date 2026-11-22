@@ -172,16 +172,31 @@ A record contains:
 - `snapshot`: null until available, then pinned `context`, `path`, exact `source`,
   and `source-hash` (`@uv`).
 - Effective `seed`, `config`, and `replay-of` (nullable).
-- `counts`, `sample-metrics` (`available` or `unavailable`), and nullable `outcome`.
+- `counts`, `sample-metrics` (`available` or `unavailable`), nullable
+  `distribution`, and nullable `outcome`.
 
 Property counts are `attempted`, `accepted`, `dropped`, `duplicate`,
 `shrink-tried`, `shrink-steps`. Suite counts are `total`, `completed`, `passed`,
 `failed`, `crashed`, `invalid`. A suite never synthesizes property counters.
 
-Outcome `kind` is `passed`, `failed`, `error`, `limited`, `exhausted`, `invalid`,
-`cancelled`, `interrupted`, or `suite`. Additional fields follow the typed result:
+A property's `distribution` counts labels and table rows over accepted samples,
+and is null for suites:
 
-- `failed`: `evidence` with `why`, `original`, `shrunk`.
+```json
+{"labels":{"short":15,"long":84},"tables":{"length":{"3":7,"10":12}}}
+```
+
+Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
+`failed-as-expected`, `error`, `limited`, `exhausted`, `invalid`, `cancelled`,
+`interrupted`, or `suite`. Additional fields follow the typed result:
+
+- `passed`: `warnings` (coverage shortfalls under `%warn`, usually empty) and
+  `examples`.
+- `uncovered`: `shortfalls` and `examples`. A shortfall is
+  `{"label","want","got"}`, percentages as numbers. An example is
+  `{"label","sample"}`, with a sample shaped like evidence samples.
+- `passed-unexpectedly`: no fields.
+- `failed` and `failed-as-expected`: `evidence` with `why`, `original`, `shrunk`.
 - `error`: `stage`, `why`, nullable `evidence`.
 - `limited`: `which`, nullable `evidence`.
 - `exhausted`: `budget`, `all-dropped`.
@@ -195,8 +210,9 @@ Outcome `kind` is `passed`, `failed`, `error`, `limited`, `exhausted`, `invalid`
   `arms` with `name`, `status`, `trace`, `clipped`.
 
 Evidence samples have rendered `text` and `noun-jam` (a jammed noun as `@uv`).
-`why` has `kind` (`false`, `crash`, `scry`, `bad-product`) and `detail`: null,
-trace lines, or a jammed noun string respectively. Rendering and retained
+`why` has `kind` (`false`, `crash`, `scry`, `bad-product`) and `detail`. For
+`false` it is `{"notes":[…],"compared":null|{"want","got"}}`; otherwise trace
+lines, or a jammed noun string. Rendering and retained
 samples obey engine bounds. `passed` means the requested checks passed, not a
 proof.
 

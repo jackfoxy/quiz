@@ -10,7 +10,8 @@ through `%quiz`; they do not call the legacy check loop.
 ### Fates and documents
 
 A fate is a Hoon gate whose sample describes the input domain and whose product
-is `?(? %drop)`. `%.y` accepts the sample, `%.n` finds a counterexample, and
+is `?(? %drop)` or a `report` (see [reports and coverage](#reports-labels-and-coverage)).
+`%.y` accepts the sample, `%.n` finds a counterexample, and
 `%drop` rejects an input without checking the intended claim. A crash or scry
 is a failure category, not a discard. A passed run establishes only the checks
 performed, not a proof or coverage of every input.
@@ -19,10 +20,12 @@ An application document is a Hoon file producing a core:
 
 | Arm | Contract |
 | --- | --- |
-| `++fate` | Required gate; sample may be any Hoon type; product must nest in `?(? %drop)` |
+| `++fate` | Required gate; sample may be any Hoon type; product must nest in `?(? %drop report:quiz-engine)` |
 | `++norn` | Optional gate `$-([@ud _og] sample-type)` |
 | `++alts` | Optional gate `$-(vase (list vase))` |
 | `++conf` | Optional `[seed=(unit @uv) config=conf:quiz-engine]` |
+| `++cover` | Optional `cover:quiz-engine`: `[mode=?(%warn %check) rows=(list [label=@t percent=@ud])]` |
+| `++expect` | Optional `?(%pass %fail)`; default `%pass` |
 
 The builder checks the arms before the run starts. Invalid source, imports,
 arm types or settings produce `%invalid`, rather than an ordinary failing
@@ -302,6 +305,64 @@ them with Ctrl-C. There is no per-run memory limit below the loom, and no
 sandbox that isolates the ship from the code it runs. Use a disposable
 development ship for examples and experimental properties.
 
+### Reports, labels and coverage
+
+A fate may return a report instead of a bare verdict:
+
+```hoon
++$  report
+  $:  %report
+      ok=?(? %drop)
+      =detail        ::  [notes=(list @t) compared=(unit [want=@t got=@t])]
+      labels=(list @t)
+      tables=(list [table=@t value=@t])
+  ==
+```
+
+Build reports with [`quiz-prop`](../lib/quiz-prop.hoon) (`/+ prop=quiz-prop`).
+Every combinator accepts a bare verdict or a report (`prop`) and returns a
+report:
+
+| Arm | Use | QuickCheck analogue |
+| --- | --- | --- |
+| `(same !>(want) !>(got))` | Passes when the nouns are equal; on failure records both, rendered with their types | `===` |
+| `(note text p)` | Adds a line of explanation, shown if the property fails | `counterexample` |
+| `(label text p)` | Labels the sample | `label` |
+| `(classify cond text p)` | Labels the sample when `cond` holds | `classify` |
+| `(collect !>(value) p)` | Labels the sample with the value's rendered text | `collect` |
+| `(tabulate table values p)` | Counts each value under a named table | `tabulate` |
+| `(implies pre \|.(p))` | `%drop` unless `pre`; the trap runs only when it holds | `==>` |
+| `(all ~[p q …])` | Conjunction: the first failure's comparison, every note and tag | `conjoin` |
+| `(any ~[p q …])` | Disjunction: passes if any part passes; otherwise fails or drops | `disjoin` |
+
+`same` and `collect` take vases. A wet gate's formula is compiled once against
+its formal sample, so `!>` inside one sees only `*`; the caller's `!>` keeps
+the real type. Hoon is strict: every element of a list given to `all` or `any`
+has already been evaluated. Guard partial computations with `implies`.
+
+The engine molds a report under virtualization; a malformed one is a
+`%bad-product` failure. A false report's `detail` becomes the failure:
+`[%false detail]`. While shrinking, the failure is replaced by each accepted
+candidate's failure, so the notes and comparison describe the shrunk sample.
+
+Labels and table rows are counted over **accepted** samples only, a label once
+per sample, a table value once per occurrence. The run keeps the first
+accepted sample per label as that label's example. A label, table name or value
+longer than 256 bytes, or more than 100 distinct labels or table rows, stops the
+run as `%limited %labels`.
+
+`++cover` lists required shares of accepted samples per label, in whole
+percent, compared exactly at the end (`100 × hits ≥ percent × accepted`).
+`%warn` reports shortfalls with `passed`; `%check` turns them into the outcome
+`uncovered`. This is a plain threshold at the final count, not QuickCheck's
+sequential statistical `checkCoverage`. With zero requested checks, every
+positive requirement is short.
+
+`++expect %fail` marks a property that should fail. A counterexample, after
+shrinking, ends `failed-as-expected`; reaching the requested count ends
+`passed-unexpectedly`. `error`, `limited` and `exhausted` outcomes are
+unchanged.
+
 ### Counters, status and outcomes
 
 Property progress has exactly these fields:
@@ -324,8 +385,11 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 
 | Outcome | Meaning / payload |
 | --- | --- |
-| `passed` | Target accepted checks reached; no counterexample |
+| `passed` | Target accepted checks reached; no counterexample. Coverage `warnings` (empty unless `%warn` found a shortfall) and the first example per label |
+| `uncovered` | Target reached, but a `%check` coverage row was short; `shortfalls` and examples |
+| `passed-unexpectedly` | `++expect %fail`, but every requested check passed |
 | `failed` | `why`, original sample, shrunk sample |
+| `failed-as-expected` | `++expect %fail` and a counterexample was found; same payload as `failed` |
 | `error` | Stage `norn`, `generate` or `alts`; failure reason; optional evidence |
 | `limited` | Named bound and optional evidence |
 | `exhausted` | Budget `attempts`, `drops` or `duplicates`, plus `all-dropped` |
@@ -336,13 +400,15 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 
 The durable Hoon [record](../sur/quiz-app.hoon) contains `id`, `request`, nullable
 `snapshot` and `replay`, nullable effective `seed` and `config`, `engine-version`,
-`status`, tagged `counts`, nullable `result`, and created/updated/finished times.
+`status`, tagged `counts` (for properties, the counters plus the label and
+table `distribution`), nullable `result`, and created/updated/finished times.
 A snapshot contains context, path, exact source and its `shax` hash. A sample
 contains noun `value` and rendered `text`; durable records do not retain vase
 types. Invalid builds may have no effective settings or replay inputs.
 
 The [JSON representation](http-api.md) uses `outcome` instead of Hoon `result`,
-flattened `counts`, a source `kind`, and `sample-metrics`. Evidence uses `text`
+flattened `counts`, a separate `distribution`, a source `kind`, and
+`sample-metrics`. Evidence uses `text`
 and `noun-jam` (jammed noun rendered as `@uv`) instead of a raw JSON noun.
 IDs/revisions are decimal strings; seeds/hashes use `@uv`; dates use `@da`.
 Do not convert IDs to JavaScript numbers. Diagnostics have `code`, `path`,
@@ -462,12 +528,17 @@ created a run: inspect history before retrying. The UI does not invent progress.
 
 | Configured application binding | Action |
 | --- | --- |
+| F1 | Help |
+| F2 | Settings |
+| F5 | Run the selected property (outside the editor) |
 | Ctrl-S / Command-S | Save active document |
 | Ctrl-Shift-S / Command-Shift-S | Save As |
-| Ctrl-O / Command-O | Open document |
+| Alt-O | Open document (outside the editor) |
+| Alt-C | Copy document (outside the editor) |
 
 Ace adds editing bindings such as undo/redo and search; Settings selects the
-default or Vim keymap. There are no configured app run/replay/cancel shortcuts.
+default or Vim keymap. Replay and cancel have no shortcut: they act on a
+selected run. [Quiz keys](keyboard/quiz-keys.md) explains why Open is Alt-O.
 The [workbench guide](workbench.md) describes editing and dirty protection.
 
 ### Troubleshooting
@@ -478,6 +549,10 @@ The [workbench guide](workbench.md) describes editing and dirty protection.
 | `%fate-missing`, `%fate-type`, `%norn-type`, `%alts-type` | Use a property core with the signatures above; choose suite mode for a test core. |
 | `%source`, `%import`, `%build`, unavailable desk/revision | Check path and pinned context. For a saved compiler failure, an editable draft may expose a more precise compiler diagnostic. |
 | `%conf-range` | Start with defaults, keep the full config, respect ceilings and positive bounds. |
+| `%cover-type`, `%cover-range` | `++cover` must be `[?(%warn %check) (list [@t @ud])]`: at most 100 distinct, nonempty labels of at most 256 bytes, each percent at most 100. |
+| `%expect-type` | `++expect` must be `%pass` or `%fail`. |
+| `%uncovered` | Every check passed, but a required label was too rare. Inspect the distribution; change the generator, not the requirement, unless the requirement was wrong. |
+| `%limited %labels` | A label was longer than 256 bytes, or a run produced more than 100 distinct labels or table rows. `collect` on a wide domain does this; label ranges instead. |
 | `%exhausted` | Inspect drops/duplicates/attempts; improve generation or reduce the requested count for a finite domain. It is not a pass. |
 | `%limited` | Inspect the named bound; simplify data/alts or lower requested work. Bounds cannot exceed engine ceilings. |
 | Wrong source after Save | Saved execution still uses its selected revision; choose latest or draft execution. |
@@ -499,7 +574,8 @@ already checked parts/configuration and own scheduling and persistence.
 
 | Module | Responsibility / key entry points |
 | --- | --- |
-| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase)]`; terminal states are stable |
+| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit cover) expect=?(%pass %fail)]`; `judge` classifies reports; terminal states are stable |
+| [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
 | [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `resolve` checks context before rebuilding |

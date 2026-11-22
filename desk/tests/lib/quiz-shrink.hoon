@@ -5,7 +5,7 @@
   |=  [fate=vase value=@ud alts=(unit vase)]
   ^-  state:engine
   =/  give  !>(|=([size=@ud rng=_og] value))
-  (init:engine 0v1 defaults:engine [fate `give alts])
+  (init:engine 0v1 defaults:engine [fate `give alts ~ %pass])
 ::
 ++  complete
   |=  s=state:engine

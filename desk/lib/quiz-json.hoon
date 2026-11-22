@@ -187,11 +187,58 @@
   :~  ['kind' s+-.value]
       :-  'detail'
       ?-  -.value
-        %false        ~
+        %false        (detail-out detail.value)
         %crash        (trace-out trace.value)
         %scry         s+(scot %uv (jam request.value))
         %bad-product  s+(scot %uv (jam product.value))
       ==
+  ==
+::
+++  detail-out
+  |=  value=detail:engine
+  ^-  json
+  %-  pairs:enjs:format
+  :~  ['notes' a+(turn notes.value |=(note=@t s+note))]
+      :-  'compared'
+      ?~  compared.value  ~
+      %-  pairs:enjs:format
+      ~[['want' s+want.u.compared.value] ['got' s+got.u.compared.value]]
+  ==
+::
+++  shortfalls-out
+  |=  rows=(list shortfall:engine)
+  ^-  json
+  :-  %a
+  %+  turn  rows
+  |=  row=shortfall:engine
+  %-  pairs:enjs:format
+  :~  ['label' s+label.row]
+      ['want' (numb:enjs:format want.row)]
+      ['got' (numb:enjs:format got.row)]
+  ==
+::
+++  examples-out
+  |=  rows=examples:app
+  ^-  json
+  :-  %a
+  %+  turn  rows
+  |=  [label=@t =sample:app]
+  (pairs:enjs:format ~[['label' s+label] ['sample' (sample-out sample)]])
+::
+++  distribution-out
+  ::  Label and table-row counts over accepted samples.
+  |=  value=distribution:engine
+  ^-  json
+  =/  counts
+    |=  m=(map @t @ud)
+    ^-  json
+    %-  pairs:enjs:format
+    (turn ~(tap by m) |=([k=@t v=@ud] [k (numb:enjs:format v)]))
+  %-  pairs:enjs:format
+  :~  ['labels' (counts labels.value)]
+      :-  'tables'
+      %-  pairs:enjs:format
+      (turn ~(tap by tables.value) |=([k=@t m=(map @t @ud)] [k (counts m)]))
   ==
 ::
 ++  sample-out
@@ -217,8 +264,17 @@
   %-  pairs:enjs:format
   :-  ['kind' s+-.value]
   ?-  -.value
-    %passed  ~
+    %passed
+      :~  ['warnings' (shortfalls-out warnings.value)]
+          ['examples' (examples-out examples.value)]
+      ==
+    %uncovered
+      :~  ['shortfalls' (shortfalls-out shortfalls.value)]
+          ['examples' (examples-out examples.value)]
+      ==
+    %passed-unexpectedly  ~
     %failed  ~[['evidence' (evidence-out +.value)]]
+    %failed-as-expected  ~[['evidence' (evidence-out +.value)]]
     %cancelled  ~[['reason' s+reason.value]]
     %interrupted
       :~  ['during' s+during.value]
@@ -305,9 +361,12 @@
       (decimal u.replay-of.request.value)
       :-  'counts'
       ?-  -.counts.value
-        %property  (property-counts +.counts.value)
+        %property  (property-counts +<.counts.value)
         %suite     (suite-counts +<.counts.value)
       ==
+      :-  'distribution'
+      ?.  ?=(%property -.counts.value)  ~
+      (distribution-out distribution.counts.value)
       :-  'sample-metrics'
       s+?:(?=(%suite -.counts.value) 'unavailable' 'available')
       ['outcome' ?~(result.value ~ (outcome-out u.result.value))]

@@ -225,6 +225,21 @@
       (gth samples-per-slice.bounds.cfg 0)
   ==
 ::
+++  valid-cover
+  ::  At most label-max distinct, nonempty, bounded labels; whole percents.
+  |=  =cover:engine
+  ^-  ?
+  =/  labels=(list @t)  (turn rows.cover head)
+  ?&  (lte (lent rows.cover) label-max:engine)
+      =((lent labels) ~(wyt in (silt labels)))
+      %+  levy  rows.cover
+      |=  [label=@t percent=@ud]
+      ?&  (gth (met 3 label) 0)
+          (lte (met 3 label) label-bytes:engine)
+          (lte percent 100)
+      ==
+  ==
+::
 ++  inspect-gate
   ::  Infer the product without executing the gate on its bunt sample.
   |=  [gate=vase input=(unit type) output=type]
@@ -240,10 +255,10 @@
   =/  names  (sloe p.core)
   ?.  (~(has in (silt names)) %fate)
     [%invalid (issue %fate-missing path.doc [1 1] `%fate ~)]
-  =/  parts=parts:engine  [*vase ~ ~]
+  =/  parts=parts:engine  [*vase ~ ~ ~ %pass]
   =/  settings=document-conf  [~ defaults:engine]
-  =/  wanted=(list ?(%fate %norn %alts %conf))
-    ~[%fate %norn %alts %conf]
+  =/  wanted=(list ?(%fate %norn %alts %conf %cover %expect))
+    ~[%fate %norn %alts %conf %cover %expect]
   |-
   ?~  wanted
     ?:  (gth (met 3 source.doc) source-bytes.bounds.config.settings)
@@ -264,6 +279,17 @@
     ?.  (valid-config config.settings)
       [%invalid (issue %conf-range path.doc at `arm ~)]
     $(wanted rest, settings settings)
+  ?:  ?=(%cover arm)
+    ?.  (~(nest ut p:!>(*cover:engine)) | p.value)
+      [%invalid (issue %cover-type path.doc at `arm ~)]
+    =/  cover  ;;(cover:engine q.value)
+    ?.  (valid-cover cover)
+      [%invalid (issue %cover-range path.doc at `arm ~)]
+    $(wanted rest, parts parts(cover `cover))
+  ?:  ?=(%expect arm)
+    ?.  (~(nest ut p:!>(*expectation:engine)) | p.value)
+      [%invalid (issue %expect-type path.doc at `arm ~)]
+    $(wanted rest, parts parts(expect ;;(expectation:engine q.value)))
   =/  input=(unit type)
     ?-  arm
       %fate  ~
@@ -272,7 +298,7 @@
     ==
   =/  output=type
     ?-  arm
-      %fate  p:!>(*?(? %drop))
+      %fate  p:!>(*?(? %drop report:engine))
       %norn  p:(slot 6 fate.parts)
       %alts  p:!>(*(list vase))
     ==

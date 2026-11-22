@@ -62,7 +62,7 @@
     (expect !>(=(counts.done counts.again)))
     (expect !>(=(seed.done seed.again)))
     (expect !>(=(config.done config.again)))
-    (expect !>(?=([%false ~] why.result)))
+    (expect !>(?=([%false ~ ~] why.result)))
     (expect !>((gth !<(@ud original.result) 500)))
     (expect-eq !>(`@ud`501) !>(!<(@ud shrunk.result)))
   ==

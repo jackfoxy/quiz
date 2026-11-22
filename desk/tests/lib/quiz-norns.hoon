@@ -48,8 +48,8 @@
   |=  [n=@ud fate=vase]
   ^-  (list @ud)
   =/  cfg  defaults:engine
-  =/  s
-    (init:engine 0v1 cfg(requested 1.000, attempts-max 2.000) [fate ~ ~])
+  =/  cfg  cfg(requested 1.000, attempts-max 2.000)
+  =/  s  (init:engine 0v1 cfg [fate ~ ~ ~ %pass])
   =|  out=(list @ud)
   |-
   ?:  =(0 n)  (flop out)

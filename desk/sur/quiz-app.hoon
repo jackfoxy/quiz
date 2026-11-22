@@ -38,9 +38,14 @@
 ::
 +$  evidence  [why=failure:engine original=sample shrunk=sample]
 ::
++$  examples  (list [label=@t =sample])
+::
 +$  outcome
-  $%  [%passed ~]
+  $%  [%passed warnings=(list shortfall:engine) =examples]
+      [%uncovered shortfalls=(list shortfall:engine) =examples]
+      [%passed-unexpectedly ~]
       [%failed evidence]
+      [%failed-as-expected evidence]
       [%error stage=error-stage:engine why=failure:engine proof=(unit evidence)]
       [%limited which=limit-name:engine proof=(unit evidence)]
       [%exhausted budget=?(%attempts %drops %duplicates) all-dropped=?]
@@ -58,7 +63,7 @@
   [where=context:build path=path source=@t source-hash=@uv]
 ::
 +$  progress
-  $%  [%property counters:engine]
+  $%  [%property counters:engine =distribution:engine]
       [%suite counters:suite sample-metrics=%unavailable]
   ==
 ::

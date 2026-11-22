@@ -1,7 +1,8 @@
 # Property documents
 
 A document builds to a core with a required `++fate` gate. Optional arms are
-`++norn`, `++alts`, and `++conf`. Other arms may hold helpers. See the executable
+`++norn`, `++alts`, `++conf`, `++cover` and `++expect`. Other arms may hold
+helpers. See the executable
 [fixture](../fixtures/quiz-build/property.hoon).
 
 ```hoon
@@ -16,10 +17,17 @@ The compiler checks types without calling the property, generator, or shrinker:
 
 | Arm | Required type |
 | --- | --- |
-| `fate` | Gate with any sample; product nests in `?(? %drop)` |
+| `fate` | Gate with any sample; product nests in `?(? %drop report:quiz-engine)` |
 | `norn` | Gate accepting `[@ud _og]`, returning the fate sample type |
 | `alts` | Gate accepting a `vase`, returning `(list vase)` |
 | `conf` | `[seed=(unit @uv) config=conf:quiz-engine]` |
+| `cover` | `cover:quiz-engine`, `[mode=?(%warn %check) rows=(list [label=@t percent=@ud])]`; at most 100 distinct nonempty labels of at most 256 bytes; percents at most 100 |
+| `expect` | `?(%pass %fail)` |
+
+Reports, `++cover` and `++expect` are explained in
+[reports, labels and coverage](reference.md#reports-labels-and-coverage).
+Build reports with `/+  prop=quiz-prop`. `cover` and `expect` come from the
+document and are unaffected by Run-panel configuration overrides.
 
 A missing `conf` uses `[~ defaults:quiz-engine]`. A null seed asks the caller to
 choose and record a seed; an explicit seed is replayable. No generator or

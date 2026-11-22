@@ -37,7 +37,7 @@
   =/  cfg  defaults:engine
   =.  cfg  cfg(requested 100, samples-per-slice.bounds 2)
   =/  parts=parts:engine
-    [!>(|=(n=@ud &)) `!>(|=([size=@ud rng=_og] size)) ~]
+    [!>(|=(n=@ud &)) `!>(|=([size=@ud rng=_og] size)) ~ ~ %pass]
   =/  run  (init:engine 0v123 cfg parts)
   =.  run  run(accepted.counts accepted, attempted.counts accepted)
   =/  rec  (~(got by records.saved.s) 1)
@@ -56,7 +56,7 @@
   ^-  tang
   =/  s  (queued 3)
   =/  a  (activate:job s now:bol)
-  =/  done  (finish:job a 1 [%passed ~] now:bol)
+  =/  done  (finish:job a 1 [%passed ~ ~] now:bol)
   =/  b  (activate:job done now:bol)
   ;:  weld
     (expect-eq !>(~[1 2 3]) !>(queue.saved.s))
@@ -118,7 +118,7 @@
   =/  rec  (get-record s 1)
   ?>  ?=(%property -.counts.rec)
   ;:  weld
-    (expect !>(?=([~ %passed ~] result.rec)))
+    (expect !>(?=([~ %passed ~ ~] result.rec)))
     (expect !>(=(%done status.rec)))
     (expect !>(=(~ active.s)))
     (expect-eq !>(100) !>(accepted.counts.rec))
@@ -154,8 +154,8 @@
 ++  test-retention-protects-pending
   ^-  tang
   =/  s  (queued 4)
-  =.  s  (finish:job s 1 [%passed ~] now:bol)
-  =.  s  (finish:job s 2 [%passed ~] now:bol)
+  =.  s  (finish:job s 1 [%passed ~ ~] now:bol)
+  =.  s  (finish:job s 2 [%passed ~ ~] now:bol)
   =.  s  (retain:job s 1)
   ;:  weld
     (expect-eq !>(~[4 3 2]) !>(order.saved.s))
@@ -169,7 +169,7 @@
 ++  test-reload-cancels-pending-keeps-completed
   ^-  tang
   =/  s  (running 3 7)
-  =.  s  (finish:job s 3 [%passed ~] now:bol)
+  =.  s  (finish:job s 3 [%passed ~ ~] now:bol)
   =/  restored  (restore:job saved.s now:bol)
   =/  one  (get-record restored 1)
   =/  two  (get-record restored 2)
@@ -294,7 +294,7 @@
 ++  test-clear-keeps-active
   ^-  tang
   =/  s  (running 2 0)
-  =.  s  (finish:job s 2 [%passed ~] now:bol)
+  =.  s  (finish:job s 2 [%passed ~ ~] now:bol)
   =/  a  ~(. agent bol)
   =.  a  a(state s)
   =/  got  (on-poke.a %quiz-action !>([%clear ~]))
@@ -408,8 +408,8 @@
 ++  test-outcome-strips-vases
   ^-  tang
   =/  evidence=counterexample:engine
-    [[%false ~] !>(`@ud`541) !>(`@ud`501)]
-  =/  got  (persist-outcome:job [%failed evidence])
+    [[%false ~ ~] !>(`@ud`541) !>(`@ud`501)]
+  =/  got  (persist-outcome:job [%failed evidence] ~)
   ?>  ?=(%failed -.got)
   ;:  weld
     (expect-eq !>(541) !>(value.original.got))
@@ -460,7 +460,7 @@
 ::
 ++  test-delete-fact-and-kick
   ^-  tang
-  =/  s  (finish:job (queued 1) 1 [%passed ~] now:bol)
+  =/  s  (finish:job (queued 1) 1 [%passed ~ ~] now:bol)
   =/  a  ~(. agent bol)
   =.  a  a(state s)
   =/  got  (on-poke.a %quiz-action !>([%delete 1]))
@@ -529,7 +529,7 @@
   ?>  ?=(%property -.work.current)
   =/  run=state:engine  +.work.current
   =/  best=counterexample:engine
-    [[%false ~] !>(`@ud`9) !>(`@ud`5)]
+    [[%false ~ ~] !>(`@ud`9) !>(`@ud`5)]
   =.  shrink.run  `[best ~ ~]
   =/  rec  (get-record s 1)
   =.  s
@@ -601,7 +601,7 @@
   =/  next  state:+.got
   =/  done  (get-record next 1)
   ;:  weld
-    (expect !>(?=([~ %passed ~] result.done)))
+    (expect !>(?=([~ %passed ~ ~] result.done)))
     (expect !>(=(~ active.next)))
     (expect !>(=(%queued status:(get-record next 2))))
     (expect-eq !>(11) !>(token:(need timer.next)))
@@ -612,7 +612,7 @@
   ^-  tang
   =/  s  (activate:job (queued 1) now:bol)
   =/  cfg  defaults:engine
-  =/  parts=parts:engine  [!>(|=(n=@ud |)) ~ ~]
+  =/  parts=parts:engine  [!>(|=(n=@ud |)) ~ ~ ~ %pass]
   =/  run  (init:engine 0v123 cfg parts)
   =/  rec  (get-record s 1)
   =.  s
@@ -667,5 +667,37 @@
   ;:  weld
     (expect-eq !>(~s3) !>(time.+.work.current))
     (expect-eq !>([~s3 ~s30 ~m1]) !>(timeouts.saved.restored))
+  ==
+::
+++  test-distribution-and-examples
+  ::  Labels reach the record each slice; examples are rendered at the end.
+  ^-  tang
+  =/  s  (activate:job (queued 1) now:bol)
+  =/  cfg  defaults:engine
+  =.  cfg  cfg(requested 10)
+  =/  fate
+    !>  |=  n=@ud
+        ^-  report:engine
+        [%report & [~ ~] ~[?:(=(0 (mod n 2)) 'even' 'odd')] ~]
+  =/  give  !>(|=([size=@ud rng=_og] size))
+  =/  parts=parts:engine  [fate `give ~ ~ %pass]
+  =/  run  (init:engine 0v123 cfg parts)
+  =/  rec  (get-record s 1)
+  =.  s
+    %=  s
+      active  `[1 [%property run]]
+      records.saved  (~(put by records.saved.s) 1 rec(status %running))
+    ==
+  =/  done  (get-record (advance:job s now:bol) 1)
+  ?>  ?=(%property -.counts.done)
+  =/  result  (need result.done)
+  ?>  ?=(%passed -.result)
+  =/  values  (turn examples.result |=([@t =sample:app] value.sample))
+  ;:  weld
+    %+  expect-eq  !>((malt `(list [@t @ud])`~[['even' 5] ['odd' 5]]))
+    !>(labels.distribution.counts.done)
+    %+  expect-eq  !>(`(list @t)`~['even' 'odd'])
+    !>((turn examples.result head))
+    (expect-eq !>(`(list *)`~[2 1]) !>(values))
   ==
 --

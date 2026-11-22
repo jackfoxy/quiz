@@ -97,6 +97,39 @@ selected desk at the pinned revision. Full rules:
 More techniques with worked examples:
 [choosing useful properties](../../../desk/doc/users-guide.md#choosing-useful-properties).
 
+## Reports, labels and coverage
+
+A fate may return a report built with `/+  prop=quiz-prop` instead of a bare
+verdict. Use it to make failures readable and to see what was tested:
+
+```hoon
+++  fate
+  |=  items=*
+  ^-  report:prop
+  =/  items  ;;((list @ud) items)
+  %^  classify:prop  =(~ items)  'empty'
+  %+  note:prop  'double reversal should be the identity'
+  (same:prop !>(items) !>((flop (flop items))))
+++  cover  [%check ~[['empty' 5]]]
+```
+
+- `same` takes **vases**: `(same:prop !>(want) !>(got))`. The run shows
+  both values rendered with their types. Without `!>` at the call site the
+  types are lost.
+- `classify`, `label`, `collect` and `tabulate` count over accepted samples.
+  The run shows the distribution and the first example per label. Keep labels
+  to ranges or cases. More than 100 distinct labels ends `limited %labels`.
+- `++cover [%warn …]` reports shortfalls on a pass; `[%check …]` ends the run
+  `uncovered`. It is a threshold at the final count, not a statistical test.
+- `++expect %fail` marks a claim that should fail (`failed-as-expected`).
+- `implies` with a trap guards partial code. `all` and `any` combine props, but
+  every list element is already evaluated.
+
+Models: [12-labels-coverage](../../../desk/examples/props/12-labels-coverage.hoon),
+[13-expected-actual](../../../desk/examples/failing/13-expected-actual.hoon),
+[14-coverage-shortfall](../../../desk/examples/failing/14-coverage-shortfall.hoon).
+API: [reports, labels and coverage](../../../desk/doc/reference.md#reports-labels-and-coverage).
+
 ## Norns
 
 Combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`, `const`,
@@ -166,8 +199,10 @@ and filter out candidates that break a precondition. Model:
 
 | Outcome | What to do |
 | --- | --- |
-| `passed` | `accepted` reached `requested`. This is evidence, not proof. Check that the inputs were interesting: `requested 0` passes with no checks. |
-| `failed` | Read `why` (`%false`, `%crash` with trace, `%scry`, `%bad-product`), then the original and shrunk samples. |
+| `passed` | `accepted` reached `requested`. This is evidence, not proof. Check that the inputs were interesting (the distribution, if the fate labels them): `requested 0` passes with no checks. `warnings` lists `%warn` coverage shortfalls. |
+| `uncovered` | Every check passed, but a `%check` coverage row was short. Fix the generator so the case occurs. |
+| `failed` | Read `why` (`%false` with notes and expected/actual if the fate gave them, `%crash` with trace, `%scry`, `%bad-product`), then the original and shrunk samples. The detail describes the shrunk sample. |
+| `failed-as-expected` / `passed-unexpectedly` | The document has `++expect %fail`. The first is the intended result. |
 | `exhausted` | A budget ran out first (`attempts`, `drops` or `duplicates`). `all-dropped` means no input was ever accepted. **Not a pass.** |
 | `limited` | A named bound was hit. Simplify the data or alts, or lower the work. |
 | `error` | The norn, default generation or alts crashed. The stage says which. |
