@@ -190,7 +190,7 @@
   =/  rec  (~(got by records.saved.p.added) 1)
   =/  labels  (malt `(list [@t @ud])`~[['even' 3]])
   =/  rows  (malt `(list [@t (map @t @ud)])`~[['size' labels]])
-  =.  counts.rec  [%property *counters:engine labels rows]
+  =.  counts.rec  [%property *counters:engine [labels rows] 0]
   =/  fields  (object:codec (record-out:codec rec))
   =/  want=json
     %-  pairs:enjs:format

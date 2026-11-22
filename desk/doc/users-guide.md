@@ -39,7 +39,9 @@ Open **Examples → props → 01-success**, leave overrides blank, and choose
 **20**, duplicate **14**. Duplicates do not count toward the accepted target.
 A small sample space can exhaust a run: **failing → 05-duplicates** records
 **exhausted / duplicates**, attempted **4**, accepted **1**, duplicate **3**.
-Exhaustion is not a pass. [All example results](examples.md).
+Exhaustion is not a pass. Set **Repeated samples** to **Evaluate every
+sample** and rerun: repeats are now evaluated, as in QuickCheck, and the run
+passes with attempted **2**, accepted **2**, duplicate **0**. [All example results](examples.md).
 
 Help uses a Markdown-capable `%docs` app when installed. Its TOC opens rendered
 pages in remembered explorer tabs; otherwise Help shows the short local guide.
@@ -425,6 +427,8 @@ The following are Quiz applications of general property-testing techniques;
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
 | Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. |
+| Small domains | `21-small-domain-allow` checks De Morgan's law over two loobeans. Only four samples exist; `duplicates %allow` evaluates repeats, so 100 checks pass and the labels show every case. |
+| Size control | `22-size-capped` checks a quadratic sort against `sort` on lists as long as the size. `size-max 30` keeps the lists short; `quiz-gen`'s `capped`, `resize` and `scale` do the same for one generator. |
 
 These are design suggestions, informed by FsCheck's
 [Properties](https://fscheck.github.io/FsCheck/Properties.html),

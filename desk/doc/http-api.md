@@ -72,12 +72,16 @@ All commands below are POSTed as JSON to `/apps/quiz/api`.
 Returns 200 with `contexts` (available local desks, each with `ship`, `desk`,
 immutable `revision`), `defaults` (the complete engine configuration), and
 `engine-version`. Configuration has `requested`, `attempts-max`, `drops-max`,
-`duplicates-max`, and `bounds`. Bounds are `source-bytes`, `requested-max`,
-`shrink-candidates`, `shrink-depth`, `sample-bytes`, `rendered-bytes`,
-`diagnostics-bytes`, `alts-bytes`, `retained-runs`, `samples-per-slice`.
-All configuration values are JSON integers. `requested` may be raised up to
+`duplicates-max`, `size-start`, `size-max`, `duplicates`, and `bounds`.
+Bounds are `source-bytes`, `requested-max`, `shrink-candidates`,
+`shrink-depth`, `sample-bytes`, `rendered-bytes`, `diagnostics-bytes`,
+`alts-bytes`, `seen-bytes`, `retained-runs`, `samples-per-slice`.
+`duplicates` is the string `"mug"`, `"exact"` or `"allow"`; every other
+configuration value is a JSON integer. `requested` may be raised up to
 `requested-max`; attempts, drop/duplicate budgets, and bounds cannot exceed
-their engine defaults. Size, retention, and slice bounds must stay positive.
+their engine defaults. `size-start` must be at least 1; `size-max` is 0
+(uncapped) or at least `size-start`. Byte, retention, and slice bounds must
+stay positive.
 
 ### Run and replay
 
@@ -175,8 +179,9 @@ A record contains:
 - `counts`, `sample-metrics` (`available` or `unavailable`), nullable
   `distribution`, and nullable `outcome`.
 
-Property counts are `attempted`, `accepted`, `dropped`, `duplicate`,
-`shrink-tried`, `shrink-steps`. Suite counts are `total`, `completed`, `passed`,
+Property counts are `size` (the size the next generated sample will use),
+`attempted`, `accepted`, `dropped`, `duplicate`, `shrink-tried`,
+`shrink-steps`. Suite counts are `total`, `completed`, `passed`,
 `failed`, `crashed`, `invalid`. A suite never synthesizes property counters.
 
 A property's `distribution` counts labels and table rows over accepted samples,

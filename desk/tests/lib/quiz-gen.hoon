@@ -222,6 +222,22 @@
     (expect !>((lte a -.sample)))
   ==
 ::
+++  test-size-combinators
+  ::  upto draws from [0, size], so its largest draw shows the size used.
+  ^-  tang
+  =/  top  |=(v=(list *) (roll ;;((list @ud) v) max))
+  =/  fixed  (resize:gen 3 upto:gen)
+  =/  tenth  (scale:gen (curr div 10) upto:gen)
+  =/  held  (capped:gen 5 upto:gen)
+  =/  exact  (sized:gen |=(n=@ud (range:gen n n)))
+  ;:  weld
+    (expect-eq !>(`@ud`3) !>((top (draws 200 1.000 0v1 fixed))))
+    (expect-eq !>(`@ud`10) !>((top (draws 300 100 0v1 tenth))))
+    (expect-eq !>(`@ud`5) !>((top (draws 200 1.000 0v1 held))))
+    (expect-eq !>(`@ud`2) !>((top (draws 200 2 0v1 held))))
+    (expect-eq !>(`(list @ud)`~[7 7 7]) !>((draws 3 7 0v1 exact)))
+  ==
+::
 ++  test-determinism
   ^-  tang
   =/  lists  (list-of:gen 0 20 small)

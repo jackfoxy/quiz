@@ -361,7 +361,7 @@
       (decimal u.replay-of.request.value)
       :-  'counts'
       ?-  -.counts.value
-        %property  (property-counts +<.counts.value)
+        %property  (property-counts +<.counts.value size.counts.value)
         %suite     (suite-counts +<.counts.value)
       ==
       :-  'distribution'
@@ -391,6 +391,9 @@
         (natural (field fields 'attempts-max'))
         (natural (field fields 'drops-max'))
         (natural (field fields 'duplicates-max'))
+        (natural (field fields 'size-start'))
+        (natural (field fields 'size-max'))
+        (policy-in (field fields 'duplicates'))
         :*  (natural (field bounds 'source-bytes'))
             (natural (field bounds 'requested-max'))
             (natural (field bounds 'shrink-candidates'))
@@ -399,12 +402,23 @@
             (natural (field bounds 'rendered-bytes'))
             (natural (field bounds 'diagnostics-bytes'))
             (natural (field bounds 'alts-bytes'))
+            (natural (field bounds 'seen-bytes'))
             (natural (field bounds 'retained-runs'))
             (natural (field bounds 'samples-per-slice'))
         ==
     ==
   ?>  (valid-config:build cfg)
   cfg
+::
+++  policy-in
+  |=  value=json
+  ^-  policy:engine
+  =/  tag  (text value)
+  ?+  tag  ~|(%bad-duplicates !!)
+    %mug    %mug
+    %exact  %exact
+    %allow  %allow
+  ==
 ::
 ++  config-out
   |=  value=conf:engine
@@ -414,6 +428,9 @@
       ['attempts-max' (numb:enjs:format attempts-max.value)]
       ['drops-max' (numb:enjs:format drops-max.value)]
       ['duplicates-max' (numb:enjs:format duplicates-max.value)]
+      ['size-start' (numb:enjs:format size-start.value)]
+      ['size-max' (numb:enjs:format size-max.value)]
+      ['duplicates' s+duplicates.value]
       ['bounds' (bounds-out bounds.value)]
   ==
 ::
@@ -429,6 +446,7 @@
       ['rendered-bytes' (numb:enjs:format rendered-bytes.value)]
       ['diagnostics-bytes' (numb:enjs:format diagnostics-bytes.value)]
       ['alts-bytes' (numb:enjs:format alts-bytes.value)]
+      ['seen-bytes' (numb:enjs:format seen-bytes.value)]
       ['retained-runs' (numb:enjs:format retained-runs.value)]
       ['samples-per-slice' (numb:enjs:format samples-per-slice.value)]
   ==
@@ -443,10 +461,12 @@
   ==
 ::
 ++  property-counts
-  |=  value=counters:engine
+  ::  `size` is the size the next generated sample will use.
+  |=  [value=counters:engine size=@ud]
   ^-  json
   %-  pairs:enjs:format
-  :~  ['attempted' (numb:enjs:format attempted.value)]
+  :~  ['size' (numb:enjs:format size)]
+      ['attempted' (numb:enjs:format attempted.value)]
       ['accepted' (numb:enjs:format accepted.value)]
       ['dropped' (numb:enjs:format dropped.value)]
       ['duplicate' (numb:enjs:format duplicate.value)]

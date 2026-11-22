@@ -11,6 +11,8 @@
 /*  parse  %hoon  /examples/props/18-parse-print/hoon
 /*  queue-gen  %hoon  /examples/failing/19-queue-gen-lib/hoon
 /*  dependent  %hoon  /examples/failing/20-dependent/hoon
+/*  allow  %hoon  /examples/props/21-small-domain-allow/hoon
+/*  capped  %hoon  /examples/props/22-size-capped/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -178,5 +180,31 @@
     (expect-eq !>([~[19] 1]) !>([-.start +>.start]))
     (expect-eq !>([~[0] 0]) !>([-.end +>.end]))
     (expect-eq !>(+<.start) !>(+<.end))
+  ==
+::
+++  test-small-domain-allow
+  ::  Repeats are evaluated, so four samples cover 100 checks.
+  ^-  tang
+  =/  path=path  /examples/props/'21-small-domain-allow'/hoon
+  =/  done  (run path allow ~[!>(engine) !>(prop)])
+  =/  want
+    %-  malt
+    ^-  (list [@t @ud])
+    ~[['both' 28] ['a only' 21] ['b only' 28] ['neither' 23]]
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[100 100 0 0 0 0]) !>(counts.done))
+    (expect-eq !>(want) !>(labels.seen-tags.done))
+  ==
+::
+++  test-size-capped
+  ::  Size grows to the cap and stays there.
+  ^-  tang
+  =/  path=path  /examples/props/'22-size-capped'/hoon
+  =/  done  (run path capped ~[!>(engine) !>(gen)])
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[100 100 0 0 0 0]) !>(counts.done))
+    (expect-eq !>(`@ud`30) !>(size.done))
   ==
 --

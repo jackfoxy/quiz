@@ -133,9 +133,11 @@ and a full queue; these pokes are nacked and allocate no ID. Build/type/context
 failures after admission are recorded as `%invalid` runs.
 
 `on-save` emits `[%0 state-0]`: IDs, tokens, requests, source/replay snapshots,
-settings, timestamps, progress (with the label distribution), and durable
+settings, timestamps, progress (with the label distribution and current
+size), and durable
 outcomes (with rendered per-label examples). It excludes pending Clay
-replies, compiled gates, suite cores, RNGs, and timer state. Counterexamples
+replies, compiled gates, suite cores, RNGs, the samples `%exact` keeps for
+duplicate comparison, and timer state. Counterexamples
 contain only their noun values and bounded rendered text, without vase types.
 `on-load` preserves completed records and marks every unfinished queued,
 building, running, shrinking, or cancelling record `%cancelled` with reason

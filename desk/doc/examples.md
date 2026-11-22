@@ -9,9 +9,10 @@ Clay paths linked below, not the workbench's virtual root names.
 Every property fixes seed `0v123` in its `conf`. Leave the panel overrides blank
 to reproduce its configuration. The ordinary target is 20 accepted checks;
 the duplicate example requests two and intentionally reaches its small budget,
-and the queue models and coverage examples request 100.
+and the queue models, coverage, generator-library and size examples request
+100.
 The results below were checked through the browser/Gall application on
-`%zuse 408`, engine `%quiz-engine-3`. They describe these exact sources and
+`%zuse 408`, engine `%quiz-engine-4`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
 
 | Document | Expected outcome | What it demonstrates |
@@ -20,7 +21,7 @@ settings, not universal outcomes of similar-looking properties.
 | [02-boolean](../examples/failing/02-boolean.hoon) | Failed, false | Dividing by two and doubling loses an odd remainder |
 | [03-crash](../examples/failing/03-crash.hoon) | Failed, crash at zero | Decrement is partial on unsigned atoms |
 | [04-discards](../examples/props/04-discards.hoon) | Passed, 20 accepted with a discard | Reject zero before applying the partial identity |
-| [05-duplicates](../examples/failing/05-duplicates.hoon) | Exhausted, duplicates | Constant seven yields 1 accepted + 3 duplicate = 4 attempted |
+| [05-duplicates](../examples/failing/05-duplicates.hoon) | Exhausted, duplicates | Constant seven yields 1 accepted + 3 duplicate = 4 attempted; passes with **Repeated samples** set to evaluate every sample |
 | [06-composed](../examples/props/06-composed.hoon) | Passed, 20 accepted | List/atom/cell norns; mapping an offset changes sum by length × offset |
 | [07-positive](../examples/props/07-positive.hoon) | Passed, 20 accepted, no drops | Generate positive values directly |
 | [08-seeded-threshold](../examples/failing/08-seeded-threshold.hoon) | Failed, false; 541 → 501 | Fixed-seed replay and default shrinking around 500 |
@@ -36,6 +37,8 @@ settings, not universal outcomes of similar-looking properties.
 | [18-parse-print](../examples/props/18-parse-print.hoon) | Passed, 100 accepted | Aura generators (`upto`, `ship`, `knot`) in `scot`/`slav` round trips |
 | [19-queue-gen-lib](../examples/failing/19-queue-gen-lib.hoon) | Failed, false; 4 commands → 3 | Example 11 rebuilt from `list-of`, `cook`, `shrink-keep` and `shrink-list` |
 | [20-dependent](../examples/failing/20-dependent.hoon) | Failed, false; one-element list | `seeded`, `regen` and `shrink-seeded`: dependent shrinking |
+| [21-small-domain-allow](../examples/props/21-small-domain-allow.hoon) | Passed, 100 accepted from four samples | `duplicates %allow` evaluates repeats of a small domain |
+| [22-size-capped](../examples/props/22-size-capped.hoon) | Passed, 100 accepted; size held at 30 | `size-max` keeps size-driven lists short; `sized` and `vector` |
 
 The composed example's list is generated as `(list @ud)` but enters its fate
 through a noun boundary and is checked there. Recursive vase types can include
@@ -135,11 +138,24 @@ the fate. The false claim is that the chosen element is never the last. The
 list shrinks from `~[19]` to `~[0]` and the size to 0; each candidate's index
 is rebuilt for its own list, so no candidate indexes past the end.
 
+`21-small-domain-allow` checks De Morgan's law for a `[? ?]` sample. Under
+the default `%mug` policy the run could accept at most four checks before
+duplicates exhausted it. Its `conf` sets `duplicates %allow`, so every
+repeat is evaluated: 100 checks pass with no duplicates, labelled both 28,
+a only 21, b only 28, neither 23.
+
+`22-size-capped` compares an insertion sort with `sort`. Its norn,
+`(sized:gen |=(n=@ud (vector:gen n upto:gen)))`, makes a list as long as the
+size. Its `conf` sets `size-max 30`, so the size climbs 1, 2, 3, … and then
+stays at 30; uncapped it would pass 60,000 by the hundredth sample. Its fate
+takes a `*` sample and molds it, because a `(list @ud)` sample type would
+exceed the sample-byte limit.
+
 ## Recorded property counters
 
 Seed `0v123`, no UI overrides. Columns use the definitions in the reference.
 [`tests/lib/quiz-examples.hoon`](../tests/lib/quiz-examples.hoon) pins the
-queue, report, coverage and generator-library rows in `-test`.
+queue, report, coverage, generator-library and size rows in `-test`.
 
 | Document | Attempted | Accepted | Dropped | Duplicate | Shrink tried | Shrink steps | Original → shrunk |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -163,6 +179,8 @@ queue, report, coverage and generator-library rows in `-test`.
 | 18-parse-print | 100 | 100 | 0 | 0 | 0 | 0 | — |
 | 19-queue-gen-lib | 4 | 3 | 0 | 0 | 46 | 7 | 4 commands → `[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]` |
 | 20-dependent | 1 | 0 | 0 | 0 | 5 | 2 | `[~[19] seed 1]` → `[~[0] seed 0]` |
+| 21-small-domain-allow | 100 | 100 | 0 | 0 | 0 | 0 | — |
+| 22-size-capped | 100 | 100 | 0 | 0 | 0 | 0 | — |
 
 ## Existing suites
 

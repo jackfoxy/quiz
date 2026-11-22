@@ -331,6 +331,35 @@
   |*  [make=$-(* $-([@ud _og] *)) outer=* seed=@uv size=@ud]
   ((make outer) size ~(. og seed))
 ::
+::  +|  Size
+::
+::  The engine's size grows with each sample; see the reference. These
+::  arms read or replace it for one generator.
+::
+++  sized
+  ::  A generator chosen from the current size.
+  |*  make=$-(@ud $-([@ud _og] *))
+  |=  [size=@ud rng=_og]
+  ((make size) size rng)
+::
+++  resize
+  ::  Run a generator at a fixed size, whatever the run's size.
+  |*  [fixed=@ud item=$-([@ud _og] *)]
+  |=  [size=@ud rng=_og]
+  (item fixed rng)
+::
+++  scale
+  ::  Run a generator at a size computed from the run's size.
+  |*  [fun=$-(@ud @ud) item=$-([@ud _og] *)]
+  |=  [size=@ud rng=_og]
+  (item (fun size) rng)
+::
+++  capped
+  ::  Run a generator at the run's size, but never above `top`.
+  |*  [top=@ud item=$-([@ud _og] *)]
+  |=  [size=@ud rng=_og]
+  (item (min top size) rng)
+::
 ::  +|  Shrinkers
 ::
 ++  shrink-atom

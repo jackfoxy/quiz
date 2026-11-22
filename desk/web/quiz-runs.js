@@ -5,6 +5,7 @@
   const deskPattern = /^[a-z][a-z0-9-]*$/;
   const seedPattern = /^0v[0-9a-v]+(?:\.[0-9a-v]+)*$/;
   const modes = ['draft', 'file', 'suite'];
+  const policies = ['mug', 'exact', 'allow'];
   const cleanFields = (saved = {}) => {
     const value = saved.runSettings || {};
     const bounded = (key, pattern, max) => typeof value[key] === 'string'
@@ -15,6 +16,9 @@
         desk: bounded('desk', deskPattern, 64),
         revision: bounded('revision', idPattern, 40),
         requested: bounded('requested', /^(0|[1-9][0-9]*)$/, 10),
+        sizeStart: bounded('sizeStart', /^[1-9][0-9]*$/, 10),
+        sizeMax: bounded('sizeMax', /^(0|[1-9][0-9]*)$/, 10),
+        duplicates: policies.includes(value.duplicates) ? value.duplicates : '',
         seed: bounded('seed', seedPattern, 256),
         arms: typeof value.arms === 'string' && value.arms.length <= 6400
           && /^[a-z0-9,\s-]*$/.test(value.arms) ? value.arms : ''
@@ -59,6 +63,13 @@
     addField('revision', 'Pinned revision').inputMode = 'numeric';
     addField('requested', 'Requested checks (blank = document conf)').inputMode = 'numeric';
     addField('seed', 'Seed (blank = document conf / new seed)').placeholder = '0v123';
+    addField('sizeStart', 'First sample size (blank = document conf)').inputMode = 'numeric';
+    addField('sizeMax', 'Largest sample size (blank = document conf; 0 = no cap)').inputMode = 'numeric';
+    const dups = addField('duplicates', 'Repeated samples', 'select');
+    for (const [value, label] of [['', 'Document conf'], ['mug', 'Skip a repeated mug'],
+      ['exact', 'Skip only an equal sample'], ['allow', 'Evaluate every sample']]) {
+      const option = node('option', '', label); option.value = value; dups.append(option);
+    }
     addField('arms', 'Suite arms (comma separated; blank = all)');
     const contextButton = button('run-latest', 'Use latest revision', latest);
     const inspectButton = button('run-inspect', 'Read document conf', inspect);
@@ -98,6 +109,8 @@
     function clearInspection() {
       ++inspecting; settingsNote.textContent = '';
       fields.requested.placeholder = 'Document conf';
+      fields.sizeStart.placeholder = 'Document conf';
+      fields.sizeMax.placeholder = 'Document conf';
       fields.seed.placeholder = 'Document conf / new seed';
     }
     function pathFor(tab) {
@@ -149,7 +162,7 @@
     function updateButtons() {
       const tab = active(); const value = tab ? settings(tab) : {};
       const suite = value.mode === 'suite';
-      fields.requested.disabled = suite; fields.seed.disabled = suite;
+      for (const key of ['requested', 'seed', 'sizeStart', 'sizeMax', 'duplicates']) fields[key].disabled = suite;
       fields.arms.disabled = !suite;
       inspectButton.disabled = busy || suite || !online;
       discoverButton.disabled = busy || !suite || !pathFor(tab) || !online;
@@ -210,9 +223,12 @@
         const request = requestFor(tab);
         const result = await post('/apps/quiz/api', {...request, op: 'document-conf'});
         if (generation !== inspecting || active()?.id !== tab.id) return;
-        fields.requested.placeholder = String(result.config.requested);
+        const conf = result.config;
+        fields.requested.placeholder = String(conf.requested);
         fields.seed.placeholder = result.seed || 'New recorded seed';
-        settingsNote.textContent = `Document conf: ${result.config.requested} checks; seed ${result.seed || 'chosen for each run'}. Other budgets are preserved when overriding requested checks.`;
+        fields.sizeStart.placeholder = String(conf['size-start']);
+        fields.sizeMax.placeholder = String(conf['size-max']);
+        settingsNote.textContent = `Document conf: ${conf.requested} checks; sizes from ${conf['size-start']}${conf['size-max'] ? ` up to ${conf['size-max']}` : ', uncapped'}; repeats ${conf.duplicates}; seed ${result.seed || 'chosen for each run'}. Other budgets are preserved when overriding these fields.`;
       } catch (error) { if (generation === inspecting) tell(errorText(error)); }
     }
     async function discover() {
@@ -256,18 +272,31 @@
     async function run() {
       const tab = active(); if (!tab) return;
       // Capture source and controls before the first await, even if tabs change.
-      let req, requested;
-      try { req = requestFor(tab); requested = settings(tab).requested; }
+      let req, value;
+      try { req = requestFor(tab); value = {...settings(tab)}; }
       catch (error) { tell(error.message); return; }
       await action(async () => {
-        if (req.source.kind !== 'suite' && requested !== '') {
+        const {requested, sizeStart, sizeMax, duplicates} = value;
+        if (req.source.kind !== 'suite' && [requested, sizeStart, sizeMax, duplicates].some((item) => item)) {
+          const whole = (text) => /^(0|[1-9][0-9]*)$/.test(text) && Number.isSafeInteger(Number(text));
           const maximum = getDefaults()?.bounds?.['requested-max'];
-          if (!/^(0|[1-9][0-9]*)$/.test(requested) || !Number.isSafeInteger(Number(requested))
-            || maximum === undefined || Number(requested) > maximum) {
+          if (requested !== '' && (!whole(requested) || maximum === undefined || Number(requested) > maximum)) {
             throw new Error(`Requested checks must be between 0 and ${maximum ?? 'the engine ceiling'}.`);
           }
-          const conf = await post('/apps/quiz/api', {...req, op: 'document-conf'});
-          req.config = {...conf.config, requested: Number(requested)};
+          if (sizeStart !== '' && (!whole(sizeStart) || Number(sizeStart) < 1)) {
+            throw new Error('The first sample size must be a whole number of at least 1.');
+          }
+          if (sizeMax !== '' && !whole(sizeMax)) throw new Error('The largest sample size must be a whole number; 0 means no cap.');
+          const conf = (await post('/apps/quiz/api', {...req, op: 'document-conf'})).config;
+          const next = {...conf};
+          if (requested !== '') next.requested = Number(requested);
+          if (sizeStart !== '') next['size-start'] = Number(sizeStart);
+          if (sizeMax !== '') next['size-max'] = Number(sizeMax);
+          if (duplicates) next.duplicates = duplicates;
+          if (next['size-max'] && next['size-max'] < next['size-start']) {
+            throw new Error(`The largest sample size (${next['size-max']}) is below the first (${next['size-start']}).`);
+          }
+          req.config = next;
         }
         await mutate(req, tab.id);
       });

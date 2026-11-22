@@ -47,11 +47,16 @@ Choose a source workflow in each tab's run controls:
   **Discover suite arms** lists available arms. Leave arms blank for all, or
   enter exact names separated by commas or whitespace.
 
-Blank requested checks and seed follow the document's `conf`; absent settings
-use engine defaults and a newly recorded seed. **Read document conf** previews
-those settings. Overriding requested checks preserves every other document
-budget. A seed uses Hoon `@uv` notation, for example `0v123`. Suite execution
-has no controlled seed or property sample counters; those controls are disabled.
+Blank requested checks, seed, first and largest sample size, and **Repeated
+samples** follow the document's `conf`; absent settings use engine defaults and
+a newly recorded seed. **Read document conf** previews those settings.
+Overriding any of these fields preserves every other document budget. A seed
+uses Hoon `@uv` notation, for example `0v123`. A largest size of 0 removes the
+cap. **Repeated samples** chooses the
+[duplicates policy](reference.md#default-generation-size-and-duplicates):
+skip a repeated mug, skip only an equal sample, or evaluate every sample.
+Suite execution has no controlled seed or property sample counters; those
+controls are disabled.
 
 Results show only confirmed server status, effective configuration and seed,
 counters, diagnostics, and original/shrunk counterexamples. Select a history

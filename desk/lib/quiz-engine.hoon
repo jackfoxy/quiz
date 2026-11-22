@@ -17,15 +17,24 @@
       rendered-bytes=@ud
       diagnostics-bytes=@ud
       alts-bytes=@ud
+      seen-bytes=@ud
       retained-runs=@ud
       samples-per-slice=@ud
   ==
+::
++$  policy
+  ::  How repeated samples are treated. %mug skips a repeated mug, %exact
+  ::  skips only an equal noun, %allow evaluates every sample.
+  ?(%mug %exact %allow)
 ::
 +$  conf
   $:  requested=@ud
       attempts-max=@ud
       drops-max=@ud
       duplicates-max=@ud
+      size-start=@ud
+      size-max=@ud
+      duplicates=policy
       bounds=limits
   ==
 ::
@@ -88,6 +97,7 @@
 +$  limit-name
   $?  %requested  %shrink-candidates  %shrink-depth  %sample-bytes
       %rendered-bytes  %diagnostics-bytes  %alts-bytes  %labels
+      %seen-bytes
   ==
 ::
 +$  shrinking
@@ -118,7 +128,8 @@
       sample=vase
       size=@ud
       rng=_og
-      seen=(set @)
+      seen=(jar @ *)
+      seen-used=@ud
       counts=counters
       shrink=(unit shrinking)
       result=(unit outcome)
@@ -130,12 +141,14 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-3
+  %quiz-engine-4
 ::
 ++  defaults
   ^-  conf
-  :*  100  10.000  1.000  1.000
-      [262.144 10.000 1.000 100 65.536 16.384 16.384 262.144 100 25]
+  :*  100  10.000  1.000  1.000  1  0  %mug
+      :*  262.144  10.000  1.000  100  65.536  16.384  16.384  262.144
+          4.194.304  100  25
+      ==
   ==
 ::
 ++  call-time
@@ -154,11 +167,14 @@
   ::  Compiled parts must already be type-checked by the source builder.
   ::  Zero requested passes immediately; zero budgets stop before generation.
   ::  Use defaults with field overrides for the app configuration.
+  ::  Size starts at size-start, at least 1, held at size-max when set.
   |=  [seed=@uv config=conf compiled=parts]
   ^-  state
+  =/  start  (max 1 size-start.config)
+  =/  size  ?:(=(0 size-max.config) start (min size-max.config start))
   %-  finish
-  :*  seed  config  compiled  (slot 6 fate.compiled)
-      1  ~(. og seed)  *(set @)  *counters  ~  ~  call-time  [~ ~]  ~
+  :*  seed  config  compiled  (slot 6 fate.compiled)  size  ~(. og seed)
+      ~  0  *counters  ~  ~  call-time  [~ ~]  ~
   ==
 ::
 ++  classify
@@ -214,7 +230,10 @@
   =/  budget=(unit ?(%attempts %drops %duplicates))
     ?:  (gte attempted.counts.s attempts-max.config.s)  `%attempts
     ?:  (gte dropped.counts.s drops-max.config.s)  `%drops
-    ?:  (gte duplicate.counts.s duplicates-max.config.s)  `%duplicates
+    ?:  ?&  !?=(%allow duplicates.config.s)
+            (gte duplicate.counts.s duplicates-max.config.s)
+        ==
+      `%duplicates
     ~
   ?~  budget  s
   ::  Duplicates do not prevent all evaluated samples from being drops.
@@ -224,7 +243,9 @@
 ++  step
   ::  Attempted counts generated samples, including duplicates and failures.
   ::  Generation errors count no sample. Only %.y increments accepted.
-  ::  Drops and duplicate mugs consume their own budgets, never requested.
+  ::  Drops and duplicates consume their own budgets, never requested.
+  ::  Which samples count as duplicates follows the conf's policy; under
+  ::  %allow none do, and the duplicates budget is ignored.
   ::  The failure sample is included in attempted. Terminal states are stable.
   ::  A shrinking step calls alts once OR considers one candidate.
   |=  s=state
@@ -244,7 +265,7 @@
   ::  molding its shared type tree again can expand recursive sample types.
   =/  sam  !<(vase [p:!>(*vase) p.made])
   =.  s
-    s(rng next-rng, size (add +(size.s) (div (mul size.s 2) 21)))
+    s(rng next-rng, size (grow size.s size-max.config.s))
   =.  attempted.counts.s  +(attempted.counts.s)
   =/  capped  (sample-limit time sam bounds.config.s)
   ?:  ?=(%.n -.capped)
@@ -253,9 +274,25 @@
   =/  limit  p.capped
   ?^  limit  s(result `[%limited u.limit ~])
   =/  hash  (mug q.sam)
-  ?:  (~(has in seen.s) hash)
+  =/  repeat=?
+    ?-  duplicates.config.s
+      %allow  |
+      %mug    (~(has by seen.s) hash)
+      %exact  (lien (~(get ja seen.s) hash) |=(n=* =(n q.sam)))
+    ==
+  ?:  repeat
     (finish s(duplicate.counts +(duplicate.counts.s)))
-  =.  seen.s  (~(put in seen.s) hash)
+  =.  s
+    ?-  duplicates.config.s
+      %allow  s
+      %mug    s(seen (~(put by seen.s) hash ~))
+      %exact  %=  s
+                seen       (~(add ja seen.s) hash q.sam)
+                seen-used  (add seen-used.s (met 3 (jam q.sam)))
+              ==
+    ==
+  ?:  (gth seen-used.s seen-bytes.bounds.config.s)
+    s(result `[%limited %seen-bytes ~])
   =/  [found=verdict =tags]  (judge (sandbox time q.fate.compiled.s q.sam))
   ?-  found
     %pass  (finish (tally s(accepted.counts +(accepted.counts.s)) sam tags))
@@ -264,6 +301,14 @@
              s(result `[%limited %diagnostics-bytes ~])
            s(shrink `[[found sam sam] (~(put in *(set @)) hash) ~])
   ==
+::
+++  grow
+  ::  The next sample's size: about 1.1 times larger, plus one, held at
+  ::  the cap when the cap is nonzero.
+  |=  [size=@ud cap=@ud]
+  ^-  @ud
+  =/  next  (add +(size) (div (mul size 2) 21))
+  ?:(=(0 cap) next (min cap next))
 ::
 ++  tally
   ::  Count a passing sample's labels, once each, and its table rows; keep
@@ -433,6 +478,8 @@
   =/  limit  p.capped
   ?^  limit
     s(shrink ~, result `[%limited u.limit `evidence])
+  ::  The visited set is a mug-only loop guard whatever the policy; weight
+  ::  decrease alone guarantees termination.
   =/  hash  (mug q.sam)
   ?:  (~(has in visited.work) hash)  s(shrink `work)
   =.  visited.work  (~(put in visited.work) hash)

@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('node:assert/strict');
 const config = {requested: 3, 'attempts-max': 17, 'drops-max': 9,
-  'duplicates-max': 8, bounds: {'requested-max': 10000, 'samples-per-slice': 2}};
+  'duplicates-max': 8, 'size-start': 1, 'size-max': 0, duplicates: 'mug', bounds: {'requested-max': 10000, 'samples-per-slice': 2}};
 function mockApi() {
   const records = new Map();
   let next = 9007199254740993n;
@@ -72,11 +72,15 @@ async function scenario(env, mock, name) {
   mock.releaseConf(); await inspection;
   assert.equal(el('run-settings-note').textContent, '', 'discard obsolete inspection');
   field('requested', '5'); field('seed', '0v123');
+  field('sizeMax', '8'); field('duplicates', 'allow');
   await runs.run();
   const id = tab.runIds[0];
   assert.equal(id, '9007199254740993');
   assert.equal(mock.records.get(id).config.requested, 5);
   assert.equal(mock.records.get(id).config['attempts-max'], 17, 'preserve document budgets');
+  assert.equal(mock.records.get(id).config['size-start'], 1, 'preserve document size start');
+  assert.equal(mock.records.get(id).config['size-max'], 8);
+  assert.equal(mock.records.get(id).config.duplicates, 'allow');
   assert.match(el('run-result-status').textContent, new RegExp(id));
   assert.equal(el('run-cancel').disabled, false);
   if (name === 'run-errors') {
@@ -146,10 +150,13 @@ async function scenario(env, mock, name) {
   runtime.session.save();
   const saved = JSON.parse(env.saved.get('quiz.session'));
   assert(saved.propertyTabs.some(t=>t.runIds?.includes(id)));
-  const cleaned = env.window.quizRunFields({runSettings:{desk:'../bad',revision:'0',seed:'<script>',requested:'NaN',arms:'<script>'},runIds:['1',1,'../2','1']});
+  const cleaned = env.window.quizRunFields({runSettings:{desk:'../bad',revision:'0',seed:'<script>',requested:'NaN',sizeStart:'0',sizeMax:'-1',duplicates:'never',arms:'<script>'},runIds:['1',1,'../2','1']});
   assert.deepEqual(cleaned.runIds,['1']);
   assert.equal(cleaned.runSettings.desk,'');
   assert.equal(cleaned.runSettings.requested,'');
+  assert.equal(cleaned.runSettings.sizeStart,'');
+  assert.equal(cleaned.runSettings.sizeMax,'');
+  assert.equal(cleaned.runSettings.duplicates,'');
   runs.stop();
 }
 module.exports={mockApi,scenario};

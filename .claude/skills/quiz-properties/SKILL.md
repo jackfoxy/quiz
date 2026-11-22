@@ -69,7 +69,9 @@ The builder type-checks every arm before anything runs. A mistake is an
 - `alts`: `$-(vase (list vase))`. Returns candidate smaller inputs.
 - `conf`: `[seed=(unit @uv) config=conf:engine]`. Always edit a copy of
   `defaults:engine`. A partial record does not type-check, and a field above
-  its ceiling is `%conf-range`.
+  its ceiling is `%conf-range`. Besides the budgets it sets `size-start`
+  (default 1), `size-max` (0 = uncapped) and `duplicates` (`%mug`,
+  `%exact` or `%allow`), as in `cfg(size-max 30, duplicates %allow)`.
 
 The prelude allows only `/-`, `/+`, `/=`, `/*`, in that order, all from the
 selected desk at the pinned revision. Full rules:
@@ -146,7 +148,10 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
 - Generators in one list (`elements`, `one-of`, `frequency`) must share one
   type: cast each to `(norn:gen a)` first.
 - `set-of`, `map-of` and `sorted` take element molds: `(set-of:gen @ud 5 g)`.
-- Text is capped at 32 characters; engine size grows past 50,000.
+- Text is capped at 32 characters; engine size grows past 50,000 unless
+  the conf sets `size-max`. `capped`, `resize`, `scale` and `sized` control
+  size for one generator
+  ([22-size-capped](../../../desk/examples/props/22-size-capped.hoon)).
 - Spell sample types out (`ship=@p`, not `=ship`): a zuse mold carries its
   subject into the sample vase and hits `%sample-bytes`.
 - Dependent inputs: `seeded`, then `regen` in the fate, with
@@ -163,9 +168,13 @@ Things that go wrong:
   `rads:rng`, or use `split-rng:quiz`, for each independent choice.
 - **`atom` ignores the aura.** A random `@da` or `@rs` atom is usually not a
   meaningful date or float. Build those values yourself.
-- **`const`, or a small domain, exhausts duplicates.** Samples are
-  deduplicated by `mug`, so a 4-value domain cannot give 20 accepted checks.
-  It ends `%exhausted %duplicates`. Lower `requested`, or widen the domain.
+- **`const`, or a small domain, exhausts duplicates.** By default samples
+  are deduplicated by `mug`, so a 4-value domain cannot give 20 accepted
+  checks. It ends `%exhausted %duplicates`. Set `duplicates %allow` in the
+  conf to evaluate repeats as QuickCheck does
+  ([21-small-domain-allow](../../../desk/examples/props/21-small-domain-allow.hoon)),
+  or lower `requested`, or widen the domain. `%exact` skips only equal
+  nouns, so a mug collision no longer hides a distinct sample.
 - **Recursive sample types can hit `%sample-bytes`.** The cap counts the
   vase's type as well as its value. For lists, declare the fate sample as `*`
   and validate it with `;;((list @ud) items)`, as
@@ -240,7 +249,7 @@ each other may stop high, as in
 | `failed` | Read `why` (`%false` with notes and expected/actual if the fate gave them, `%crash` with trace, `%scry`, `%bad-product`), then the original and shrunk samples. The detail describes the shrunk sample. |
 | `failed-as-expected` / `passed-unexpectedly` | The document has `++expect %fail`. The first is the intended result. |
 | `exhausted` | A budget ran out first (`attempts`, `drops` or `duplicates`). `all-dropped` means no input was ever accepted. **Not a pass.** |
-| `limited` | A named bound was hit. Simplify the data or alts, or lower the work. |
+| `limited` | A named bound was hit. Simplify the data or alts, or lower the work. `%seen-bytes` means `%exact` kept too many sample bytes; cap the size or use `%mug`/`%allow`. |
 | `error` | The norn, default generation or alts crashed. The stage says which. |
 | `invalid` | Source, import, arm type, context or conf problem. Use the code and line. |
 | `cancelled` | Cancelled by request, or by an agent reload. |

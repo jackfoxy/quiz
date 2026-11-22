@@ -1,6 +1,8 @@
 /+  engine=quiz-engine, quiz
 |%
-  ::  A constant generator cannot supply two distinct accepted samples.
+  ::  A constant generator cannot supply two distinct accepted samples
+  ::  under the default duplicates policy %mug. With `duplicates %allow`
+  ::  each repeat is evaluated and the run passes.
   ::
 ::
 ++  fate

@@ -85,7 +85,7 @@
         %queued
         ?:  ?=(%suite -.source.req)
           [%suite *counters:suite %unavailable]
-        [%property *counters:engine *distribution:engine]
+        [%property *counters:engine *distribution:engine 0]
         ~  now  now  ~
     ==
   :-  %.y
@@ -271,7 +271,7 @@
         $(running next, left (dec left))
       =.  rec
         %=  rec
-          counts  [%property counts.running seen-tags.running]
+          counts  [%property counts.running seen-tags.running size.running]
           updated  now
           status  ?:(=(~ shrink.running) %running %shrinking)
         ==

@@ -151,20 +151,40 @@ set. Holds are resolved through type operations. Other type forms warn and
 return the supplied vase unchanged. This is heuristic generation, not a
 promise that arbitrary gates, cores or semantic domains can be randomized.
 
-Both runners start size at 1 and grow it after each generated sample:
+Both runners grow size after each generated sample:
 
 `next-size = size + 1 + floor(2 * size / 21)`
 
-Duplicate samples also grow size and advance the engine RNG. There is no
-separate size ceiling; attempt and post-generation byte limits constrain the
-app run. They cannot prevent a single large allocation or looping generator.
+The legacy runner starts at 1 with no ceiling. The app starts at the conf's
+`size-start` (default 1) and, when `size-max` is nonzero, holds size at
+`size-max` from then on: `size = min(size-max, next-size)`. Under the
+defaults size passes 50,000 by the 100th sample, so a cap mainly keeps
+generated values small. Capped runs also reach a small domain's repeats
+sooner, which the duplicates policy below decides what to do with.
 
-Both runners identify samples by `mug` of the sample **noun**, ignoring the
-vase's type. A repeated mug is skipped without calling the fate. Distinct nouns
-can collide, so deduplication is approximate. Duplicate counts are cumulative
-for the run, not consecutive streaks; they do not reset after an accepted
-sample. A small finite generator cannot satisfy a request larger than its
-available distinct mugs.
+Duplicate samples also grow size and advance the engine RNG. Attempt and
+post-generation byte limits constrain the app run. They cannot prevent a
+single large allocation or looping generator.
+
+**Duplicates.** The legacy runner, and the app under its default policy
+`%mug`, identify samples by `mug` of the sample **noun**, ignoring the vase's
+type. A repeated mug is skipped without calling the fate. Distinct nouns can
+collide, so `%mug` deduplication is approximate. The app's `duplicates` conf
+field chooses the policy:
+
+| Policy | A sample is skipped as a duplicate when | Notes |
+| --- | --- | --- |
+| `%mug` (default) | Its mug was seen before | Today's rule; a mug collision skips a distinct noun |
+| `%exact` | An equal noun was seen before | Each evaluated noun is kept, charged at its `jam` bytes against `bounds.seen-bytes`; over it the run ends `%limited %seen-bytes` |
+| `%allow` | Never | Every sample is evaluated and may be accepted, as in QuickCheck; `duplicate` stays 0 and `duplicates-max` is ignored |
+
+Duplicate counts are cumulative for the run, not consecutive streaks; they do
+not reset after an accepted sample. Under `%mug` and `%exact` a small finite
+generator cannot satisfy a request larger than its available distinct samples;
+use `%allow`, as in
+[21-small-domain-allow](../examples/props/21-small-domain-allow.hoon).
+Shrinking always uses a mug-based visited set as a loop guard, whatever the
+policy; decreasing weight alone guarantees termination.
 
 ### Measured generator characteristics
 
@@ -175,14 +195,14 @@ beyond it.
 
 | Facet | Measured behaviour |
 | --- | --- |
-| Size by sample | 1, 10, 33, 586, 55,946 at samples 1, 10, 20, 50, 100; drops and duplicates advance it too |
+| Size by sample | 1, 10, 33, 586, 55,946 at samples 1, 10, 20, 50, 100 under the default conf; drops and duplicates advance it too; `size-max` holds it |
 | `atom` | Uniform over `[0, size)`; both ends reached; size 0 crashes |
 | `list` length | At most `xeb(size)-1`, so 0 at size 1 and 15 at sample 100; most draws are near that maximum and short lists are rare at large sizes; size 0 crashes |
 | `noun` | Depth at most `xeb(size)-1`; leaves below size |
 | `freq` and `pick` | Follow the weights; a zero weight is never chosen; an empty or all-zero list crashes |
 | `cell` and `split-rng` | Children draw independently of each other and of the parent; split paths are prefix-free |
 | `fill` on a union | Each branch is equally likely; `(unit a)` yields both `~` and values |
-| Small domains | A `?` sample yields at most two accepted checks before duplicates exhaust the run |
+| Small domains | A `?` sample yields at most two accepted checks before duplicates exhaust the run, unless the app conf sets `duplicates %allow` |
 | Default `sink` | An atom `n` gives `n/2` and `n-1`; a cell shrinks its children; a noun cell gives its two subtrees; every candidate weighs less than its parent |
 | `sink` on lists and unions | Nothing: a list's type is a fork. Write `alts` for lists, as in [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) |
 
@@ -193,7 +213,8 @@ beyond it.
 | Target | `runs`: passes plus drops | `requested`: accepted `%.y` only |
 | Zero target | Becomes 100 | Passes immediately with zero counters |
 | Drops | Consume target budget | Consume drop and attempt budgets |
-| Duplicate stop | 1,000 collisions, prints `%tired`, null `defy`; `check` returns true | `%exhausted %duplicates` |
+| Duplicate stop | 1,000 collisions, prints `%tired`, null `defy`; `check` returns true | `%exhausted %duplicates`, or never under `%allow` |
+| Size | Starts at 1, uncapped | `size-start`, optional `size-max` |
 | All evaluated inputs dropped | May report success | Never counts them as accepted; exhaustion flags `all-dropped` |
 | Fate false/crash/scry | All become failure with no structured distinction | `%false`, `%crash`, `%scry` remain distinct |
 | Unexpected fate product | Assertion failure in the legacy check loop | `%bad-product` classification; document builder normally rejects its type earlier |
@@ -217,7 +238,7 @@ Every generator is a norn, `$-([@ud _og] a)`, and is **total in size**: size 0
 behaves as size 1. An empty choice crashes with a named `~|` message, which a
 run reports as a generation `%error`. Generated text is at most `text-max`
 (32) characters, because the engine's size grows past 50,000 by the 100th
-sample.
+sample unless the conf sets `size-max`.
 
 | Generator | Produces |
 | --- | --- |
@@ -242,6 +263,10 @@ sample.
 | `(bind gen next)` | Dependent: `next` receives the first value and returns a generator |
 | `(such-that gen pred tries)` | Retries with growing size; crashes after `tries` |
 | `(seeded gen)`, `(regen make outer seed size)` | Dependent shrinking; see below |
+| `(sized make)` | `make` receives the current size and returns the generator to run |
+| `(resize n gen)` | `gen` at size `n`, whatever the run's size |
+| `(scale fun gen)` | `gen` at size `(fun size)`, as in `(scale (curr div 10) gen)` |
+| `(capped top gen)` | `gen` at `min(top, size)`; a per-generator `size-max` |
 
 Shrinkers are typed gates from a value to candidates, simplest first. Except
 for sets and maps, every candidate weighs strictly less than its input, so
@@ -304,7 +329,8 @@ faces/hints while recursing. Singleton atoms do not shrink. Unhandled types,
 including fork/hold wrappers at this stage, produce no candidates. List
 shrinking is therefore not a general list-minimization algorithm.
 
-The app accepts a candidate only when its mug is new, its noun weight strictly
+The app accepts a candidate only when its mug is new (whatever the duplicates
+policy), its noun weight strictly
 decreases, and it reproduces the original failure **category**. Atom weight is
 `value + 1`; cell weight is `1 + weight(head) + weight(tail)`. Equal-weight
 permutations and growing candidates are skipped. Crash traces need not match:
@@ -327,18 +353,29 @@ only sequences that satisfy the pop precondition.
 
 ### Configuration and limits
 
-`conf:quiz-engine` is
-`[requested=@ud attempts-max=@ud drops-max=@ud duplicates-max=@ud bounds=limits]`.
+`conf:quiz-engine` is:
+
+```hoon
+$:  requested=@ud  attempts-max=@ud  drops-max=@ud  duplicates-max=@ud
+    size-start=@ud  size-max=@ud  duplicates=?(%mug %exact %allow)
+    bounds=limits
+==
+```
+
 The table gives engine defaults and maximum accepted configuration values.
 `requested` defaults to 100 and can increase to `requested-max` (10,000).
-All other fields can be lowered but not raised above their engine defaults.
+`size-start` and `size-max` have no ceiling. All other numeric fields can be
+lowered but not raised above their engine defaults.
 
 | Field | Default | Unit / enforcement |
 | --- | ---: | --- |
 | `requested` | 100 | Accepted checks to complete |
 | `attempts-max` | 10,000 | Generated samples, including duplicates and failures |
 | `drops-max` | 1,000 | Fate `%drop` results |
-| `duplicates-max` | 1,000 | Duplicate sample mugs |
+| `duplicates-max` | 1,000 | Duplicate samples; ignored under `%allow` |
+| `size-start` | 1 | First sample's size; at least 1 |
+| `size-max` | 0 | Largest size; 0 means uncapped, otherwise at least `size-start` |
+| `duplicates` | `%mug` | Duplicate policy: `%mug`, `%exact` or `%allow` |
 | `bounds.source-bytes` | 262,144 | Source cord bytes; builder ceiling and effective replay capture check |
 | `bounds.requested-max` | 10,000 | Ceiling for requested checks |
 | `bounds.shrink-candidates` | 1,000 | Candidates considered, even if skipped |
@@ -347,6 +384,7 @@ All other fields can be lowered but not raised above their engine defaults.
 | `bounds.rendered-bytes` | 16,384 | Rendered sample cord bytes |
 | `bounds.diagnostics-bytes` | 16,384 | Jammed engine failure/diagnostic noun bytes |
 | `bounds.alts-bytes` | 262,144 | Jammed candidate-list bytes |
+| `bounds.seen-bytes` | 4,194,304 | Jammed bytes of the samples `%exact` keeps |
 | `bounds.retained-runs` | 100 | Completed records retained after this property finishes |
 | `bounds.samples-per-slice` | 25 | Engine steps per scheduling slice, including shrink work |
 
@@ -456,7 +494,7 @@ Property progress has exactly these fields:
 | `attempted` | Generated sample vases, including duplicates, capped samples and the failing sample; a generation failure before a sample is produced adds none |
 | `accepted` | Unique evaluated samples returning `%.y` |
 | `dropped` | Unique evaluated samples returning `%drop` |
-| `duplicate` | Generated samples skipped because their mug was already seen |
+| `duplicate` | Generated samples skipped as repeats under the duplicates policy: a seen mug (`%mug`), an equal seen noun (`%exact`), or none (`%allow`) |
 | `shrink-tried` | Candidates considered, including repeated, nondecreasing or capped candidates |
 | `shrink-steps` | Candidates accepted as a smaller failure of the original category |
 
@@ -637,6 +675,8 @@ The [workbench guide](workbench.md) describes editing and dirty protection.
 | `%expect-type` | `++expect` must be `%pass` or `%fail`. |
 | `%uncovered` | Every check passed, but a required label was too rare. Inspect the distribution; change the generator, not the requirement, unless the requirement was wrong. |
 | `%limited %labels` | A label was longer than 256 bytes, or a run produced more than 100 distinct labels or table rows. `collect` on a wide domain does this; label ranges instead. |
+| `%limited %seen-bytes` | Under `duplicates %exact`, the samples kept for comparison passed `bounds.seen-bytes`. Use `%mug`, `%allow`, smaller samples (`size-max`), or fewer checks. |
+| `%exhausted %duplicates` on a small domain | The generator has fewer distinct samples than `requested`. Set `duplicates %allow` to evaluate repeats. |
 | `%exhausted` | Inspect drops/duplicates/attempts; improve generation or reduce the requested count for a finite domain. It is not a pass. |
 | `%limited` | Inspect the named bound; simplify data/alts or lower requested work. Bounds cannot exceed engine ceilings. |
 | Wrong source after Save | Saved execution still uses its selected revision; choose latest or draft execution. |
@@ -660,7 +700,7 @@ already checked parts/configuration and own scheduling and persistence.
 | --- | --- |
 | [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit cover) expect=?(%pass %fail)]`; `judge` classifies reports; terminal states are stable |
 | [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
-| [quiz-gen](../lib/quiz-gen.hoon) | Total generators, typed shrinkers and the `alts-of` adaptor; no engine state |
+| [quiz-gen](../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
 | [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `resolve` checks context before rebuilding |

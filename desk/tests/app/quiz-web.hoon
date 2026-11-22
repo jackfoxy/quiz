@@ -215,7 +215,17 @@
 ++  test-config-round-trip
   ^-  tang
   =/  got  (config-in:codec (config-out:codec defaults:engine))
-  (expect-eq !>(defaults:engine) !>(got))
+  =/  cfg  defaults:engine
+  =.  cfg  cfg(size-start 3, size-max 40, duplicates %exact)
+  =/  out  (config-out:codec cfg)
+  ?>  ?=([%o *] out)
+  =/  bad  [%o (~(put by p.out) 'duplicates' s+'never')]
+  ;:  weld
+    (expect-eq !>(defaults:engine) !>(got))
+    (expect-eq !>(cfg) !>((config-in:codec out)))
+    (expect-eq !>(s+'exact') !>((~(got by p.out) 'duplicates')))
+    (expect !>(=(~ (mole |.((config-in:codec bad))))))
+  ==
 ::
 ++  test-decimal-precision
   ^-  tang

@@ -8,7 +8,14 @@
 ++  config
   |=  [requested=@ud attempts=@ud drops=@ud duplicates=@ud]
   ^-  conf:engine
-  [requested attempts drops duplicates bounds:defaults:engine]
+  [requested attempts drops duplicates 1 0 %mug bounds:defaults:engine]
+::
+++  sizes
+  ::  The size each of the next `n` samples is generated at.
+  |=  [n=@ud s=state:engine]
+  ^-  (list @ud)
+  ?:  |(=(0 n) !=(~ result.s))  ~
+  [size.s $(n (dec n), s (step:engine s))]
 ::
 ++  start
   |=  [fate=vase norn=(unit vase)]
@@ -301,8 +308,77 @@
     (expect !>(?=([~ %passed ~] result.done)))
     (expect !>((gth duplicate.counts 0)))
     %+  expect-eq  !>((add accepted.counts dropped.counts))
-    !>(~(wyt in seen.done))
+    !>(~(wyt by seen.done))
   ==
+::
+++  test-size-progression
+  ::  The default growth: one more each sample, then about 1.1 times.
+  ^-  tang
+  =/  s  (init:engine 0v1 (config 20 40 5 5) [!>(|=(@ud &)) `sized ~ ~ %pass])
+  %+  expect-eq  !>(`(list @ud)`~[1 2 3 4 5 6 7 8 9 10 11 13 15 17])
+  !>((sizes 14 s))
+::
+++  test-size-start-and-cap
+  ::  size-start sets the first size; size-max holds every later one.
+  ^-  tang
+  =/  cfg  (config 20 40 5 5)
+  =/  =parts:engine  [!>(|=(@ud &)) `sized ~ ~ %pass]
+  =/  capped  (init:engine 0v1 cfg(size-start 5, size-max 8) parts)
+  =/  zero  (init:engine 0v1 cfg(size-start 0) parts)
+  =/  low  (init:engine 0v1 cfg(size-start 9, size-max 4) parts)
+  ;:  weld
+    %+  expect-eq  !>(`(list @ud)`~[5 6 7 8 8 8])
+    !>((sizes 6 capped(duplicates.config %allow)))
+    (expect-eq !>(`@ud`1) !>(size.zero))
+    (expect-eq !>(`@ud`4) !>(size.low))
+  ==
+::
+++  test-allow-small-domain
+  ::  %allow evaluates repeats, so a two-value domain reaches ten passes.
+  ^-  tang
+  =/  cfg  (config 10 100 5 0)
+  =/  =parts:engine  [!>(|=(? &)) ~ `no-alts ~ %pass]
+  =/  done  (complete (init:engine 0v1 cfg(duplicates %allow) parts))
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.done)))
+    (expect-eq !>(`counters:engine`[10 10 0 0 0 0]) !>(counts.done))
+    (expect-eq !>(*(jar @ *)) !>(seen.done))
+  ==
+::
+++  test-exact-collision
+  ::  Two nouns with one mug: %mug skips the second, %exact evaluates it.
+  ^-  tang
+  =/  give  !>(|=([size=@ud rng=_og] ?:(=(size 1) 28.731 188.973)))
+  =/  fate  !>(|=(a=@ud =(a 28.731)))
+  =/  cfg  (config 3 10 5 5)
+  =/  =parts:engine  [fate `give `no-alts ~ %pass]
+  =/  done  (complete (init:engine 0v1 cfg(duplicates %exact) parts))
+  ;:  weld
+    (expect !>(?=([~ %failed [%false ~ ~] * *] result.done)))
+    (expect-eq !>(`counters:engine`[2 1 0 0 0 0]) !>(counts.done))
+  ==
+::
+++  test-exact-repeats
+  ::  %exact still skips an equal noun, and charges each kept noun's bytes.
+  ^-  tang
+  =/  give  !>(|=([size=@ud rng=_og] `@ud`7))
+  =/  cfg  (config 3 10 5 2)
+  =/  =parts:engine  [!>(|=(@ud &)) `give `no-alts ~ %pass]
+  =/  done  (complete (init:engine 0v1 cfg(duplicates %exact) parts))
+  ;:  weld
+    (expect !>(?=([~ %exhausted %duplicates %.n] result.done)))
+    (expect-eq !>(`counters:engine`[3 1 0 2 0 0]) !>(counts.done))
+    (expect-eq !>((met 3 (jam 7))) !>(seen-used.done))
+  ==
+::
+++  test-seen-bytes-limit
+  ::  Kept nouns beyond seen-bytes stop an %exact run.
+  ^-  tang
+  =/  cfg  (config 10 40 5 5)
+  =.  cfg  cfg(duplicates %exact, seen-bytes.bounds 3)
+  =/  =parts:engine  [!>(|=(@ud &)) `sized `no-alts ~ %pass]
+  =/  done  (complete (init:engine 0v1 cfg parts))
+  (expect !>(?=([~ %limited %seen-bytes ~] result.done)))
 ::
 ++  finished
   ::  Run to completion with a generous bound for label and limit tests.
@@ -427,7 +503,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-3) !>(version:engine))
+    (expect-eq !>(%quiz-engine-4) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))

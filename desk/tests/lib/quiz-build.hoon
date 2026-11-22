@@ -290,6 +290,13 @@
     (expect !>(!(valid-config:build cfg(rendered-bytes.bounds 0))))
     (expect !>(!(valid-config:build cfg(diagnostics-bytes.bounds 0))))
     (expect !>(!(valid-config:build cfg(retained-runs.bounds 0))))
+    (expect !>(!(valid-config:build cfg(size-start 0))))
+    (expect !>(!(valid-config:build cfg(size-start 9, size-max 8))))
+    (expect !>((valid-config:build cfg(size-start 8, size-max 8))))
+    (expect !>((valid-config:build cfg(size-start 50, size-max 0))))
+    (expect !>((valid-config:build cfg(duplicates %allow))))
+    (expect !>(!(valid-config:build cfg(seen-bytes.bounds 0))))
+    (expect !>(!(valid-config:build cfg(seen-bytes.bounds 4.194.305))))
   ==
 ::
 ++  test-body-scry

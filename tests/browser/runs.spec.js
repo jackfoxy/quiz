@@ -31,7 +31,7 @@ test('document conf inspection and requested override preserve other budgets', a
 --`;
   await setSource(page, source);
   await page.locator('#run-inspect').click();
-  await expect(page.locator('#run-settings-note')).toContainText('3 checks; seed 0v123');
+  await expect(page.locator('#run-settings-note')).toContainText('3 checks; sizes from 1, uncapped; repeats mug; seed 0v123');
   await page.locator('#run-requested').fill('5');
   await page.locator('#run-start').click();
   const record = await done(page);

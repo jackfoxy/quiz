@@ -63,7 +63,7 @@
   [where=context:build path=path source=@t source-hash=@uv]
 ::
 +$  progress
-  $%  [%property counters:engine =distribution:engine]
+  $%  [%property counters:engine =distribution:engine size=@ud]
       [%suite counters:suite sample-metrics=%unavailable]
   ==
 ::

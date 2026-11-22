@@ -22,6 +22,8 @@ const examples = [
   ['props', '18-parse-print', 'passed'],
   ['failing', '19-queue-gen-lib', 'failed', 'false'],
   ['failing', '20-dependent', 'failed', 'false'],
+  ['props', '21-small-domain-allow', 'passed'],
+  ['props', '22-size-capped', 'passed'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -65,7 +67,8 @@ for (const [root, name, outcome, why] of examples) {
     } else expect(got.seed).toBe('0v123');
     if (why) expect(got.outcome.evidence.why.kind).toBe(why);
     if (outcome === 'passed')
-      expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print'].includes(name) ? 100 : 20);
+      expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
+        '21-small-domain-allow', '22-size-capped'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -104,6 +107,15 @@ for (const [root, name, outcome, why] of examples) {
         .toBe('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
     }
     if (name === '20-dependent') expect(got.counts['shrink-steps']).toBe(2);
+    if (name === '21-small-domain-allow') {
+      expect(got.config.duplicates).toBe('allow');
+      expect(got.counts.duplicate).toBe(0);
+      expect(got.distribution.labels).toEqual({both:28, 'a only':21, 'b only':28, neither:23});
+    }
+    if (name === '22-size-capped') {
+      expect(got.config['size-max']).toBe(30);
+      expect(got.counts.size).toBe(30);
+    }
     if (name === '05-duplicates') {
       expect(got.outcome.budget).toBe('duplicates');
       expect(got.counts).toMatchObject({attempted:4, accepted:1, duplicate:3});
@@ -127,3 +139,28 @@ for (const [root, name, outcome, why] of examples) {
     fs.writeFileSync(info.outputPath('run.json'), JSON.stringify(evidence,null,2)+'\n');
   });
 }
+test('Run panel overrides the duplicates policy', async ({page}) => {
+  // 05-duplicates exhausts under %mug; evaluating repeats lets it pass.
+  const login = await page.request.post('/~/login', {form:{password:process.env.QUIZ_CODE}});
+  expect(login.ok()).toBeTruthy();
+  await page.goto('/apps/quiz/');
+  await page.waitForFunction(() => window.quiz?.ready);
+  await page.evaluate(() => window.quiz.ready);
+  await page.evaluate(path => window.quiz.documents.open('property', path),
+    ['failing', '05-duplicates', 'hoon']);
+  await expect(page.locator('#run-mode')).toHaveValue('file');
+  await page.locator('#run-duplicates').selectOption('allow');
+  await page.locator('#run-sizeMax').fill('4');
+  await page.locator('#run-start').click();
+  const record = () => page.evaluate(() => {
+    const id = JSON.parse(localStorage.getItem('quiz.session')).runSelection;
+    return window.quiz.runs.records.get(id);
+  });
+  await expect.poll(async () => (await record())?.status, {timeout:45000}).toBe('done');
+  const got = await record();
+  expect(got.outcome.kind).toBe('passed');
+  expect(got.config).toMatchObject({duplicates:'allow', 'size-max':4, 'duplicates-max':3, requested:2});
+  expect(got.counts).toMatchObject({attempted:2, accepted:2, duplicate:0});
+  await page.locator('#run-duplicates').selectOption('');
+  await page.locator('#run-sizeMax').fill('');
+});

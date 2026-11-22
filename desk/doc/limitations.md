@@ -54,16 +54,24 @@ authoritative behavior and recovery guidance.
   and `freq` or `pick` crash on an empty or all-zero list. The default
   `sink` offers nothing for lists or unions. Prefer the
   [app generator library](reference.md#app-generator-library-quiz-gen),
-  whose generators are total and whose `shrink-list` handles lists. Mug
-  deduplication exhausts a small domain such as `?` before a larger request.
+  whose generators are total and whose `shrink-list` handles lists.
+- **Duplicates are skipped by mug unless you choose otherwise.** Under the
+  default `%mug` policy a small domain such as `?` exhausts before a larger
+  request, and a mug collision skips a distinct noun. Set `duplicates %allow`
+  to evaluate repeats, or `%exact` to skip only equal nouns; `%exact` keeps
+  every evaluated sample, bounded by `seen-bytes`.
+- **Size grows fast unless capped.** The default size passes 50,000 by the
+  100th sample. Set `size-max`, or use `quiz-gen`'s `capped`, for generators
+  whose output grows with size.
   See [measured generator characteristics](reference.md#measured-generator-characteristics).
 - **Shrinkers combine independently.** `quiz-gen` shrinks each component on
   its own. Values that constrain each other, such as a search tree's keys and
   the key being deleted, may stop at larger values than a coordinated
   shrinker would reach.
 - **Spell out sample types.** A fate sample typed with a mold that carries a
-  large subject, such as zuse's `ship`, makes every sample vase exceed the
-  sample-byte limit. Use the aura (`@p`) or a `*` sample molded in the fate.
+  large subject, such as zuse's `ship`, or with a recursive type, such as
+  `(list @ud)`, makes every sample vase exceed the sample-byte limit. Use the
+  aura (`@p`) or a `*` sample molded in the fate.
 - **Coverage is a threshold, not a statistical test.** `++cover` compares
   each label's share at the final count. It does not keep running until the
   share is known with confidence, as QuickCheck's `checkCoverage` does. Raise
