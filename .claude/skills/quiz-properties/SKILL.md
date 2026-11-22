@@ -132,8 +132,30 @@ API: [reports, labels and coverage](../../../desk/doc/reference.md#reports-label
 
 ## Norns
 
-Combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`, `const`,
-`cell`, `freq`, `pick`, `list`. Signatures:
+Prefer `quiz-gen` (`/+ gen=quiz-gen`) for new documents. Its generators are
+total (size 0 acts as 1), list lengths are uniform between bounds you choose,
+and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
+`term`):
+
+```hoon
+++  norn
+  ^-  $-([@ud _og] [(list @ud) @ud])
+  (pair:gen (list-of:gen 0 20 (range:gen 0 99)) upto:gen)
+```
+
+- Generators in one list (`elements`, `one-of`, `frequency`) must share one
+  type: cast each to `(norn:gen a)` first.
+- `set-of`, `map-of` and `sorted` take element molds: `(set-of:gen @ud 5 g)`.
+- Text is capped at 32 characters; engine size grows past 50,000.
+- Spell sample types out (`ship=@p`, not `=ship`): a zuse mold carries its
+  subject into the sample vase and hits `%sample-bytes`.
+- Dependent inputs: `seeded`, then `regen` in the fate, with
+  `shrink-seeded` ([20-dependent](../../../desk/examples/failing/20-dependent.hoon)).
+
+API: [app generator library](../../../desk/doc/reference.md#app-generator-library-quiz-gen).
+
+The legacy combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`,
+`const`, `cell`, `freq`, `pick`, `list`. Signatures:
 [norns and composition](../../../desk/doc/reference.md#norns-and-composition).
 Things that go wrong:
 
@@ -176,10 +198,24 @@ domain of positive even numbers, where halving gives odd values. Rules:
 Model: [09-custom-alts](../../../desk/examples/failing/09-custom-alts.hoon).
 
 The default shrinker offers nothing for a typed list, and for a `*` sample
-only the two subtrees of a cell; it never deletes one element. For a list,
-write alts that delete one element at a time, then shrink element values,
-and filter out candidates that break a precondition. Model:
-[11-queue-model-bug](../../../desk/examples/failing/11-queue-model-bug.hoon).
+only the two subtrees of a cell; it never deletes one element. Use
+`quiz-gen`:
+
+```hoon
+++  alts
+  %+  alts-of:gen  ,[(list @ud) @ud]
+  (shrink-pair:gen (shrink-list:gen shrink-atom:gen) shrink-atom:gen)
+```
+
+`shrink-list` deletes chunks, then shrinks one element; `shrink-keep` filters
+candidates by a precondition; `shrink-via` shrinks through a representation.
+**The comma matters:** `,[(list @ud) @ud]` is a mold, while `[(list @ud) @ud]`
+is a cell of two gates. Models:
+[19-queue-gen-lib](../../../desk/examples/failing/19-queue-gen-lib.hoon)
+(library), [11-queue-model-bug](../../../desk/examples/failing/11-queue-model-bug.hoon)
+(hand-written). Components shrink independently, so values that constrain
+each other may stop high, as in
+[17-bst-delete-bug](../../../desk/examples/failing/17-bst-delete-bug.hoon).
 
 ## Running
 

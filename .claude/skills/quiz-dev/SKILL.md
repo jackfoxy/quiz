@@ -20,6 +20,7 @@ a bowl.
 | --- | --- | --- |
 | Generation, classification, counters, shrinking, limits | `lib/quiz-engine.hoon` (bump `++version`) | `tests/lib/quiz-engine.hoon`, `tests/lib/quiz-shrink.hoon` |
 | Report combinators (`quiz-prop`): notes, expected/actual, labels | `lib/quiz-prop.hoon` (report type lives in the engine) | `tests/lib/quiz-prop.hoon`, `tests/lib/quiz-engine.hoon` |
+| Generators and shrinkers (`quiz-gen`) | `lib/quiz-gen.hoon`; no engine change, no version bump | `tests/lib/quiz-gen.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generator and default-shrinker characterization (frozen `lib/quiz.hoon`) | none: record surprises in the docs | `tests/lib/quiz-norns.hoon`, `tests/lib/quiz-sink.hoon` |
 | Bundled property examples | `examples/props/`, `examples/failing/` | `tests/lib/quiz-examples.hoon` (queue models), browser `examples.spec.js`; re-measure `doc/examples.md` |
 | Document format, prelude, arm type checks, context pinning | `lib/quiz-build.hoon` | `tests/lib/quiz-build.hoon` (fixtures in `fixtures/quiz-build/`) |
@@ -69,6 +70,22 @@ A ship-free runner exists in urui (`bin/hoon-test.js`, using `vere eval`). It
 works for engine-only cores. It fails on anything that uses `quiz-build`,
 because its embedded Hoon lacks `vi` (error `-find.vi`). Treat `-test` on
 the fake ship as the real authority.
+
+## Wet-gate pitfalls met in this desk
+
+`quiz-gen` and `quiz-prop` are mostly wet gates. These cost time before:
+
+- `!>` inside `|*` sees the formal sample type (`*`), not the caller's: a wet
+  gate's formula is compiled once. Take a vase from the caller instead.
+- `*_x` bunts to the **value** of `x`. Seed an empty list as `` `_x`~ ``.
+- A literal list such as `~[1 2 3]` has an exact tuple type; `snag` and
+  friends need `(homo items)` first.
+- `silt`, `malt` and `sort` over a wet element type `fuse-loop`; take an
+  element mold and cast the list.
+- `?>  ?=(^ items)` narrows the list for later `scag`/`snag`; test with
+  `?<  =(~ items)` instead.
+- In a wet combinator, type an inner sample from the inner gate's own sample:
+  `|=  items=(list _+<.item)`.
 
 ## Debugging by symptom
 

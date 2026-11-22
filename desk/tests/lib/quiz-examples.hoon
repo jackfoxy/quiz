@@ -1,10 +1,16 @@
-/+  build=quiz-build, engine=quiz-engine, quiz, prop=quiz-prop, *test
+/+  build=quiz-build, engine=quiz-engine, quiz, prop=quiz-prop, gen=quiz-gen,
+    *test
 /*  queue-model  %hoon  /examples/props/10-queue-model/hoon
 /*  queue-bug  %hoon  /examples/failing/11-queue-model-bug/hoon
 /*  labels  %hoon  /examples/props/12-labels-coverage/hoon
 /*  compared  %hoon  /examples/failing/13-expected-actual/hoon
 /*  uncovered  %hoon  /examples/failing/14-coverage-shortfall/hoon
 /*  expected  %hoon  /examples/props/15-expect-failure/hoon
+/*  insert  %hoon  /examples/props/16-sorted-insert/hoon
+/*  bst  %hoon  /examples/failing/17-bst-delete-bug/hoon
+/*  parse  %hoon  /examples/props/18-parse-print/hoon
+/*  queue-gen  %hoon  /examples/failing/19-queue-gen-lib/hoon
+/*  dependent  %hoon  /examples/failing/20-dependent/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -104,5 +110,73 @@
     (expect-eq !>(`counters:engine`[13 6 0 6 4 1]) !>(counts.done))
     (expect-eq !>(`*`11) !>(q.original.result))
     (expect-eq !>(`*`10) !>(q.shrunk.result))
+  ==
+::
+++  test-sorted-insert
+  ^-  tang
+  =/  path=path  /examples/props/'16-sorted-insert'/hoon
+  =/  done  (run path insert ~[!>(engine) !>(gen) !>(prop)])
+  =/  want
+    %-  malt
+    `(list [@t @ud])`~[['empty' 3] ['front' 18] ['middle' 65] ['end' 14]]
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[100 100 0 0 0 0]) !>(counts.done))
+    (expect-eq !>(want) !>(labels.seen-tags.done))
+  ==
+::
+++  test-bst-delete-bug
+  ::  Keys and the deleted key shrink independently, so they stop at a
+  ::  three-key tree whose root is deleted.
+  ^-  tang
+  =/  path=path  /examples/failing/'17-bst-delete-bug'/hoon
+  =/  done  (run path bst ~[!>(engine) !>(gen)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  ;:  weld
+    (expect-eq !>(`counters:engine`[18 17 0 0 60 6]) !>(counts.done))
+    %+  expect-eq  !>(`*`[~[2 19 18 12 6 15 7 3 15] 12])
+    !>(q.original.result)
+    (expect-eq !>(`*`[~[12 0 13] 12]) !>(q.shrunk.result))
+  ==
+::
+++  test-parse-print
+  ^-  tang
+  =/  path=path  /examples/props/'18-parse-print'/hoon
+  =/  done  (run path parse ~[!>(engine) !>(gen) !>(prop)])
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[100 100 0 0 0 0]) !>(counts.done))
+  ==
+::
+++  test-queue-gen-lib
+  ::  The library-built shrinker reaches example 11's minimum.
+  ^-  tang
+  =/  path=path  /examples/failing/'19-queue-gen-lib'/hoon
+  =/  done  (run path queue-gen ~[!>(engine) !>(gen)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  original  ~[[%push 97] [%push 27] [%pop ~] [%size ~]]
+  ;:  weld
+    (expect-eq !>(`counters:engine`[4 3 0 0 46 7]) !>(counts.done))
+    (expect-eq !>(`*`original) !>(q.original.result))
+    %+  expect-eq  !>(`*`~[[%push 0] [%push 1] [%pop ~]])
+    !>(q.shrunk.result)
+  ==
+::
+++  test-dependent
+  ::  The list shrinks to one element, whose index is necessarily the last.
+  ^-  tang
+  =/  path=path  /examples/failing/'20-dependent'/hoon
+  =/  done  (run path dependent ~[!>(engine) !>(gen)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  start  ;;([(list @ud) @uv @ud] q.original.result)
+  =/  end  ;;([(list @ud) @uv @ud] q.shrunk.result)
+  ;:  weld
+    (expect-eq !>(`counters:engine`[1 0 0 0 5 2]) !>(counts.done))
+    (expect-eq !>([~[19] 1]) !>([-.start +>.start]))
+    (expect-eq !>([~[0] 0]) !>([-.end +>.end]))
+    (expect-eq !>(+<.start) !>(+<.end))
   ==
 --

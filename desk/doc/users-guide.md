@@ -193,6 +193,26 @@ duplicate **0**. The norn constructs a typed list; the fate validates its noun
 boundary with `;;`. This keeps the sample vase small: recursive types can retain
 large compiler contexts and hit the byte cap even for short values.
 
+The [app generator library](reference.md#app-generator-library-quiz-gen) does
+the same with total generators, list lengths you choose, and a list shrinker:
+
+```hoon
+/+  gen=quiz-gen
+::  …
+++  norn
+  ^-  $-([@ud _og] [(list @ud) @ud])
+  (pair:gen (list-of:gen 0 20 upto:gen) upto:gen)
+::
+++  alts
+  %+  alts-of:gen  ,[(list @ud) @ud]
+  (shrink-pair:gen (shrink-list:gen shrink-atom:gen) shrink-atom:gen)
+```
+
+The legacy `list` norn gives at most `xeb(size)-1` elements; `list-of` gives a
+length uniform in its bounds. `shrink-list` deletes chunks of elements before
+shrinking single values, which the legacy default shrinker cannot do. Note the
+comma in `,[(list @ud) @ud]`: `alts-of` needs a mold.
+
 Structural types alone do not express sortedness, positivity, valid dates or
 relationships between fields. Choose a generator for that semantic domain and
 keep the shrinker in the same domain. Bounded recursive generation should reduce
@@ -396,12 +416,15 @@ The following are Quiz applications of general property-testing techniques;
 | Simple model | `10-queue-model` compares a two-list queue with a plain list model after each command. Keep model logic independent from the optimized implementation. |
 | Avoid tautologies | The offset/sum example compares two computations. Comparing a value only with itself cannot find a bug; don't use that as a real specification. |
 | Avoid vacuity | `04-discards` still requires 20 accepted inputs; `05-duplicates` explicitly exhausts. An always-dropping generator establishes nothing. |
-| Boundaries | The regression above checks zero and one explicitly; boxcar checks four/five. **Conceptual:** add empty, singleton, repeated and very large structures appropriate to your own domain. |
+| Boundaries | The regression above checks zero and one explicitly; boxcar checks four/five. `16-sorted-insert` labels where an inserted value lands (empty, front, middle, end) and requires each with `++cover`. |
+| Data structures | `17-bst-delete-bug` checks a binary search tree against a sorted-set model and shrinks a failing deletion to three keys. |
+| Round trip | `18-parse-print` prints and parses decimal numbers, ships and knots made by aura generators. |
 | Filtering | Compare `04-discards` with `07-positive`: construct the domain directly when most inputs would be dropped. |
 | Distribution | `12-labels-coverage` labels each list by length and requires short and long lists with `++cover`; `14-coverage-shortfall` shows a requirement the generator misses. Know the stock norns' shape first: a `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics](reference.md#measured-generator-characteristics). |
 | Readable failures | `13-expected-actual` uses `same` and `note`, so the run shows the expected and actual values, not just `false`. |
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
-| Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list. |
+| Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
+| Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. |
 
 These are design suggestions, informed by FsCheck's
 [Properties](https://fscheck.github.io/FsCheck/Properties.html),

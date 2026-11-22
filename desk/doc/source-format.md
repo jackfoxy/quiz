@@ -26,7 +26,9 @@ The compiler checks types without calling the property, generator, or shrinker:
 
 Reports, `++cover` and `++expect` are explained in
 [reports, labels and coverage](reference.md#reports-labels-and-coverage).
-Build reports with `/+  prop=quiz-prop`. `cover` and `expect` come from the
+Build reports with `/+  prop=quiz-prop`, and generators and shrinkers with
+`/+  gen=quiz-gen`; see the
+[app generator library](reference.md#app-generator-library-quiz-gen). `cover` and `expect` come from the
 document and are unaffected by Run-panel configuration overrides.
 
 A missing `conf` uses `[~ defaults:quiz-engine]`. A null seed asks the caller to

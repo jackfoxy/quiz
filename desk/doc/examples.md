@@ -31,6 +31,11 @@ settings, not universal outcomes of similar-looking properties.
 | [13-expected-actual](../examples/failing/13-expected-actual.hoon) | Failed, false; expected 1, actual 0 | `same` and `note`: a failure that explains itself |
 | [14-coverage-shortfall](../examples/failing/14-coverage-shortfall.hoon) | Uncovered; empty 1% of 10% | Every check passes, but the generator misses a required case |
 | [15-expect-failure](../examples/props/15-expect-failure.hoon) | Failed as expected; 11 → 10 | `++expect %fail` for a claim known to be false |
+| [16-sorted-insert](../examples/props/16-sorted-insert.hoon) | Passed, 100 accepted; every position covered | `sorted` and `pair` generators; labels where the value lands |
+| [17-bst-delete-bug](../examples/failing/17-bst-delete-bug.hoon) | Failed, false; 9 keys → 3 | A search tree against a sorted-set model; `shrink-pair` of `shrink-list` |
+| [18-parse-print](../examples/props/18-parse-print.hoon) | Passed, 100 accepted | Aura generators (`upto`, `ship`, `knot`) in `scot`/`slav` round trips |
+| [19-queue-gen-lib](../examples/failing/19-queue-gen-lib.hoon) | Failed, false; 4 commands → 3 | Example 11 rebuilt from `list-of`, `cook`, `shrink-keep` and `shrink-list` |
+| [20-dependent](../examples/failing/20-dependent.hoon) | Failed, false; one-element list | `seeded`, `regen` and `shrink-seeded`: dependent shrinking |
 
 The composed example's list is generated as `(list @ud)` but enters its fate
 through a noun boundary and is checked there. Recursive vase types can include
@@ -100,11 +105,41 @@ note and comparison follow the shrunk sample, not the original 3.
 `++expect %fail`. The engine finds 11, shrinks it to 10, and reports
 `failed-as-expected`.
 
+## Generator library examples
+
+Examples 16 to 20 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
+
+`16-sorted-insert` generates a sorted list and a value, inserts the value,
+and checks the result with `same` under `all`. It labels where the value
+landed: empty 3, front 18, middle 65, end 14, all above the `++cover`
+minimums.
+
+`17-bst-delete-bug` builds a binary search tree from a key list and deletes a
+key; the bug drops the right subtree when the deleted node has two children.
+The original nine keys shrink to `~[12 0 13]` with 12 deleted: a root with two
+children. The values stay at 12 and 13 because the keys and the deleted key
+shrink independently, and shrinking any one of them alone would stop the
+failure. A coordinated shrinker could reach `~[1 0 2]`.
+
+`18-parse-print` checks `slav` after `scot` for `@ud`, `@p` and `@ta` values from
+aura generators. Its fate spells the sample out as `@p`; the zuse mold `ship`
+would make each sample vase exceed the sample-byte limit.
+
+`19-queue-gen-lib` is example 11 written with library parts: the norn draws
+up to 40 commands and removes forbidden pops (`cook` with a repair gate); the
+alts is `shrink-list` over a command shrinker, filtered by `shrink-keep`. It
+reaches 11's minimum, `~[[%push 0] [%push 1] [%pop ~]]`.
+
+`20-dependent` stores a list with a seed and regenerates an index into it in
+the fate. The false claim is that the chosen element is never the last. The
+list shrinks from `~[19]` to `~[0]` and the size to 0; each candidate's index
+is rebuilt for its own list, so no candidate indexes past the end.
+
 ## Recorded property counters
 
 Seed `0v123`, no UI overrides. Columns use the definitions in the reference.
 [`tests/lib/quiz-examples.hoon`](../tests/lib/quiz-examples.hoon) pins the
-queue, report and coverage rows in `-test`.
+queue, report, coverage and generator-library rows in `-test`.
 
 | Document | Attempted | Accepted | Dropped | Duplicate | Shrink tried | Shrink steps | Original → shrunk |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -123,6 +158,11 @@ queue, report and coverage rows in `-test`.
 | 13-expected-actual | 5 | 2 | 0 | 2 | 3 | 1 | value=3 → value=1 |
 | 14-coverage-shortfall | 104 | 100 | 0 | 4 | 0 | 0 | — |
 | 15-expect-failure | 13 | 6 | 0 | 6 | 4 | 1 | value=11 → value=10 |
+| 16-sorted-insert | 100 | 100 | 0 | 0 | 0 | 0 | — |
+| 17-bst-delete-bug | 18 | 17 | 0 | 0 | 60 | 6 | 9 keys, delete 12 → `[~[12 0 13] 12]` |
+| 18-parse-print | 100 | 100 | 0 | 0 | 0 | 0 | — |
+| 19-queue-gen-lib | 4 | 3 | 0 | 0 | 46 | 7 | 4 commands → `[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]` |
+| 20-dependent | 1 | 0 | 0 | 0 | 5 | 2 | `[~[19] seed 1]` → `[~[0] seed 0]` |
 
 ## Existing suites
 

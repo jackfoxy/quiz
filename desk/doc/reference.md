@@ -100,8 +100,10 @@ property. Structural type compatibility does not establish semantic validity:
 positive integers, sorted lists, valid timestamps and consistent records need
 appropriate generation and, where necessary, validation.
 
-These constructors are under `norns:quiz` in the legacy library and can also
-be used by app documents:
+For new documents, prefer the [app generator library](#app-generator-library-quiz-gen),
+whose generators are total and whose shrinkers fit the engine's rules. The
+constructors below are under `norns:quiz` in the frozen legacy library and
+can also be used by app documents:
 
 | Arm | Construction and resulting type |
 | --- | --- |
@@ -203,6 +205,88 @@ beyond it.
 The frozen library has no application limits or cooperative cancellation.
 Library users needing legacy behavior may continue to import it unchanged.
 Do not interpret its `runs` field as the app's `accepted` or `attempted` count.
+
+### App generator library (`quiz-gen`)
+
+[`quiz-gen`](../lib/quiz-gen.hoon) (`/+ gen=quiz-gen`) provides generators,
+typed shrinkers and an adaptor to `++alts`. Executable models:
+[16-sorted-insert](../examples/props/16-sorted-insert.hoon) to
+[20-dependent](../examples/failing/20-dependent.hoon).
+
+Every generator is a norn, `$-([@ud _og] a)`, and is **total in size**: size 0
+behaves as size 1. An empty choice crashes with a named `~|` message, which a
+run reports as a generation `%error`. Generated text is at most `text-max`
+(32) characters, because the engine's size grows past 50,000 by the 100th
+sample.
+
+| Generator | Produces |
+| --- | --- |
+| `(range low high)` | Uniform in `[low, high]`; crashes if `low > high` |
+| `upto` | Uniform in `[0, size]` |
+| `signed` | `@sd`, magnitude at most size, either sign |
+| `ship` | `@p`: galaxy, star or planet, equally likely |
+| `date` | `@da` within size seconds of `~2000.1.1`; no ambient time |
+| `span` | `@dr`, whole seconds up to size |
+| `real`, `real-single` | Finite `@rd`, `@rs` from random bits; never infinity or NaN |
+| `cord`, `knot`, `term` | Printable `@t`; valid `@ta`; valid nonempty `@tas` |
+| `(chars alphabet)` | A tape from the alphabet |
+| `(elements items)`, `(one-of gens)`, `(frequency ~[[weight gen] …])` | Choice from a nonempty list; all generators must have one type |
+| `(unit-of gen)` | `~` with chance 1/(size+2), otherwise a value |
+| `(list-of low high gen)` | Length uniform in `[low, min(high, max(low, size))]`; elements from split streams |
+| `(nonempty high gen)`, `(vector len gen)` | At least one element; exactly `len` |
+| `(set-of mold high gen)`, `(map-of key-mold value-mold high key value)` | Up to `high` entries |
+| `(sublist items)`, `(shuffle items)` | Order-preserving subset; uniform permutation |
+| `(sorted mold low high gen order)` | A sorted `list-of` |
+| `(pair a b)`, `(trip a b c)` | Components from split streams |
+| `(cook gen fun)` | Mapped output |
+| `(bind gen next)` | Dependent: `next` receives the first value and returns a generator |
+| `(such-that gen pred tries)` | Retries with growing size; crashes after `tries` |
+| `(seeded gen)`, `(regen make outer seed size)` | Dependent shrinking; see below |
+
+Shrinkers are typed gates from a value to candidates, simplest first. Except
+for sets and maps, every candidate weighs strictly less than its input, so
+the engine never discards one for lack of progress. Equal-weight candidates
+such as permutations are never offered; this is where Quiz differs from
+QuickCheck.
+
+| Shrinker | Candidates, in order |
+| --- | --- |
+| `shrink-atom` | `0`, then `n-n/2`, `n-n/4`, …, `n-1` |
+| `(shrink-toward floor)` | The same, never below `floor` |
+| `(shrink-list item)` | Delete chunks of n, n/2, …, 1 elements, then shrink one element with `item` |
+| `(shrink-pair a b)` | Shrink the left, then the right |
+| `(shrink-unit item)` | `~`, then smaller inner values |
+| `(shrink-set item)`, `(shrink-map key value)` | Through the element list; a rebalanced tree may not weigh less, and the engine discards such a candidate |
+| `(shrink-via to from inner)` | Shrink through a representation |
+| `(shrink-keep pred inner)` | Only candidates satisfying an invariant or precondition |
+| `(shrink-seeded outer)` | A `seeded` sample: smaller outer values, then a halved size; the seed stays |
+| `shrink-nothing` | No candidates |
+
+`(alts-of mold shrinker)` turns a typed shrinker into a document's `++alts`.
+It molds the sample's noun, so it works for samples typed `*`, and it keeps
+the sample's vase type. Pass a mold: a tuple mold needs its comma, as in
+`(alts-of ,[(list @ud) @ud] …)`. Written without the comma, `[(list @ud) @ud]`
+is a cell of two gates.
+
+Shrinkers combine independently. When values constrain each other, such as a
+tree's keys and the key being deleted in
+[17-bst-delete-bug](../examples/failing/17-bst-delete-bug.hoon), each can
+shrink only while the failure survives, so the result may keep larger values
+than a coordinated shrinker would.
+
+**Dependent shrinking.** QuickCheck shrinks nested `forAll` inputs by
+regenerating the inner value as the outer one shrinks. `seeded` gives a
+sample `[value seed size]`; the fate calls `(regen make value seed size)` to
+rebuild the dependent value, where `make` takes the outer value and returns a
+generator. `shrink-seeded` shrinks only the outer value and size, so every
+candidate rebuilds a consistent inner value. The inner value itself is not
+shrunk directly.
+
+**Wet-gate notes.** `set-of`, `map-of` and `sorted` take element molds because
+`silt`, `malt` and `sort` cannot be type-checked over a wet element type.
+Generators taking a literal list (`elements`, `one-of`, `frequency`,
+`sublist`, `shuffle`) widen it with `homo`; every element must already share
+one type, so cast generators to `(norn:gen a)` before listing them.
 
 ### Alts and shrinking
 
@@ -576,6 +660,7 @@ already checked parts/configuration and own scheduling and persistence.
 | --- | --- |
 | [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit cover) expect=?(%pass %fail)]`; `judge` classifies reports; terminal states are stable |
 | [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
+| [quiz-gen](../lib/quiz-gen.hoon) | Total generators, typed shrinkers and the `alts-of` adaptor; no engine state |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
 | [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `resolve` checks context before rebuilding |

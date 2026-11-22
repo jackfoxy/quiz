@@ -48,13 +48,22 @@ authoritative behavior and recovery guidance.
   limited to property records with captured source, context, seed and
   configuration. See
   [Clay context, seed and replay](reference.md#clay-context-seed-and-replay).
-- **The stock generators are narrow and partial.** The `list` norn yields
-  at most `xeb(size)-1` elements, usually close to that, so short lists are
-  rare late in a run. `atom`, `list` and `noun` crash at size 0, and `freq`
-  or `pick` crash on an empty or all-zero list. The default `sink` offers
-  nothing for lists or unions, so list properties need custom `alts`. Mug
+- **The legacy generators are narrow and partial.** The legacy `list` norn
+  yields at most `xeb(size)-1` elements, usually close to that, so short
+  lists are rare late in a run. `atom`, `list` and `noun` crash at size 0,
+  and `freq` or `pick` crash on an empty or all-zero list. The default
+  `sink` offers nothing for lists or unions. Prefer the
+  [app generator library](reference.md#app-generator-library-quiz-gen),
+  whose generators are total and whose `shrink-list` handles lists. Mug
   deduplication exhausts a small domain such as `?` before a larger request.
   See [measured generator characteristics](reference.md#measured-generator-characteristics).
+- **Shrinkers combine independently.** `quiz-gen` shrinks each component on
+  its own. Values that constrain each other, such as a search tree's keys and
+  the key being deleted, may stop at larger values than a coordinated
+  shrinker would reach.
+- **Spell out sample types.** A fate sample typed with a mold that carries a
+  large subject, such as zuse's `ship`, makes every sample vase exceed the
+  sample-byte limit. Use the aura (`@p`) or a `*` sample molded in the fate.
 - **Coverage is a threshold, not a statistical test.** `++cover` compares
   each label's share at the final count. It does not keep running until the
   share is known with confidence, as QuickCheck's `checkCoverage` does. Raise

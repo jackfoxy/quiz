@@ -31,6 +31,7 @@
 - [App engine](desk/lib/quiz-engine.hoon): stepper, shrinking, limits
 - [Document builder](desk/lib/quiz-build.hoon)
 - [Property combinators](desk/lib/quiz-prop.hoon): reports, labels, coverage
+- [Generator library](desk/lib/quiz-gen.hoon): generators, shrinkers, alts adaptor
 - [Job lifecycle](desk/lib/quiz-job.hoon) and [Gall adapter](desk/lib/quiz-agent.hoon)
 - [Web agent](desk/lib/quiz-web-agent.hoon) and [workbench config](desk/lib/quiz-web.hoon)
 - [Internal module map](desk/doc/reference.md#internal-implementation-map)

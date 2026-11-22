@@ -17,6 +17,11 @@ const examples = [
   ['failing', '13-expected-actual', 'failed', 'false'],
   ['failing', '14-coverage-shortfall', 'uncovered'],
   ['props', '15-expect-failure', 'failed-as-expected', 'false'],
+  ['props', '16-sorted-insert', 'passed'],
+  ['failing', '17-bst-delete-bug', 'failed', 'false'],
+  ['props', '18-parse-print', 'passed'],
+  ['failing', '19-queue-gen-lib', 'failed', 'false'],
+  ['failing', '20-dependent', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -60,7 +65,7 @@ for (const [root, name, outcome, why] of examples) {
     } else expect(got.seed).toBe('0v123');
     if (why) expect(got.outcome.evidence.why.kind).toBe(why);
     if (outcome === 'passed')
-      expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage'].includes(name) ? 100 : 20);
+      expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -87,6 +92,18 @@ for (const [root, name, outcome, why] of examples) {
       await expect(page.locator('#run-coverage-shortfalls')).toContainText('empty');
     }
     if (name === '15-expect-failure') expect(got.outcome.evidence.shrunk.text).toBe('value=10');
+    if (name === '16-sorted-insert') {
+      expect(got.distribution.labels).toEqual({empty:3, front:18, middle:65, end:14});
+    }
+    if (name === '17-bst-delete-bug') {
+      expect(got.counts).toMatchObject({'shrink-tried':60, 'shrink-steps':6});
+    }
+    if (name === '19-queue-gen-lib') {
+      // The same minimum as 11-queue-model-bug, from library shrinkers.
+      expect(got.outcome.evidence.shrunk.text)
+        .toBe('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
+    }
+    if (name === '20-dependent') expect(got.counts['shrink-steps']).toBe(2);
     if (name === '05-duplicates') {
       expect(got.outcome.budget).toBe('duplicates');
       expect(got.counts).toMatchObject({attempted:4, accepted:1, duplicate:3});
