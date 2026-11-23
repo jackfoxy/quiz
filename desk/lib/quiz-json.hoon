@@ -14,6 +14,7 @@
       [%runs ~]
       [%contexts ~]
       [%suite-arms desk=@tas revision=case path=path]
+      [%properties desk=@tas revision=@ud]
       [%timeouts ~]
       [%set-timeouts timeouts:app]
   ==
@@ -116,6 +117,11 @@
           (case-in (field fields 'revision'))
           (path-in (field fields 'path'))
       ==
+    %properties
+      :*  %properties
+          (name (field fields 'desk'))
+          (natural (field fields 'revision'))
+      ==
     ?(%run %document-conf)
       =/  src  (object (field fields 'source'))
       =/  kind  (text (field src 'kind'))
@@ -128,11 +134,11 @@
             ?>  ?=([%a *] arms)
             [%suite (path-in (field src 'path')) (turn p.arms name)]
         ==
-      =/  cfg=(unit conf:engine)
+      =/  cfg=(unit patch:app)
         =/  val  (~(get by fields) 'config')
         ?~  val  ~
         ?:  ?=(%~ u.val)  ~
-        `(config-in u.val)
+        `(patch-in u.val)
       =/  seed=(unit @uv)
         =/  val  (~(get by fields) 'seed')
         ?~  val  ~
@@ -158,7 +164,7 @@
   ::  A path as an array of segment strings.
   |=  value=path
   ^-  json
-  a+(turn value |=(part=@ta s+part))
+  a+(turn value (lead %s))
 ::
 ++  context-out
   ::  The pinned ship, desk and numeric revision.
@@ -188,10 +194,9 @@
   ::  A tang as an array of lines wrapped at 80 columns.
   |=  value=tang
   ^-  json
-  =/  blocks=(list wall)
-    (turn value |=(item=tank ^-(wall (wash [0 80] item))))
+  =/  blocks=(list wall)  (turn value (cury wash [0 80]))
   =/  lines=wall  (zing blocks)
-  a+(turn lines |=(line=tape s+(crip line)))
+  a+(turn lines (cork crip (lead %s)))
 ::
 ++  failure-out
   ::  The failure kind and its detail; scry requests and bad products
@@ -215,7 +220,7 @@
   |=  value=detail:engine
   ^-  json
   %-  pairs:enjs:format
-  :~  ['notes' a+(turn notes.value |=(note=@t s+note))]
+  :~  ['notes' a+(turn notes.value (lead %s))]
       :-  'compared'
       ?~  compared.value  ~
       %-  pairs:enjs:format
@@ -351,7 +356,7 @@
           ==
       ==
       ['seed' ?~(seed.value ~ s+(scot %uv u.seed.value))]
-      ['config' ?~(config.value ~ (config-out u.config.value))]
+      ['config' ?~(config.value ~ (patch-out u.config.value))]
       ['replay-of' ?~(replay-of.value ~ (decimal u.replay-of.value))]
       :-  'source'
       %-  pairs:enjs:format
@@ -361,7 +366,7 @@
         %file   ~[['path' (path-out path.source.value)]]
         %suite
           :~  ['path' (path-out path.source.value)]
-              ['arms' a+(turn arms.source.value |=(arm=term s+arm))]
+              ['arms' a+(turn arms.source.value (lead %s))]
           ==
       ==
   ==
@@ -407,36 +412,45 @@
       ==
   ==
 ::
-++  config-in
-  ::  A complete conf, every field required, checked by valid-config.
+++  patch-in
+  ::  Conf fields to override. An absent or null field keeps the document's;
+  ::  `bounds`, when given, is complete. The merged conf is checked later.
   |=  value=json
-  ^-  conf:engine
+  ^-  patch:app
   =/  fields  (object value)
-  =/  bounds  (object (field fields 'bounds'))
-  =/  cfg=conf:engine
-    :*  (natural (field fields 'requested'))
-        (natural (field fields 'attempts-max'))
-        (natural (field fields 'drops-max'))
-        (natural (field fields 'duplicates-max'))
-        (natural (field fields 'size-start'))
-        (natural (field fields 'size-max'))
-        (policy-in (field fields 'duplicates'))
-        :*  (natural (field bounds 'source-bytes'))
-            (natural (field bounds 'requested-max'))
-            (natural (field bounds 'shrink-candidates'))
-            (natural (field bounds 'shrink-depth'))
-            (natural (field bounds 'sample-bytes'))
-            (natural (field bounds 'rendered-bytes'))
-            (natural (field bounds 'diagnostics-bytes'))
-            (natural (field bounds 'alts-bytes'))
-            (natural (field bounds 'seen-bytes'))
-            (natural (field bounds 'retained-runs'))
-            (natural (field bounds 'samples-per-slice'))
-        ==
-        (timeout-in (field fields 'on-timeout'))
-    ==
-  ?>  (valid-config:build cfg)
-  cfg
+  =/  get
+    |=  key=@t
+    ^-  (unit json)
+    =/  val  (~(get by fields) key)
+    ?:(|(=(~ val) =(`~ val)) ~ val)
+  :*  (bind (get 'requested') natural)
+      (bind (get 'attempts-max') natural)
+      (bind (get 'drops-max') natural)
+      (bind (get 'duplicates-max') natural)
+      (bind (get 'size-start') natural)
+      (bind (get 'size-max') natural)
+      (bind (get 'duplicates') policy-in)
+      (bind (get 'bounds') bounds-in)
+      (bind (get 'on-timeout') timeout-in)
+  ==
+::
+++  bounds-in
+  ::  Every limit of a conf's bounds, each required.
+  |=  value=json
+  ^-  limits:engine
+  =/  fields  (object value)
+  :*  (natural (field fields 'source-bytes'))
+      (natural (field fields 'requested-max'))
+      (natural (field fields 'shrink-candidates'))
+      (natural (field fields 'shrink-depth'))
+      (natural (field fields 'sample-bytes'))
+      (natural (field fields 'rendered-bytes'))
+      (natural (field fields 'diagnostics-bytes'))
+      (natural (field fields 'alts-bytes'))
+      (natural (field fields 'seen-bytes'))
+      (natural (field fields 'retained-runs'))
+      (natural (field fields 'samples-per-slice'))
+  ==
 ::
 ++  timeout-in
   ::  interrupt, fail or discard.
@@ -461,7 +475,7 @@
   ==
 ::
 ++  config-out
-  ::  A conf, field for field as config-in reads it.
+  ::  A complete conf, with every bound.
   |=  value=conf:engine
   ^-  json
   %-  pairs:enjs:format
@@ -474,6 +488,23 @@
       ['duplicates' s+duplicates.value]
       ['on-timeout' s+on-timeout.value]
       ['bounds' (bounds-out bounds.value)]
+  ==
+::
+++  patch-out
+  ::  A request's patch, field for field as patch-in reads it; null keeps.
+  |=  value=patch:app
+  ^-  json
+  =/  num  |=(n=(unit @ud) ^-(json ?~(n ~ (numb:enjs:format u.n))))
+  %-  pairs:enjs:format
+  :~  ['requested' (num requested.value)]
+      ['attempts-max' (num attempts-max.value)]
+      ['drops-max' (num drops-max.value)]
+      ['duplicates-max' (num duplicates-max.value)]
+      ['size-start' (num size-start.value)]
+      ['size-max' (num size-max.value)]
+      ['duplicates' ?~(duplicates.value ~ s+u.duplicates.value)]
+      ['on-timeout' ?~(on-timeout.value ~ s+u.on-timeout.value)]
+      ['bounds' ?~(bounds.value ~ (bounds-out u.bounds.value))]
   ==
 ::
 ++  bounds-out

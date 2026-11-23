@@ -56,12 +56,11 @@
   ?:  &(!=(~ original) =(~ replay))  [%.n %replay-unavailable]
   =.  req
     ?~  replay  req
+    ::  The record's replay inputs, not a patch, give the conf.
     :*  [%draft source.u.replay]  desk.where.u.replay
-        [%ud revision.where.u.replay]  `config.u.replay
+        [%ud revision.where.u.replay]  ~
         `seed.u.replay  original
     ==
-  =/  cfg  config.req
-  ?:  ?&(?=(^ cfg) !(valid-config:build u.cfg))  [%.n %conf-range]
   ?:  ?&  ?=(%draft -.source.req)
           (gth (met 3 text.source.req) source-bytes.bounds:defaults:engine)
       ==
@@ -83,7 +82,7 @@
   =/  rec=record:app
     :*  id  req  ~  replay
         ?:(?=(%suite -.source.req) ~ `?~(seed.req entropy u.seed.req))
-        ?:(?=(%suite -.source.req) ~ cfg)  version:engine
+        ?~(replay ~ `config.u.replay)  version:engine
         %queued
         ?:  ?=(%suite -.source.req)
           [%suite *counters:suite %unavailable]
@@ -96,6 +95,21 @@
     records.saved  (~(put by records.saved.s) id rec)
     order.saved  [id order.saved.s]
     queue.saved  (snoc queue.saved.s id)
+  ==
+::
+++  merge
+  ::  A document's conf with a request's patch applied.
+  |=  [base=conf:engine =patch:app]
+  ^-  conf:engine
+  :*  (fall requested.patch requested.base)
+      (fall attempts-max.patch attempts-max.base)
+      (fall drops-max.patch drops-max.base)
+      (fall duplicates-max.patch duplicates-max.base)
+      (fall size-start.patch size-start.base)
+      (fall size-max.patch size-max.base)
+      (fall duplicates.patch duplicates.base)
+      (fall bounds.patch bounds.base)
+      (fall on-timeout.patch on-timeout.base)
   ==
 ::
 ++  activate
@@ -143,7 +157,7 @@
   =.  s
     %=  s
       records.saved  (~(put by records.saved.s) id rec)
-      queue.saved  (skim queue.saved.s |=(n=run-id:app !=(n id)))
+      queue.saved  (skip queue.saved.s (cury test id))
     ==
   =/  cap
     ?~  config.rec  retained-runs.bounds:defaults:engine
@@ -221,7 +235,7 @@
   ?.  =(%done status.u.rec)  s
   %=  s
     records.saved  (~(del by records.saved.s) id)
-    order.saved  (skim order.saved.s |=(n=run-id:app !=(n id)))
+    order.saved  (skip order.saved.s (cury test id))
   ==
 ::
 ++  restore
@@ -236,26 +250,26 @@
   (retain [saved(queue ~) ~ ~ ~] retained-runs.bounds:defaults:engine)
 ::
 ++  persist-evidence
-  ::  Drop type information; render only already capped engine samples.
+  ::  Drop type information; the engine rendered each kept sample once.
   |=  proof=counterexample:engine
   ^-  evidence:app
   :*  why.proof
-      [q.original.proof (crip ~(ram re (sell original.proof)))]
-      [q.shrunk.proof (crip ~(ram re (sell shrunk.proof)))]
+      [q.original.proof original.texts.proof]
+      [q.shrunk.proof shrunk.texts.proof]
   ==
 ::
 ++  persist-examples
   ::  One rendered example per label, in label order.
-  |=  kept=(map @t vase)
+  |=  kept=(map @t example:engine)
   ^-  examples:app
   %+  turn  (sort ~(tap by kept) |=([a=[@t *] b=[@t *]] (aor -.a -.b)))
-  |=  [label=@t sam=vase]
-  [label q.sam (crip ~(ram re (sell sam)))]
+  |=  [label=@t =example:engine]
+  [label q.vase.example text.example]
 ::
 ++  persist-outcome
   ::  An engine outcome without vases: evidence and examples keep their
   ::  nouns and rendered text.
-  |=  [out=outcome:engine kept=(map @t vase)]
+  |=  [out=outcome:engine kept=(map @t example:engine)]
   ^-  outcome:app
   ?-  -.out
     ?(%exhausted %passed-unexpectedly)  out

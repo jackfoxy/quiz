@@ -78,7 +78,7 @@
   ^-  report
   =/  r  (lift p)
   =/  rows=(list [table=@t value=@t])
-    (turn values |=(value=@t [table value]))
+    (turn values (lead table))
   r(tables (weld rows tables.r))
 ::
 ++  implies

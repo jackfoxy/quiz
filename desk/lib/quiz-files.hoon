@@ -44,6 +44,62 @@
       ['readonly' b+&]
   ==
 ::
+++  properties
+  ::  Hoon files on `desk` at `revision` whose prelude imports
+  ::  `engine=quiz-engine` and that declare `++  fate`, as workbench paths
+  ::  under /clay. The Clay source view lists these; urui's browse, used
+  ::  by Open, lists all.
+  |=  [bol=bowl:gall desk=@tas revision=@ud]
+  ^-  (each (list path) failure:ufiles)
+  ::  a-co, not scot: +locate parses the revision with +dem, so no dots.
+  =/  scope=path  /clay/[desk]/(crip (a-co:co revision))
+  =/  where  (locate bol scope)
+  ?:  ?=(%.n -.where)  where
+  =/  tomb  ~[(scot %p our.bol) %$ (scot %da now.bol) %tomb]
+  =/  found
+    %-  mule
+    |.
+    %+  skim  (browse-paths:ufiles p.where)
+    |=  sub=path
+    ^-  ?
+    ?~  sub  |
+    ?.  =(%hoon (rear sub))  |
+    =/  beam  (en-beam beak.p.where (weld rel.p.where sub))
+    ?.  .^(? %cx (weld tomb beam))  |
+    =/  text  (from-stored:ufiles %cord .^(* %cq beam))
+    ?~(text | &((imports-engine u.text) (has-fate u.text)))
+  ?:  ?=(%.n -.found)
+    [%.n (fail-with:ufiles %internal 500 'clay browse failed' p.found)]
+  =/  kept=(list path)  p.found
+  [%.y (turn kept (cury weld scope))]
+::
+++  imports-engine
+  ::  Whether the prelude has `/+  engine=quiz-engine`. Only whole lines
+  ::  within the first prelude-bytes are parsed.
+  |=  text=@t
+  ^-  ?
+  =/  lines=wain  (to-wain:format (end [3 prelude-bytes] text))
+  =?  lines  (gth (met 3 text) prelude-bytes)  (snip lines)
+  =/  parsed  (header-rule:build [1 1] (trip (of-wain:format lines)))
+  ?~  q.parsed  |
+  %+  lien  p.u.q.parsed
+  |=  dep=dependency:build
+  &(=(`%engine face.dep) =(/lib/quiz-engine/hoon path.dep))
+::
+++  has-fate
+  ::  Whether a line starts with `++  fate`, alone or followed by a space:
+  ::  the arm every property needs, at column 0. Textual; the build still
+  ::  type-checks.
+  |=  text=@t
+  ^-  ?
+  %+  lien  (to-wain:format text)
+  |=  line=@t
+  |(=('++  fate' line) =('++  fate ' (end [3 9] line)))
+::
+++  prelude-bytes
+  ::  Far longer than any real prelude; no need to read a whole file.
+  4.096
+::
 ++  locate
   ::  Virtual workbench roots. Only work documents may be written.
   |=  [bol=bowl:gall rel=path]

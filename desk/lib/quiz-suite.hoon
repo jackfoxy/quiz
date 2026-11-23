@@ -86,7 +86,7 @@
       =.  names  (sort names |=([a=term b=term] !(aor a b)))
       =/  selected
         ?:  =(~ selected.doc)  names
-        (skim names |=(name=term (~(has in chosen) name)))
+        (skim names ~(has in chosen))
       :*  %ready  doc  core  names  selected
           ~  [(lent selected) 0 0 0 0 0]  ~
       ==

@@ -40,7 +40,8 @@ function mockApi() {
       const rec = {id, kind: request.source.kind, request,
         status: 'running', 'engine-version': 'test',
         seed: suite ? null : request.seed || '0v123',
-        config: suite ? null : request.config || config,
+        // %quiz merges a request's changed fields into the document conf.
+        config: suite ? null : {...config, ...(request.config || {})},
         'sample-metrics': suite ? 'unavailable' : 'available',
         'replay-of': old?.id || null,
         snapshot: {source: request.source.text || '|=  a=@ud\n=(a a)',
@@ -73,7 +74,10 @@ async function scenario(env, mock, name) {
   assert.equal(el('run-settings-note').textContent, '', 'discard obsolete inspection');
   field('requested', '5'); field('seed', '0v123');
   field('sizeMax', '8'); field('duplicates', 'allow');
+  const confCalls = () => mock.calls.filter(c => c.op === 'document-conf').length;
+  const before = confCalls();
   await runs.run();
+  assert.equal(confCalls(), before, 'overrides need no conf build');
   const id = tab.runIds[0];
   assert.equal(id, '9007199254740993');
   assert.equal(mock.records.get(id).config.requested, 5);

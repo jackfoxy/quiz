@@ -10,11 +10,25 @@
       [%suite path=path arms=(list term)]
   ==
 ::
++$  patch
+  ::  Conf fields a request sets; ~ keeps the document's value. Merged in
+  ::  %quiz after the build, so a client need not compile to override.
+  $:  requested=(unit @ud)
+      attempts-max=(unit @ud)
+      drops-max=(unit @ud)
+      duplicates-max=(unit @ud)
+      size-start=(unit @ud)
+      size-max=(unit @ud)
+      duplicates=(unit policy:engine)
+      bounds=(unit limits:engine)
+      on-timeout=(unit timeout-policy:engine)
+  ==
+::
 +$  request
   $:  source=source
       desk=@tas
       revision=case
-      config=(unit conf:engine)
+      config=(unit patch)
       seed=(unit @uv)
       replay-of=(unit run-id)
   ==

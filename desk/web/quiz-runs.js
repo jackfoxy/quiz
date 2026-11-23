@@ -30,7 +30,7 @@
   };
   window.quizRunFields = cleanFields;
   window.createQuizRuns = ({runtime, post, getContexts, getDefaults,
-    selection, select, pollDelay = 1000}) => {
+    selection, select, pollDelay = 1000, idleDelay = 30000}) => {
     const docs = runtime.documents;
     const el = (id) => document.getElementById(id);
     const node = (tag, id, text) => {
@@ -101,7 +101,8 @@
     let stopped = false;
     let currentTab = null;
     let inspecting = 0;
-    let detailKey = '';
+    let shown = {};
+    let staleNote = null;
     let historyKey = '';
     const active = () => docs.active('property');
     const tell = (text) => { message.textContent = text; };
@@ -287,13 +288,14 @@
             throw new Error('The first sample size must be a whole number of at least 1.');
           }
           if (sizeMax !== '' && !whole(sizeMax)) throw new Error('The largest sample size must be a whole number; 0 means no cap.');
-          const conf = (await post('/apps/quiz/api', {...req, op: 'document-conf'})).config;
-          const next = {...conf};
+          // Only the changed fields: %quiz merges them into the document's conf
+          // after its one build, and reports an out-of-range result as conf-range.
+          const next = {};
           if (requested !== '') next.requested = Number(requested);
           if (sizeStart !== '') next['size-start'] = Number(sizeStart);
           if (sizeMax !== '') next['size-max'] = Number(sizeMax);
           if (duplicates) next.duplicates = duplicates;
-          if (next['size-max'] && next['size-max'] < next['size-start']) {
+          if (next['size-max'] && next['size-start'] && next['size-max'] < next['size-start']) {
             throw new Error(`The largest sample size (${next['size-max']}) is below the first (${next['size-start']}).`);
           }
           req.config = next;
@@ -368,12 +370,24 @@
         block(parent, 'run-got', 'Actual', detail.compared.got);
       }
     };
+    const sourceNote = (rec, tab) => {
+      const snapshot = rec.snapshot;
+      if (tab && snapshot && tab.text !== snapshot.source) return 'Stale: the source tab differs from this run’s snapshot.';
+      return !tab ? 'Source tab is closed or not linked in this browser.'
+        : !snapshot ? (rec.status === 'done' ? 'No source snapshot is available for this run.'
+          : 'Waiting for the server source snapshot.') : 'Source tab matches this snapshot.';
+    };
+    // Fetched records are replaced, never mutated, so identity detects change.
+    // An edit only touches the stale note, not the whole detail.
     function renderDetail() {
       const id = selection(); const rec = records.get(id);
       const tab = linked(id);
-      const key = JSON.stringify([id, rec, tab?.id, tab?.label, tab?.text]);
-      if (key === detailKey) { updateButtons(); return; }
-      detailKey = key;
+      if (shown.id === id && shown.rec === rec && shown.tab === tab?.id && shown.label === tab?.label) {
+        if (rec && staleNote) staleNote.textContent = sourceNote(rec, tab);
+        updateButtons(); return;
+      }
+      shown = {id, rec, tab: tab?.id, label: tab?.label};
+      staleNote = null;
       detail.replaceChildren();
       if (!rec) {
         detail.append(node('p', 'run-empty', id
@@ -385,12 +399,8 @@
         ? rec.outcome.status : rec.outcome?.kind || rec.status}`);
       detail.append(title);
       const snapshot = rec.snapshot;
-      const stale = Boolean(tab && snapshot && tab.text !== snapshot.source);
-      detail.append(node('p', 'run-stale', stale
-        ? 'Stale: the source tab differs from this run’s snapshot.'
-        : !tab ? 'Source tab is closed or not linked in this browser.'
-          : !snapshot ? (rec.status === 'done' ? 'No source snapshot is available for this run.'
-            : 'Waiting for the server source snapshot.') : 'Source tab matches this snapshot.'));
+      staleNote = node('p', 'run-stale', sourceNote(rec, tab));
+      detail.append(staleNote);
       if (tab) detail.append(button('run-source-tab', `Source tab: ${tab.label}`,
         () => docs.select('property', tab.id)));
       line(detail, 'Server status', rec.status);
@@ -478,9 +488,14 @@
       }
       renderDetail();
     }
+    // Poll quickly only while a known run can still change. When every run is
+    // done, a slow poll still notices runs started elsewhere; a hidden page
+    // does not poll and refreshes when shown again.
     function schedule() {
       clearTimeout(timer);
-      if (!stopped && !window.__URUI_DOUBLES_TEST__) timer = setTimeout(() => { void refresh(); }, online ? pollDelay : 5000);
+      if (stopped || document.hidden || window.__URUI_DOUBLES_TEST__) return;
+      const working = ids.some((id) => records.get(id)?.status !== 'done');
+      timer = setTimeout(() => { void refresh(); }, !online ? 5000 : working ? pollDelay : idleDelay);
     }
     async function refresh() {
       if (refreshing) return refreshing;
@@ -509,6 +524,9 @@
     }
     window.addEventListener('pagehide', () => { stopped = true; clearTimeout(timer); });
     window.addEventListener('pageshow', () => { if (stopped) { stopped = false; void refresh(); } });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearTimeout(timer); else if (!stopped) void refresh();
+    });
     function changed() {
       clearInspection();
       renderDetail();

@@ -185,9 +185,12 @@
     context = selected;
     runtime.session.queue();
     state.textContent = `Loading %${context.desk} at revision ${context.revision}…`;
-    const scope = ['clay', context.desk, context.revision];
     try {
-      const result = await post('/apps/quiz/files', {op: 'browse', scope});
+      // Only property documents: Hoon files whose prelude imports
+      // engine=quiz-engine and that declare ++fate.  Open's /clay location
+      // still lists every file.
+      const result = await post('/apps/quiz/api',
+        {op: 'properties', desk: context.desk, revision: context.revision});
       if (generation !== browseGeneration) return false;
       const entries = result.entries.filter((entry) => entry.kind === 'file');
       for (const entry of entries) {
@@ -197,7 +200,7 @@
         button.addEventListener('click', () => docs.open('property', entry.path));
         files.append(button);
       }
-      state.textContent = `${entries.length} Hoon files — revision ${selected.revision}`;
+      state.textContent = `${entries.length} property documents — revision ${selected.revision}`;
       return true;
     } catch (cause) {
       if (generation !== browseGeneration) return false;

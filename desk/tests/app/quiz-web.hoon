@@ -37,14 +37,19 @@
   |=  body=@t
   (poke (request %'POST' '/apps/quiz/api' `(as-octs:mimes:html body)))
 ::
-++  status
+++  header
   |=  cards=(list card:agent:gall)
-  ^-  @ud
+  ^-  response-header:http
   =/  found  (skim cards |=(c=card:agent:gall ?=([%give %fact * *] c)))
   ?>  ?=(^ found)
   =/  card  i.found
   ?>  ?=([%give %fact * %http-response-header *] card)
-  status-code:!<(response-header:http q.cage.p.card)
+  !<(response-header:http q.cage.p.card)
+::
+++  status
+  |=  cards=(list card:agent:gall)
+  ^-  @ud
+  status-code:(header cards)
 ::
 ++  response-body
   |=  cards=(list card:agent:gall)
@@ -107,6 +112,27 @@
   =/  req  (request %'GET' url ~)
   =/  got  (poke req(authenticated |))
   (expect-eq !>(200) !>((status -.got)))
+::
+++  test-asset-revalidation
+  ^-  tang
+  =/  req  (request %'GET' '/apps/quiz/app.js' ~)
+  =.  authenticated.req  |
+  =/  first  -:(poke req)
+  =/  heads  headers:(header first)
+  =/  tag  (need (get-header:http 'etag' heads))
+  =/  again  -:(poke req(header-list.request ~[['if-none-match' tag]]))
+  =/  stale  -:(poke req(header-list.request ~[['if-none-match' '"0v0"']]))
+  =/  data
+    %+  skim  again
+    |=(c=card:agent:gall ?=([%give %fact * %http-response-data *] c))
+  ?>  ?=([[%give %fact * %http-response-data *] ~] data)
+  ;:  weld
+    (expect-eq !>(200) !>((status first)))
+    (expect-eq !>(`'no-cache') !>((get-header:http 'cache-control' heads)))
+    (expect-eq !>(304) !>((status again)))
+    (expect !>(=(~ !<((unit octs) q.cage.p.i.data))))
+    (expect-eq !>(200) !>((status stale)))
+  ==
 ::
 ++  test-auth-before-method-body-and-path
   ^-  tang
@@ -212,20 +238,22 @@
     (expect-eq !>(~) !>(-.stale))
   ==
 ::
-++  test-config-round-trip
+++  test-patch-round-trip
   ^-  tang
-  =/  got  (config-in:codec (config-out:codec defaults:engine))
-  =/  cfg  defaults:engine
-  =.  cfg  cfg(size-start 3, size-max 40, duplicates %exact, on-timeout %fail)
+  =/  base  defaults:engine
+  =/  cfg  base(size-start 3, size-max 40, duplicates %exact, on-timeout %fail)
   =/  out  (config-out:codec cfg)
   ?>  ?=([%o *] out)
+  =/  whole  (patch-in:codec out)
+  =/  one  (pairs:enjs:format ~[['requested' n+'7'] ['size-max' ~]])
+  =/  some  (patch-in:codec one)
   =/  bad  [%o (~(put by p.out) 'duplicates' s+'never')]
   ;:  weld
-    (expect-eq !>(defaults:engine) !>(got))
-    (expect-eq !>(cfg) !>((config-in:codec out)))
+    (expect-eq !>(cfg) !>((merge:job base whole)))
+    (expect-eq !>(base(requested 7)) !>((merge:job base some)))
+    (expect-eq !>(some) !>((patch-in:codec (patch-out:codec some))))
     (expect-eq !>(s+'exact') !>((~(got by p.out) 'duplicates')))
-    (expect-eq !>(s+'fail') !>((~(got by p.out) 'on-timeout')))
-    (expect !>(=(~ (mole |.((config-in:codec bad))))))
+    (expect !>(=(~ (mole |.((patch-in:codec bad))))))
   ==
 ::
 ++  test-decimal-precision

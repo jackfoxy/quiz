@@ -32,35 +32,6 @@
   $~  [~ ~ default-timeouts:job]
   [files=(unit pending:ufiles) api=(unit pending) limits=timeouts:app]
 ::
-++  assets
-  ::  Public GET routes under /apps/quiz: page, client, help index, Ace
-  ::  and icons.
-  ^-  (list [suffix=@t asset=asset:uhttp])
-  =/  js  'text/javascript; charset=utf-8'
-  =/  plain  'text/plain; charset=utf-8'
-  =/  texts=(list [@t @t @t])
-    :~  ['' 'text/html; charset=utf-8' page:web]
-        ['/' 'text/html; charset=utf-8' page:web]
-        ['/app.js' js javascript:web]
-        ['/doc.toc' plain docs-toc]
-        ['/ace/ace.js' js ace-core]
-        ['/ace/config.js' js ace-config:web]
-        ['/ace/mode-hoon.js' js ace-hoon]
-        ['/ace/theme-github.js' js ace-light]
-        ['/ace/theme-monokai.js' js ace-dark]
-        ['/ace/ext-beautify.js' js ace-beaut]
-        ['/ace/ext-prompt.js' js ace-prompt]
-        ['/ace/ext-searchbox.js' js ace-search]
-        ['/ace/ext-settings_menu.js' js ace-sets]
-        ['/ace/keybinding-vim.js' js ace-vim]
-        ['/ace/license.txt' plain (of-wain:format ace-lic)]
-    ==
-  :-  ['/favicon.png' 'image/png' (as-octs:mimes:html favicon)]
-  :-  ['/quiz.png' 'image/png' (as-octs:mimes:html quiz-tile)]
-  %+  turn  texts
-  |=  [suffix=@t kind=@t body=@t]
-  [suffix kind (as-octs:mimes:html body)]
-::
 ++  reply
   ::  A JSON response that is never cached or content-sniffed.
   |=  [id=@ta status=@ud body=json]
@@ -97,7 +68,7 @@
     ?.  %+  lien  cards
         |=  c=card
         ?.  ?=([%give %fact * *] c)  |
-        (lien paths.p.c |=(p=path =(p watched)))
+        (lien paths.p.c (cury test watched))
       ~
     `[%give %kick ~[watched] `who]
   (weld kicks cards)
@@ -122,6 +93,34 @@
       ['seed' ?~(seed.settings.got ~ s+(scot %uv u.seed.settings.got))]
   ==
 --
+::  Public GET routes under /apps/quiz: page, client, help index, Ace and
+::  icons. Pinned here, they are built once per commit, not per request.
+=/  assets=(list [suffix=@t asset=asset:uhttp])
+  =/  page  page:web
+  =/  js  'text/javascript; charset=utf-8'
+  =/  plain  'text/plain; charset=utf-8'
+  =/  texts=(list [@t @t @t])
+    :~  ['' 'text/html; charset=utf-8' page]
+        ['/' 'text/html; charset=utf-8' page]
+        ['/app.js' js javascript:web]
+        ['/doc.toc' plain docs-toc]
+        ['/ace/ace.js' js ace-core]
+        ['/ace/config.js' js ace-config:web]
+        ['/ace/mode-hoon.js' js ace-hoon]
+        ['/ace/theme-github.js' js ace-light]
+        ['/ace/theme-monokai.js' js ace-dark]
+        ['/ace/ext-beautify.js' js ace-beaut]
+        ['/ace/ext-prompt.js' js ace-prompt]
+        ['/ace/ext-searchbox.js' js ace-search]
+        ['/ace/ext-settings_menu.js' js ace-sets]
+        ['/ace/keybinding-vim.js' js ace-vim]
+        ['/ace/license.txt' plain (of-wain:format ace-lic)]
+    ==
+  :-  ['/favicon.png' 'image/png' (as-octs:mimes:html favicon)]
+  :-  ['/quiz.png' 'image/png' (as-octs:mimes:html quiz-tile)]
+  %+  turn  texts
+  |=  [suffix=@t kind=@t body=@t]
+  [suffix kind (as-octs:mimes:html body)]
 =|  state
 =*  state  -
 |_  bowl=bowl:gall
@@ -182,7 +181,19 @@
   ?^  asset
     ?.  =(%'GET' method.request.req)
       [(refuse id 405 'method-not-allowed') this]
-    [(give:uhttp id (respond:uhttp 200 u.asset)) this]
+    ::  `no-cache` revalidates each load, so a commit shows at once; a
+    ::  matching etag answers 304 without the body. Atoms cache their mug.
+    =/  tag  (rap 3 ~['"' (scot %uv (mug q.body.u.asset)) '"'])
+    =/  seen  (get-header:http 'if-none-match' header-list.request.req)
+    =/  fresh  ?~(seen | ?=(^ (find (trip tag) (trip u.seen))))
+    =/  payload  (respond:uhttp ?:(fresh 304 200) u.asset)
+    =.  headers.response-header.payload
+      :~  ['content-type' content-type.u.asset]
+          ['etag' tag]
+          ['cache-control' 'no-cache']
+      ==
+    =?  data.payload  fresh  ~
+    [(give:uhttp id payload) this]
   ?.  &(authenticated.req =(src.bowl our.bowl))
     [(refuse id 401 'authentication-required') this]
   =/  handled  (private-http id req url)
@@ -231,7 +242,7 @@
         (pairs:enjs:format ~[['ids' a+(turn ids decimal:codec)]])
       ==
     %status
-      ?.  (lien ids |=(n=@ud =(n id.cmd)))
+      ?.  (lien ids (cury test id.cmd))
         [(refuse id 404 'run-not-found') this]
       =/  path=path
         /(scot %p our.bowl)/quiz/(scot %da now.bowl)/run/(scot %ud id.cmd)/noun
@@ -286,6 +297,15 @@
           ['defaults' (config-out:codec defaults:engine)]
           ['engine-version' s+version:engine]
       ==
+    %properties
+      =/  got  (properties:qfiles bowl desk.cmd revision.cmd)
+      ?:  ?=(%.n -.got)  [(refuse:ufiles id p.got) this]
+      =/  entry
+        |=  rel=path
+        ^-  json
+        (pairs:enjs:format ~[['path' (path-out:codec rel)] ['kind' s+'file']])
+      =/  entries=json  a+(turn p.got entry)
+      [(reply id 200 (pairs:enjs:format ~[['entries' entries]])) this]
     %suite-arms
       ?:  !=(~ api.state)  [(refuse id 503 'api-busy') this]
       =/  ctx  (pin:build our.bowl desk.cmd revision.cmd now.bowl)
@@ -399,7 +419,7 @@
     :-  200
     %-  pairs:enjs:format
     :~  ['context' (context-out:codec where.doc.got)]
-        ['arms' a+(turn available.got |=(name=term s+name))]
+        ['arms' a+(turn available.got (lead %s))]
     ==
   :_  this(api.state ~)
   :-  [%pass wire %arvo %b %rest until.pending]

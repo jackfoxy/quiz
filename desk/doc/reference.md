@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-6`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-7`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -442,8 +442,8 @@ lowered but not raised above their engine defaults.
 | `bounds.requested-max` | 10,000 | Ceiling for requested checks |
 | `bounds.shrink-candidates` | 1,000 | Candidates considered, even if skipped |
 | `bounds.shrink-depth` | 100 | Accepted shrink replacements |
-| `bounds.sample-bytes` | 65,536 | Jammed sample vase bytes, including its type |
-| `bounds.rendered-bytes` | 16,384 | Rendered sample cord bytes |
+| `bounds.sample-bytes` | 65,536 | Jammed sample value bytes; the type, shared by every sample, is not counted |
+| `bounds.rendered-bytes` | 16,384 | Rendered cord bytes of a kept sample: failure evidence, accepted shrinks, each label's first example, and samples stored under a split timeout policy |
 | `bounds.diagnostics-bytes` | 16,384 | Jammed engine failure/diagnostic noun bytes |
 | `bounds.alts-bytes` | 262,144 | Jammed candidate-list bytes |
 | `bounds.seen-bytes` | 4,194,304 | Jammed bytes of the samples `%exact` keeps |
@@ -478,7 +478,9 @@ A change applies from the next slice, build or arm. It does not reach a call
 that is already running.
 
 Byte limits apply after generation, rendering or list construction as relevant;
-`jam` also allocates. Build and suite diagnostics use the default diagnostic
+`jam` also allocates. Only kept samples are rendered, each once, so a passing
+sample with no new label renders nothing and cannot hit `rendered-bytes`.
+Shrink candidates are weighed under the call limit before they are judged. Build and suite diagnostics use the default diagnostic
 cap; the configurable property cap applies inside the engine.
 
 CPU limits are enforced by Vere's `%jinx` hint. A call that exceeds its limit,
@@ -766,7 +768,7 @@ as `dropped` under `%discard`, and as the failure under `%fail`.
 | `clay: no files match /sur/quiz-app/hoon` or `/sur/urui/hoon` | Copy **all** packaged `desk/` contents into the mounted desk, including `sur`, `app`, `web`, `doc`, fixtures and examples; then `\|commit %quiz` and rerun tests. Copying only lib/gen/tests is insufficient. |
 | `%fate-missing`, `%fate-type`, `%norn-type`, `%alts-type` | Use a property core with the signatures above; choose suite mode for a test core. |
 | `%source`, `%import`, `%build`, unavailable desk/revision | Check path and pinned context. For a saved compiler failure, an editable draft may expose a more precise compiler diagnostic. |
-| `%conf-range` | Start with defaults, keep the full config, respect ceilings and positive bounds. |
+| `%conf-range` | Start with defaults, keep the full config, respect ceilings and positive bounds. A request `config` patch is checked after it is merged. |
 | `%cover-type`, `%cover-range` | `++cover` must be `[?(%warn %check) (list [@t @ud])]`: at most 100 distinct, nonempty labels of at most 256 bytes, each percent at most 100. |
 | `%expect-type` | `++expect` must be `%pass` or `%fail`. |
 | `%uncovered` | Every check passed, but a required label was too rare. Inspect the distribution; change the generator, not the requirement, unless the requirement was wrong. |
@@ -801,7 +803,7 @@ already checked parts/configuration and own scheduling and persistence.
 | [quiz-gen](../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
-| [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `resolve` checks context before rebuilding |
+| [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `refuse` checks a record without parsing; `resolve` checks context before rebuilding |
 | [quiz-job](../lib/quiz-job.hoon) | Pure admission, queue, slices, retention, save/load transformations |
 | [quiz-agent](../lib/quiz-agent.hoon) | Gall bowl, Clay requests, Behn scheduling, facts/scries and local admission callbacks |
 | [quiz-json](../lib/quiz-json.hoon) | JSON codecs; decimal string IDs; no vases on HTTP |

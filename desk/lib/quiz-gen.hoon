@@ -384,7 +384,7 @@
   |=  n=@
   ^-  (list @)
   ?:  (lte n floor)  ~
-  (turn (shrink-atom (sub n floor)) |=(d=@ (add floor d)))
+  (turn (shrink-atom (sub n floor)) (cury add floor))
 ::
 ++  shrink-list
   ::  Delete chunks of n/1, n/2, ..., 1 elements, then shrink one element

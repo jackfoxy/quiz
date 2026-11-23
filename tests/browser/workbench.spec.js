@@ -81,8 +81,12 @@ test('read-only examples/docs, editable copies, pinned Clay and fallback help', 
   await page.locator('#clay-revision').fill(pinned);
   await page.locator('#clay-browse').click();
   await expect(page.locator('#clay-state')).toContainText(`revision ${pinned}`);
-  await page.locator('#clay-files button').filter({hasText: /^lib\/quiz\/hoon$/}).click();
-  await expect(page.locator('#document-location')).toHaveText(`Read-only: clay/quiz/${pinned}/lib/quiz/hoon`);
+  // Clay source lists property documents only: lib/quiz has no engine import.
+  await expect(page.locator('#clay-files button').filter({hasText: /^lib\/quiz\/hoon$/})).toHaveCount(0);
+  await page.locator('#clay-files button')
+    .filter({hasText: /^examples\/props\/01-success\/hoon$/}).click();
+  await expect(page.locator('#document-location'))
+    .toHaveText(`Read-only: clay/quiz/${pinned}/examples/props/01-success/hoon`);
   await page.evaluate(() => window.quiz.runtime.session.save());
   page.once('dialog', (dialog) => dialog.accept());
   await page.reload();

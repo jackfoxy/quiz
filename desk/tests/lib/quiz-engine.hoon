@@ -319,7 +319,7 @@
         ^-  (list @ud)
         ~[size]
   =/  initial  (start fate `give)
-  =/  done  (step:engine initial(sample-bytes.bounds.config 1))
+  =/  done  (step:engine initial(sample-bytes.bounds.config 0))
   ;:  weld
     (expect !>(?=([~ %limited %sample-bytes ~] result.done)))
     (expect-eq !>(`counters:engine`[1 0 0 0 0 0]) !>(counts.done))
@@ -441,6 +441,22 @@
       =/  tag  ?:(=(0 (mod n 2)) 'even' 'odd')
       [%report & [~ ~] ~[tag tag] ~[['parity' tag] ['all' 'x']]]
 ::
+++  test-render-cap-only-kept
+  ::  Only kept samples render: untagged passes ignore rendered-bytes, a
+  ::  label's first example is held to it.
+  ^-  tang
+  ::  Old rules stopped both: '10' and 'n=10' are over their caps.
+  =/  cfg  (config 10 20 5 5)
+  =/  one  cfg(rendered-bytes.bounds 1)
+  =/  three  cfg(rendered-bytes.bounds 3)
+  =/  plain  (finished one [!>(|=(@ud &)) `sized `no-alts ~ %pass])
+  =/  tagged  (finished three [parity `sized `no-alts ~ %pass])
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.plain)))
+    (expect !>(?=([~ %passed ~] result.tagged)))
+    (expect-eq !>('n=1') !>(text:(~(got by examples.tagged) 'odd')))
+  ==
+::
 ++  test-report-tags
   ::  Labels count once per sample; table rows count every value.
   ^-  tang
@@ -452,8 +468,8 @@
     !>(labels.seen-tags.done)
     %+  expect-eq  !>((malt `(list [@t @ud])`~[['x' 10]]))
     !>((~(got by tables) 'all'))
-    (expect-eq !>(`*`1) !>(q:(~(got by examples.done) 'odd')))
-    (expect-eq !>(`*`2) !>(q:(~(got by examples.done) 'even')))
+    (expect-eq !>(`*`1) !>(q.vase:(~(got by examples.done) 'odd')))
+    (expect-eq !>(`*`2) !>(q.vase:(~(got by examples.done) 'even')))
   ==
 ::
 ++  test-report-verdicts
@@ -546,7 +562,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-6) !>(version:engine))
+    (expect-eq !>(%quiz-engine-7) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))
@@ -633,7 +649,7 @@
   =/  work  (need shrink.start)
   =/  cand  !>(`@ud`0)
   =.  shrink.start  `work(pending `~[cand])
-  =.  pending.start  `cand
+  =.  pending.start  `[cand '0' 1]
   =/  got  (timed-out:engine start)
   ;:  weld
     (expect-eq !>(`@ud`1) !>(shrink-steps.counts.got))
@@ -649,8 +665,12 @@
   =/  failed=state:engine  (step:engine s)
   =/  cand  !>(`@ud`0)
   =.  shrink.failed
-    `[[[%false ~ ~] !>(`@ud`5) !>(`@ud`5)] *(set @) `~[cand]]
-  =.  pending.failed  `cand
+    :-  ~
+    :^  [[%false ~ ~] !>(`@ud`5) !>(`@ud`5) '5' '5']
+      *(set @)
+    `~[cand]
+    6
+  =.  pending.failed  `[cand '0' 1]
   =/  got  (timed-out:engine failed)
   ;:  weld
     (expect !>(=(~ pending.got)))

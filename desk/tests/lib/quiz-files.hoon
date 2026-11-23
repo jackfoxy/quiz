@@ -60,4 +60,61 @@
     (expect-eq !>(400) !>(status.p.partial))
     (expect-eq !>(400) !>(status.p.bad))
   ==
+::
+++  source
+  ::  Lines joined into a source text.
+  |=  lines=wain
+  ^-  @t
+  (of-wain:format (weld lines `wain`~['|%' '++  fate  |=(@ud &)' '--']))
+::
+++  test-imports-engine
+  ::  Only an `engine=quiz-engine` face on a /+ import marks a property.
+  ^-  tang
+  =/  yes=(list @t)
+    :~  (source ~['/+  engine=quiz-engine'])
+        (source ~['/-  app=quiz-app' '/+  gen=quiz-gen, engine=quiz-engine'])
+        (source ~['/+  gen=quiz-gen,' '    engine=quiz-engine'])
+        (source ~['::  a property' '/+  engine=quiz-engine'])
+    ==
+  =/  no=(list @t)
+    :~  (source ~)
+        (source ~['/+  quiz-engine'])
+        (source ~['/+  e=quiz-engine'])
+        (source ~['/+  *test, quiz'])
+        (source ~['::  /+  engine=quiz-engine'])
+    ==
+  ;:  weld
+    (expect !>((levy yes imports-engine:files)))
+    (expect !>(!(lien no imports-engine:files)))
+  ==
+::
+++  test-has-fate
+  ::  `++  fate` at column 0, alone or before a space; nothing before it.
+  ^-  tang
+  =/  prelude  '/+  engine=quiz-engine'
+  =/  yes=(list @t)
+    :~  (source ~)
+        (of-wain:format ~[prelude '|%' '++  fate' '  |=(@ud &)' '--'])
+    ==
+  =/  no=(list @t)
+    :~  (of-wain:format ~[prelude '|%' '++  norn  !!' '--'])
+        (of-wain:format ~[prelude '|%' '  ++  fate' '    |=(@ud &)' '--'])
+        (of-wain:format ~[prelude '|%' '::  ++  fate' '--'])
+        (of-wain:format ~[prelude '|%' '++  fate-helper  !!' '--'])
+        (of-wain:format ~[prelude '|%' '++  fated  !!' '--'])
+    ==
+  ;:  weld
+    (expect !>((levy yes has-fate:files)))
+    (expect !>(!(lien no has-fate:files)))
+  ==
+::
+++  test-imports-engine-long-source
+  ::  The prelude is found however long the body after it.
+  ^-  tang
+  =/  body=wain  (reap 2.000 '::  padding line')
+  =/  long  (source (weld `wain`~['/+  engine=quiz-engine'] body))
+  ;:  weld
+    (expect !>((gth (met 3 long) prelude-bytes:files)))
+    (expect !>((imports-engine:files long)))
+  ==
 --

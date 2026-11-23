@@ -29,6 +29,11 @@ with a session, 401 without one. Known routes with the wrong method return 405
 bodies 413, unsupported content types 415. Authentication is checked first.
 The engine separately enforces its source and configuration limits.
 
+Public GET responses are built once per commit. Each carries an `etag` and
+`cache-control: no-cache`, so the browser revalidates on every load; a
+matching `If-None-Match` returns 304 with no body. A commit that changes an
+asset changes its `etag`.
+
 Eyre uses a guest ship identity for anonymous HTTP, so its response watches and
 HTTP request mark accept guests. Private commands require both Eyre's
 `authenticated` flag and `src == our`; a foreign caller cannot forge the flag.
@@ -105,8 +110,12 @@ Other source forms:
 
 For a suite, `arms` is required: empty selects every discovered test arm; a
 nonempty array selects exact names. Suites have no controlled seed or sample
-metrics. `config`, when supplied, is a **complete** override, including every
-bound. Omit it to use the document's configuration or engine defaults.
+metrics. `config`, when supplied, overrides only the fields it names, for
+example `{"requested":500,"size-max":40}`; an absent or `null` field keeps the
+document's value, and `bounds`, when given, must be complete. `%quiz` merges it
+after the build and records the effective configuration; a merged value out of
+range ends the run `invalid` with code `conf-range`. Omit `config` to use the
+document's configuration or engine defaults.
 
 ```json
 {"op":"replay","id":"42"}
@@ -140,9 +149,9 @@ exhausted memory or was interrupted, the event rolls back and Eyre answers
 discovery behaves the same way when interrupted; its Clay build has no CPU
 limit.
 
-The workbench uses this operation when overriding requested checks: it copies
-the document's full configuration and changes only `requested`, preserving
-other budgets. Blank controls leave the engine to resolve document settings.
+The workbench uses this operation only for **Read document conf**. A run
+with overridden fields sends just those fields, so it needs no extra build.
+Blank controls leave the engine to resolve document settings.
 
 ### CPU time limits
 
@@ -237,6 +246,25 @@ proof.
 Returns 200 with pinned `context` and ordered `arms` names after an asynchronous
 Clay build. Discovery does not execute the test arms. Invalid/missing source,
 desk, revision, or test core returns 422 with the located diagnostic object.
+
+### Property documents on a desk
+
+```json
+{"op":"properties","desk":"quiz","revision":"100"}
+```
+
+Returns 200 with `entries`: every Hoon file on the desk at that decimal
+revision whose prelude imports `engine=quiz-engine` on a `/+` line and that
+declares a `++  fate` arm, as
+`{"path":["clay","quiz","100",…,"hoon"],"kind":"file"}` in path order. Only
+that exact face and library qualify; the first 4,096 bytes of each file are
+parsed for the prelude, in whole lines. The fate check is textual: a line must
+start with `++  fate`, at column 0 with nothing before it, followed by a space
+or the end of the line; nothing is compiled. The paths open through the file
+wire below. The workbench's **Clay source** view uses this; the file wire's
+`browse` lists every file. A missing or unavailable desk or revision returns
+the file wire's error envelope (400 or 404). The command is a read and takes
+no API slot.
 
 One API mutation/discovery/configuration inspection may await a reply at a time; another returns 503
 `{"error":"api-busy"}`. Reads remain available. Pending API requests time out

@@ -100,7 +100,18 @@
 ::
 +$  verdict  ?(%pass %drop failure)
 ::
-+$  counterexample  [why=failure original=vase shrunk=vase]
++$  shown
+  ::  A kept sample's rendering and its shrink weight, made together once.
+  [text=@t weight=@]
+::
++$  example  [=vase text=@t]
+::
++$  counterexample
+  $:  why=failure
+      original=vase
+      shrunk=vase
+      texts=[original=@t shrunk=@t]
+  ==
 ::
 +$  limit-name
   $?  %requested  %shrink-candidates  %shrink-depth  %sample-bytes
@@ -109,9 +120,11 @@
   ==
 ::
 +$  shrinking
+  ::  `weight` is the shrunk sample's, so candidates need not reweigh it.
   $:  evidence=counterexample
       visited=(set @)
       pending=(unit (list vase))
+      weight=@
   ==
 ::
 +$  error-stage  ?(%norn %generate %alts)
@@ -143,14 +156,14 @@
       result=(unit outcome)
       time=@dr
       seen-tags=distribution
-      examples=(map @t vase)
-      pending=(unit vase)
+      examples=(map @t example)
+      pending=(unit [=vase =shown])
   ==
 ::
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-6
+  %quiz-engine-7
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
@@ -276,20 +289,17 @@
   ?.  ?=(%0 -.made)
     =/  why  (classify made)
     ?>  ?=(^ why)
-    =/  stage  ?:(=(~ norn.compiled.s) %generate %norn)
-    (stop-error s stage why ~)
+    (stop-error s (source-stage s) why ~)
   ::  generate's maker already returns a vase. Unbox that trusted product;
   ::  molding its shared type tree again can expand recursive sample types.
   =/  sam  !<(vase [p:!>(*vase) p.made])
   =.  s
     s(rng next-rng, size (grow size.s size-max.config.s))
   =.  attempted.counts.s  +(attempted.counts.s)
-  =/  capped  (sample-limit time sam bounds.config.s)
-  ?:  ?=(%.n -.capped)
-    =/  stage  ?:(=(~ norn.compiled.s) %generate %norn)
-    (stop-error s stage p.capped ~)
-  =/  limit  p.capped
-  ?^  limit  s(result `[%limited u.limit ~])
+  ::  Only the value counts: every sample shares the type.
+  =/  bytes  (met 3 (jam q.sam))
+  ?:  (gth bytes sample-bytes.bounds.config.s)
+    s(result `[%limited %sample-bytes ~])
   =/  hash  (mug q.sam)
   =/  repeat=?
     ?-  duplicates.config.s
@@ -305,37 +315,49 @@
       %mug    s(seen (~(put by seen.s) hash ~))
       %exact  %=  s
                 seen       (~(add ja seen.s) hash q.sam)
-                seen-used  (add seen-used.s (met 3 (jam q.sam)))
+                seen-used  (add seen-used.s bytes)
               ==
     ==
   ?:  (gth seen-used.s seen-bytes.bounds.config.s)
     s(result `[%limited %seen-bytes ~])
-  ::  Under the split policy the fate runs on a later tick, from `pending`.
-  ?.  =(%interrupt on-timeout.config.s)  s(pending `sam)
-  (evaluate s sam)
+  ?:  =(%interrupt on-timeout.config.s)  (evaluate s sam ~)
+  ::  Under a split policy the fate runs on a later tick, from `pending`.
+  ::  Show the sample first: the error wake after a timeout keeps it as
+  ::  evidence and must run no user code.
+  =/  got  (show s sam ~)
+  ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
+  s(pending `[sam p.got])
 ::
 ++  judge-pending
   ::  The fate on the sample or candidate a split tick stored.
   |=  s=state
   ^-  state
-  =/  sam=vase  (need pending.s)
+  =/  got  (need pending.s)
   =.  s  s(pending ~)
-  ?^  shrink.s  (judge-candidate s sam)
-  (evaluate s sam)
+  ?^  shrink.s  (judge-candidate s vase.got `shown.got)
+  (evaluate s vase.got `shown.got)
 ::
 ++  evaluate
   ::  Judge a generated sample. A pass counts and tallies, a drop counts,
-  ::  and a failure starts shrinking.
-  |=  [s=state sam=vase]
+  ::  and a failure starts shrinking. `seen` is the sample's rendering when
+  ::  a split tick already made it.
+  |=  [s=state sam=vase seen=(unit shown)]
   ^-  state
-  =/  hash  (mug q.sam)
   =/  [found=verdict =tags]  (judge (sandbox time.s q.fate.compiled.s q.sam))
-  ?-  found
-    %pass  (finish (tally s(accepted.counts +(accepted.counts.s)) sam tags))
-    %drop  (finish s(dropped.counts +(dropped.counts.s)))
-    ^      ?.  (fits diagnostics-bytes.bounds.config.s found)
-             s(result `[%limited %diagnostics-bytes ~])
-           s(shrink `[[found sam sam] (~(put in *(set @)) hash) ~])
+  ?-    found
+      %pass
+    (finish (tally s(accepted.counts +(accepted.counts.s)) sam seen tags))
+  ::
+      %drop
+    (finish s(dropped.counts +(dropped.counts.s)))
+  ::
+      ^
+    ?.  (fits diagnostics-bytes.bounds.config.s found)
+      s(result `[%limited %diagnostics-bytes ~])
+    =/  got  (show s sam seen)
+    ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
+    =/  evidence=counterexample  [found sam sam text.p.got text.p.got]
+    s(shrink `[evidence (~(put in *(set @)) (mug q.sam)) ~ weight.p.got])
   ==
 ::
 ++  timed-out
@@ -345,24 +367,29 @@
   ::  sample starts shrinking as a %timeout failure, and a hanging candidate
   ::  is accepted only while the failure is also a %timeout: a candidate
   ::  that hangs for a different kind of failure is skipped.
+  ::  The stored sample was shown before it waited, so no user code runs.
   |=  s=state
   ^-  state
-  =/  sam=vase  (need pending.s)
+  =/  got  (need pending.s)
   =.  s  s(pending ~)
   ?:  ?=(%discard on-timeout.config.s)
     ?~  shrink.s  s(dropped.counts +(dropped.counts.s))
     s
+  =/  [sam=vase text=@t weight=@]  got
   ?~  shrink.s
-    s(shrink `[[[%timeout ~] sam sam] *(set @) ~])
+    =/  evidence=counterexample  [[%timeout ~] sam sam text text]
+    s(shrink `[evidence *(set @) ~ weight])
   ?.  ?=([%timeout ~] why.evidence.u.shrink.s)  s
   =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
+  =/  work  u.shrink.s
+  =.  evidence.work  evidence.work(shrunk sam, shrunk.texts text)
   ::  The candidate list is for the old best sample: ask alts again.
-  s(shrink `u.shrink.s(shrunk.evidence sam, pending ~))
+  s(shrink `work(weight weight, pending ~))
 ::
 ++  judge-candidate
   ::  Judge one shrink candidate whose weight was already checked. The
   ::  failure follows the shrunk sample, as its detail describes it.
-  |=  [s=state sam=vase]
+  |=  [s=state sam=vase seen=(unit shown)]
   ^-  state
   =/  work  (need shrink.s)
   =/  found  -:(judge (sandbox time.s q.fate.compiled.s q.sam))
@@ -370,8 +397,12 @@
   ?.  (fits diagnostics-bytes.bounds.config.s found)
     s(shrink ~, result `[%limited %diagnostics-bytes `evidence.work])
   ?.  =(-.found -.why.evidence.work)  s(shrink `work)
+  =/  got  (show s sam seen)
+  ?:  ?=(%.n -.got)  (unshown s %alts p.got `evidence.work)
   =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
-  s(shrink `work(shrunk.evidence sam, why.evidence found, pending ~))
+  =.  evidence.work
+    evidence.work(shrunk sam, why found, shrunk.texts text.p.got)
+  s(shrink `work(weight weight.p.got, pending ~))
 ::
 ++  grow
   ::  The next sample's size: about 1.1 times larger, plus one, held at
@@ -385,8 +416,10 @@
   ::  Count a passing sample's labels, once each, and its table rows; keep
   ::  the first sample per label as that label's example. An oversized tag
   ::  or too many distinct labels or rows stops the run.
-  |=  [s=state sam=vase =tags]
+  ::  An untagged pass changes nothing: the totals already met their caps.
+  |=  [s=state sam=vase seen=(unit shown) =tags]
   ^-  state
+  ?:  &(=(~ labels.tags) =(~ tables.tags))  s
   =/  labels=(list @t)  ~(tap in (silt labels.tags))
   =/  cells=(list (list @t))
     (turn tables.tags |=([a=@t b=@t] `(list @t)`~[a b]))
@@ -409,12 +442,14 @@
     (roll (turn ~(val by rows) |=(m=(map @t @ud) ~(wyt by m))) add)
   ?:  |((gth ~(wyt by counted) label-max) (gth width label-max))
     s(result `[%limited %labels ~])
-  =/  keep
-    |=  [label=@t kept=(map @t vase)]
-    ^-  (map @t vase)
-    ?:((~(has by kept) label) kept (~(put by kept) label sam))
-  =/  kept  (roll labels keep(kept examples.s))
-  s(seen-tags [counted rows], examples kept)
+  =.  seen-tags.s  [counted rows]
+  ::  Only a label's first sample is shown, so most passes render nothing.
+  =/  fresh=(list @t)  (skip labels ~(has by examples.s))
+  ?~  fresh  s
+  =/  got  (show s sam seen)
+  ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
+  =/  new=(list [@t example])  (turn fresh (late [sam text.p.got]))
+  s(examples (~(gas by examples.s) new))
 ::
 ++  shortfalls
   ::  Rows below their required share. `got` is the floored percentage;
@@ -466,23 +501,43 @@
   ~>  %jinx.time
   (mong [gate sample] |=(^ ~))
 ::
-++  sample-limit
-  ::  A vase returned by alts can have a valid type but an invalid value.
-  ::  Keep rendering inside virtualization so such products become errors.
-  |=  [time=@dr sam=vase bounds=limits]
-  ^-  (each (unit limit-name) failure)
-  =/  inspect
-    |=  [sam=vase bounds=limits]
-    ^-  (unit limit-name)
-    ?.  (fits sample-bytes.bounds sam)  `%sample-bytes
-    =/  text  (crip ~(ram re (sell sam)))
-    ?:  (gth (met 3 text) rendered-bytes.bounds)  `%rendered-bytes
-    ~
-  =/  checked  (sandbox time inspect [sam bounds])
-  ?:  ?=(%0 -.checked)  [%.y ;;((unit limit-name) p.checked)]
-  =/  why  (classify checked)
-  ?>  ?=(^ why)
-  [%.n why]
+++  show
+  ::  Render and weigh a sample that will be kept, reusing `seen` when a
+  ::  split tick already made it. Both run virtualized: a vase from alts can
+  ::  have a valid type but an invalid value, and shared subtrees can make a
+  ::  small jam a huge tree. %.n ~ is text over rendered-bytes.
+  |=  [s=state sam=vase seen=(unit shown)]
+  ^-  (each shown (unit failure))
+  ?^  seen  [%.y u.seen]
+  =/  made
+    %^  sandbox  time.s
+      |=(v=vase `shown`[(crip ~(ram re (sell v))) (weight q.v)])
+    sam
+  ?.  ?=(%0 -.made)
+    =/  why  (classify made)
+    ?>  ?=(^ why)
+    [%.n `why]
+  =/  got  ;;(shown p.made)
+  ?:  (gth (met 3 text.got) rendered-bytes.bounds.config.s)  [%.n ~]
+  [%.y got]
+::
+++  unshown
+  ::  A kept sample that rendered too long is a limit; one whose rendering
+  ::  crashed is an error at `stage`.
+  |=  $:  s=state
+          stage=error-stage
+          why=(unit failure)
+          evidence=(unit counterexample)
+      ==
+  ^-  state
+  ?~  why  s(shrink ~, result `[%limited %rendered-bytes evidence])
+  (stop-error s stage u.why evidence)
+::
+++  source-stage
+  ::  Where a generated sample came from.
+  |=  s=state
+  ^-  error-stage
+  ?:(=(~ norn.compiled.s) %generate %norn)
 ::
 ++  stop-error
   ::  End the run as an error at `stage`, or %limited when the failure
@@ -548,18 +603,24 @@
   =/  sam  i.candidates
   =.  work  work(pending `t.candidates)
   =.  shrink-tried.counts.s  +(shrink-tried.counts.s)
-  =/  capped  (sample-limit time sam bounds.config.s)
-  ?:  ?=(%.n -.capped)  (stop-error s %alts p.capped `evidence)
-  =/  limit  p.capped
-  ?^  limit
-    s(shrink ~, result `[%limited u.limit `evidence])
+  ?:  (gth (met 3 (jam q.sam)) sample-bytes.bounds.config.s)
+    s(shrink ~, result `[%limited %sample-bytes `evidence])
   ::  The visited set is a mug-only loop guard whatever the policy; weight
   ::  decrease alone guarantees termination.
   =/  hash  (mug q.sam)
   ?:  (~(has in visited.work) hash)  s(shrink `work)
   =.  visited.work  (~(put in visited.work) hash)
-  ?.  (lth (weight q.sam) (weight q.shrunk.evidence))  s(shrink `work)
-  ::  Split: the candidate waits in `pending` for its own tick.
-  ?.  =(%interrupt on-timeout.config.s)  s(shrink `work, pending `sam)
-  (judge-candidate s(shrink `work) sam)
+  ::  Weighed virtualized: a small jam can be a huge tree.
+  =/  weighed  (sandbox time weight q.sam)
+  ?.  ?=(%0 -.weighed)
+    =/  why  (classify weighed)
+    ?>  ?=(^ why)
+    (stop-error s %alts why `evidence)
+  ?.  (lth ;;(@ p.weighed) weight.work)  s(shrink `work)
+  ?:  =(%interrupt on-timeout.config.s)
+    (judge-candidate s(shrink `work) sam ~)
+  ::  Split: the candidate is shown, then waits in `pending` for its tick.
+  =/  got  (show s sam ~)
+  ?:  ?=(%.n -.got)  (unshown s %alts p.got `evidence)
+  s(shrink `work, pending `[sam p.got])
 --

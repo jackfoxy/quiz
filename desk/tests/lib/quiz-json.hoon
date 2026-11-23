@@ -52,21 +52,25 @@
 ++  test-config-seed-round-trip
   ^-  tang
   =/  req=request:app  request
-  =.  req  req(config `defaults:engine, seed `0v123)
+  =/  changes=patch:app  *patch:app
+  =.  changes  changes(requested `5, duplicates `%exact)
+  =.  req  req(config `changes, seed `0v123)
   =/  jon  (request-out:codec req)
   ?>  ?=([%o *] jon)
   =/  got  (decode:codec [%o (~(put by p.jon) 'op' s+'run')])
   (expect !>(=(got `[%run req])))
 ::
-++  test-config-range-refused
+++  test-patch-shape-refused
+  ::  Ranges are checked on the merged conf; only shapes are refused here.
   ^-  tang
-  =/  cfg  defaults:engine
-  =.  cfg  cfg(samples-per-slice.bounds 0)
   =/  jon  command
   ?>  ?=([%o *] jon)
-  =/  got
-    (decode:codec [%o (~(put by p.jon) 'config' (config-out:codec cfg))])
-  (expect-eq !>(~) !>(got))
+  =/  bad  (pairs:enjs:format ~[['requested' s+'many']])
+  =/  fine  (pairs:enjs:format ~[['requested' n+'0']])
+  ;:  weld
+    (expect-eq !>(~) !>((decode:codec [%o (~(put by p.jon) 'config' bad)])))
+    (expect !>(?=(^ (decode:codec [%o (~(put by p.jon) 'config' fine)]))))
+  ==
 ::
 ++  test-invalid-fields
   ^-  tang
@@ -109,6 +113,8 @@
         ['{"op":"status","id":"123"}' [%status 123]]
         ['{"op":"cancel","id":123}' [%cancel 123]]
         ['{"op":"replay","id":"123"}' [%replay 123]]
+        :-  '{"op":"properties","desk":"quiz","revision":"1000"}'
+        [%properties %quiz 1.000]
     ==
   %-  zing
   %+  turn  commands

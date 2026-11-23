@@ -149,8 +149,9 @@ A changed tab marks its earlier result stale; the recorded snapshot stays fixed.
 Open **Examples → examples → 02-boxcar**. It defaults to **Saved suite**.
 Choose **Discover suite arms**, leave the selection empty for all arms, and run.
 Recorded result: **suite / passed**, **3** total, **3** completed, **3** passed.
-Alternatively, **Clay source** lets you choose a local desk and numeric revision
-and open a Hoon test core there. Select **Saved suite** for your test core.
+Alternatively, choose a local desk and numeric revision in **Clay source**,
+then open a Hoon test core with **Open** under `/clay`; Clay source itself
+lists only property documents. Select **Saved suite** for your test core.
 
 A suite reports arm results. Legacy checks inside an arm do not expose their
 sample seed, drops or counterexamples as application property metrics.

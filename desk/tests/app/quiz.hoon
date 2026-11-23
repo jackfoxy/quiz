@@ -74,15 +74,17 @@
 ::
 ++  test-admission-limits
   ^-  tang
+  ::  A patch is checked once merged, after the build, not on admission.
   =/  cfg  defaults:engine
   =/  req=request:app  request
-  =.  req  req(config `cfg(samples-per-slice.bounds 0))
-  =/  bad-conf  (admit:job initial:job req now:bol 0v0)
+  =/  changes=patch:app  *patch:app
+  =.  req  req(config `changes(requested `10.001))
+  =/  patched  (admit:job initial:job req now:bol 0v0)
   =/  oversized  (bex (mul 8 source-bytes.bounds.cfg))
   =.  req  req(source [%draft oversized], config ~)
   =/  bad-source  (admit:job initial:job req now:bol 0v0)
   ;:  weld
-    (expect !>(?=([%.n %conf-range] bad-conf)))
+    (expect !>(?=(%.y -.patched)))
     (expect !>(?=([%.n %source-size] bad-source)))
   ==
 ::
@@ -408,7 +410,7 @@
 ++  test-outcome-strips-vases
   ^-  tang
   =/  evidence=counterexample:engine
-    [[%false ~ ~] !>(`@ud`541) !>(`@ud`501)]
+    [[%false ~ ~] !>(`@ud`541) !>(`@ud`501) '541' '501']
   =/  got  (persist-outcome:job [%failed evidence] ~)
   ?>  ?=(%failed -.got)
   ;:  weld
@@ -418,6 +420,34 @@
     (expect !>(=(got (cue (jam got)))))
   ==
 ::
+++  test-patch-merge-checked
+  ::  A patch edits only its fields; an out-of-range merge is %invalid.
+  ^-  tang
+  =/  text  '|%  ++  fate  |=(@ud &)  --'
+  =/  doc  (prepare:build [~zod %quiz 1] /draft/hoon text)
+  ?>  ?=(%.y -.doc)
+  =/  core
+    !>  |%  ++  fate  |=(@ud &)  --
+  =/  reply=rant:clay  [[%a [%ud 1] %quiz] /draft/hoon %vase !>(core)]
+  =/  ready
+    |=  changes=patch:app
+    ^-  record:app
+    =/  s  (activate:job (queued 1) now:bol)
+    =/  rec  (get-record s 1)
+    =.  rec  rec(request request.rec(config `changes))
+    =.  s  s(records.saved (~(put by records.saved.s) 1 rec))
+    =/  a  ~(. agent bol)
+    =.  a  a(state s(active `[1 [%file p.doc]], build-token `10))
+    (get-record state:+:(on-arvo.a /quiz/build/10 [%clay %writ `reply]) 1)
+  =/  none=patch:app  *patch:app
+  =/  edited  (ready none(size-max `40))
+  =/  bad  (ready none(requested `10.001))
+  =/  base  defaults:engine
+  ;:  weld
+    (expect-eq !>(`base(size-max 40)) !>(config.edited))
+    (expect !>(?=([~ %invalid %conf-range *] result.bad)))
+  ==
+::
 ++  test-property-settings-and-replay
   ^-  tang
   =/  text  '|%  ++  fate  |=(@ud &)  --'
@@ -425,9 +455,8 @@
   ?>  ?=(%.y -.doc)
   =/  s  (activate:job (queued 1) now:bol)
   =/  rec  (get-record s 1)
-  =/  cfg  defaults:engine
-  =.  cfg  cfg(requested 3)
-  =.  rec  rec(request request.rec(config `cfg, seed `0v0))
+  =/  changes=patch:app  *patch:app
+  =.  rec  rec(request request.rec(config `changes(requested `3), seed `0v0))
   =.  s  s(records.saved (~(put by records.saved.s) 1 rec))
   =/  a  ~(. agent bol)
   =.  a  a(state s(active `[1 [%file p.doc]], build-token `10))
@@ -529,8 +558,8 @@
   ?>  ?=(%property -.work.current)
   =/  run=state:engine  +.work.current
   =/  best=counterexample:engine
-    [[%false ~ ~] !>(`@ud`9) !>(`@ud`5)]
-  =.  shrink.run  `[best ~ ~]
+    [[%false ~ ~] !>(`@ud`9) !>(`@ud`5) '9' '5']
+  =.  shrink.run  `[best ~ ~ 6]
   =/  rec  (get-record s 1)
   =.  s
     %=  s
@@ -710,7 +739,7 @@
   ?>  ?=(%property -.work.current)
   =/  run=state:engine  +.work.current
   =/  cfg  config.run
-  =.  run  run(pending `!>(0), config cfg(on-timeout policy))
+  =.  run  run(pending `[!>(0) '0' 1], config cfg(on-timeout policy))
   =/  rec  (get-record s 1)
   %=  s
     active  `[1 [%property run]]

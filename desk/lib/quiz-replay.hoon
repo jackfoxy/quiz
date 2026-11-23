@@ -15,29 +15,38 @@
 ::
 ++  capture
   ::  Store the resolved seed and effective config, including panel overrides.
+  ::  `doc` is already parsed, so only the record's own checks run here.
   |=  [doc=prepared:build seed=@uv config=conf:engine]
   ^-  (each record diagnostic:build)
   =/  saved=record
     :*  where.doc  path.doc  source.doc  (shax source.doc)
         seed  config  version:engine
     ==
-  =/  checked  (prepare saved)
-  ?:  ?=(%.n -.checked)  [%.n p.checked]
+  =/  bad  (refuse saved)
+  ?^  bad  [%.n u.bad]
   [%.y saved]
 ::
 ++  prepare
   ::  Validate persisted inputs without reading Clay or selecting new entropy.
   |=  saved=record
   ^-  (each prepared:build diagnostic:build)
-  ?.  =(engine-version.saved version:engine)
-    [%.n (issue:build %engine-version path.saved [1 1] ~ ~)]
-  ?.  =(source-hash.saved (shax source.saved))
-    [%.n (issue:build %source-hash path.saved [1 1] ~ ~)]
-  ?.  (valid-config:build config.saved)
-    [%.n (issue:build %conf-range path.saved [1 1] `%conf ~)]
-  ?:  (gth (met 3 source.saved) source-bytes.bounds.config.saved)
-    [%.n (issue:build %source-size path.saved [1 1] ~ ~)]
+  =/  bad  (refuse saved)
+  ?^  bad  [%.n u.bad]
   (prepare:build where.saved path.saved source.saved)
+::
+++  refuse
+  ::  Why a record cannot be replayed, short of parsing its source.
+  |=  saved=record
+  ^-  (unit diagnostic:build)
+  ?.  =(engine-version.saved version:engine)
+    `(issue:build %engine-version path.saved [1 1] ~ ~)
+  ?.  =(source-hash.saved (shax source.saved))
+    `(issue:build %source-hash path.saved [1 1] ~ ~)
+  ?.  (valid-config:build config.saved)
+    `(issue:build %conf-range path.saved [1 1] `%conf ~)
+  ?:  (gth (met 3 source.saved) source-bytes.bounds.config.saved)
+    `(issue:build %source-size path.saved [1 1] ~ ~)
+  ~
 ::
 ++  resolve
   ::  No substitution of the latest revision or a different ship is allowed.

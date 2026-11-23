@@ -23,12 +23,15 @@ See the [example catalog](examples.md) for expected outcomes. **Documentation** 
 these reference files. Both are read-only. **Open editable copy** creates
 an unsaved tab; save it in My documents to keep your version.
 
-**Clay source** lists Hoon files on a local desk at an explicit revision.
-Select a desk, enter a positive decimal revision, then choose **Browse
-revision**. The revision is pinned: changing files does not change that
-view. Select a file to read it or make an editable copy. An unavailable
-revision reports an error. The Open chooser's `/clay` location requires a
-context; use the Clay source view to choose that context.
+**Clay source** lists the property documents on a local desk at an explicit
+revision: Hoon files whose prelude imports `engine=quiz-engine` on a `/+` line
+and that declare a `++  fate` arm at the start of a line. Select a desk, enter
+a positive decimal revision, then choose **Browse revision**. The revision is
+pinned: changing files does not change that view. Select a file to read it or
+make an editable copy. An unavailable revision reports an error. The Open
+chooser's `/clay` location lists every Hoon file, including test cores for
+suites; it requires a context, so use the Clay source view to choose one
+first.
 
 Tabs, unsaved text, selections, pane layout and the last browsed Clay
 context are saved in this browser's local storage. Clearing browser data
@@ -77,7 +80,9 @@ diagnostics. Empty history explains how to start. A connection failure keeps
 last confirmed results and disables mutations until a successful refresh.
 Requests are never retried automatically: a lost admission reply may still
 have created a run, so inspect history before retrying. Polling continues after
-reconnection. **Cancel** waits for the current Hoon call to return. A call
+reconnection. History refreshes every second while a run is unfinished and
+every 30 seconds once all are done; **Refresh history** shows runs started
+elsewhere at once. A hidden page does not poll and refreshes when shown. **Cancel** waits for the current Hoon call to return. A call
 that never returns hits its CPU limit, or can be stopped with Ctrl-C in the
 Vere terminal; the result shows **interrupted**, with the stage, any
 counterexample found so far, and the suite arm. See

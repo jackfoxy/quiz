@@ -29,15 +29,17 @@ The request fields, in order, are:
 | `source` | `[%draft text=@t]`, `[%file path]`, or `[%suite path arms=(list term)]` |
 | `desk` | Local Clay desk, `@tas` |
 | `revision` | Clay `case`: positive `%ud`, `%da`, or `%tas` label |
-| `config` | `(unit conf:quiz-engine)`; optional complete settings override |
+| `config` | `(unit patch)`; optional per-field settings override |
 | `seed` | `(unit @uv)`; optional seed override, including zero |
 | `replay-of` | `(unit @ud)`; replay an existing property's captured inputs |
 
 Absent overrides use the document's `conf`, then engine defaults. Entropy is
 captured on admission; a document seed takes precedence over that entropy.
-The effective settings and seed are recorded after compilation. A supplied
-config replaces the whole config; clients changing one field should copy the
-current settings and edit that field. Suites expose neither a controlled seed
+The effective settings and seed are recorded after compilation. A `patch`
+holds one `unit` per top-level `conf` field (`bounds` is one whole `limits`);
+`%quiz` merges the set fields into the document's settings after the build, so
+a client changing one field sets just that field. A merged result outside the
+engine ranges ends the run `%invalid` with `%conf-range`. Suites expose neither a controlled seed
 nor property counters: their record's `seed` and `config` are absent.
 
 When `replay-of` is present, its stored source, path, context, seed, and settings
@@ -88,7 +90,7 @@ Scries return `%noun` cages:
 | `/x/run/<id>` | `record:quiz-app`; known path with absent ID returns no value |
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
-| `/x/version` | Engine semantics version (`%quiz-engine-6`) |
+| `/x/version` | Engine semantics version (`%quiz-engine-7`) |
 | `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |
 
 The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:

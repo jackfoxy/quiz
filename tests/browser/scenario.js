@@ -43,11 +43,14 @@ global.fetch = async (url, options = {}) => {
   const req = options.body ? JSON.parse(options.body) : {};
   requests.push({url, ...req});
   let body = {ok: true}; let status = 200;
-  if (url.endsWith('/api') && req.op !== 'contexts') {
+  if (url.endsWith('/api') && !['contexts', 'properties'].includes(req.op)) {
     body = await mock.api(req); status = body?._status || 200;
   }
   else if (url === '/docs' || url.endsWith('/doc.toc')) status = 404;
   else if (url.endsWith('/api') && req.op === 'runs') body.ids = [];
+  else if (req.op === 'properties') body.entries = [...files.keys()]
+    .filter((key) => key.startsWith(`clay/${req.desk}/${req.revision}/`))
+    .map((key) => ({path: key.split('/'), kind: 'file'}));
   else if (url.endsWith('/api')) body.contexts = [
     {desk: 'quiz', revision: '20'}, {desk: 'base', revision: '10'}];
   else if (req.op === 'browse') body.entries = [...files.keys()]
@@ -123,7 +126,8 @@ const el = (id) => env.document.getElementById(id);
   const saved = JSON.parse(env.saved.get('quiz.session'));
   assert.deepEqual(saved.clayContext, scenario === 'restore'
     ? {desk: 'base', revision: '9'} : {desk: 'quiz', revision: '20'});
-  assert(requests.some((req) => req.op === 'browse'
-    && req.scope.join('/') === `clay/${saved.clayContext.desk}/${saved.clayContext.revision}`));
+  assert(requests.some((req) => req.op === 'properties'
+    && req.desk === saved.clayContext.desk
+    && req.revision === saved.clayContext.revision));
   console.log(`PASS ${scenario}`);
 })().then(() => process.exit(0), (error) => {console.error(error); process.exit(1);});

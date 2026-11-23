@@ -77,8 +77,15 @@
         ?:  ?=(%invalid -.built)
           [~ (finish:job s id built now.bowl)]
         =/  rec  (~(got by records.saved.s) id)
-        =/  override  config.request.rec
-        =/  cfg  ?~(override config.settings.built u.override)
+        ::  A replay keeps its recorded conf; a patch edits the document's.
+        =/  base  config.settings.built
+        =/  changes  config.request.rec
+        =/  cfg=conf:engine
+          ?^  replay.rec  config.u.replay.rec
+          ?~(changes base (merge:job base u.changes))
+        ?.  (valid-config:build cfg)
+          =/  bad  (issue:build %conf-range path.doc [1 1] `%conf ~)
+          [~ (finish:job s id [%invalid bad] now.bowl)]
         =/  override-seed  seed.request.rec
         =/  seed
           ?^  override-seed  u.override-seed

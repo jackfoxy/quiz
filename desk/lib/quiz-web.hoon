@@ -207,7 +207,7 @@
         ;p: Save writes to this desk. Save As keeps another copy.
         ;p: Unsaved tabs and editor selections are restored in this browser.
         ;h2: Clay source
-        ;p: Select a desk and an immutable revision, then browse Hoon files.
+        ;p: Pick a desk and immutable revision to list its property documents.
         ;p: Read-only files can be opened as editable copies.
         ;h2: Runs
         ;p: Draft runs use the editor; saved runs use the pinned revision.
