@@ -513,7 +513,7 @@
 ++  test-interrupt-running
   ^-  tang
   =/  s  (running 2 5)
-  =/  got  (interrupt:job s now:bol)
+  =/  got  (interrupt:job s now:bol ~s0)
   =/  rec  (get-record got 1)
   ;:  weld
     (expect !>(?=([~ %interrupted %running ~ ~] result.rec)))
@@ -537,7 +537,7 @@
       active  `[1 [%property run]]
       records.saved  (~(put by records.saved.s) 1 rec(status %shrinking))
     ==
-  =/  got  (get-record (interrupt:job s now:bol) 1)
+  =/  got  (get-record (interrupt:job s now:bol ~s0) 1)
   ?>  ?=([~ %interrupted %shrinking [~ *] ~] result.got)
   =/  proof  (need proof.u.result.got)
   ;:  weld
@@ -558,19 +558,19 @@
   =/  current  (need active.first)
   ?>  ?=(%suite -.work.current)
   =/  next  (snag 0 remaining.+.work.current)
-  =/  rec  (get-record (interrupt:job first now:bol) 1)
+  =/  rec  (get-record (interrupt:job first now:bol ~s0) 1)
   (expect !>(=(result.rec `[%interrupted %running ~ `next])))
 ::
 ++  test-interrupt-blames-queue-head
   ^-  tang
   =/  s  (queued 2)
-  =/  got  (interrupt:job s now:bol)
+  =/  got  (interrupt:job s now:bol ~s0)
   =/  head  (get-record got 1)
   ;:  weld
     (expect !>(=(result.head `[%interrupted %building ~ ~])))
     (expect !>(=(%queued status:(get-record got 2))))
     (expect-eq !>(~[2]) !>(queue.saved.got))
-    (expect !>(=(initial:job (interrupt:job initial:job now:bol))))
+    (expect !>(=(initial:job (interrupt:job initial:job now:bol ~s0))))
   ==
 ::
 ++  test-error-wake-interrupts-and-continues
@@ -622,7 +622,7 @@
     ==
   =/  first  (advance:job s now:bol)
   =/  done  (get-record first 1)
-  =/  stopped  (get-record (interrupt:job first now:bol) 1)
+  =/  stopped  (get-record (interrupt:job first now:bol ~s0) 1)
   ?>  ?=(%property -.counts.done)
   ;:  weld
     (expect !>(=(%shrinking status.done)))
@@ -701,22 +701,27 @@
     (expect-eq !>(`(list *)`~[2 1]) !>(values))
   ==
 ::
-++  test-interrupt-pending-discards
-  ::  An abort on a stored sample under %discard drops it and runs on.
-  ^-  tang
+++  stored
+  ::  Job 1 holds a sample under `policy`, as a split tick leaves it.
+  |=  policy=timeout-policy:engine
+  ^-  state:job
   =/  s  (running 2 0)
   =/  current  (need active.s)
   ?>  ?=(%property -.work.current)
   =/  run=state:engine  +.work.current
   =/  cfg  config.run
-  =.  run  run(pending `!>(0), config cfg(on-timeout %discard))
+  =.  run  run(pending `!>(0), config cfg(on-timeout policy))
   =/  rec  (get-record s 1)
-  =.  s
-    %=  s
-      active  `[1 [%property run]]
-      records.saved  (~(put by records.saved.s) 1 rec(status %running))
-    ==
-  =/  got  (get-record (interrupt:job s now:bol) 1)
+  %=  s
+    active  `[1 [%property run]]
+    records.saved  (~(put by records.saved.s) 1 rec(status %running))
+  ==
+::
+++  test-interrupt-pending-discards
+  ::  An abort on a stored sample under %discard drops it and runs on.
+  ^-  tang
+  =/  s  (stored %discard)
+  =/  got  (get-record (interrupt:job s now:bol call-time:engine) 1)
   ?>  ?=(%property -.counts.got)
   ;:  weld
     (expect-eq !>(`@ud`1) !>(dropped.+<.counts.got))
@@ -727,22 +732,41 @@
 ++  test-interrupt-pending-fails-as-timeout
   ::  Under %fail the same abort starts shrinking with a %timeout failure.
   ^-  tang
-  =/  s  (running 2 0)
-  =/  current  (need active.s)
-  ?>  ?=(%property -.work.current)
-  =/  run=state:engine  +.work.current
-  =/  cfg  config.run
-  =.  run  run(pending `!>(0), config cfg(on-timeout %fail))
-  =/  rec  (get-record s 1)
-  =.  s
-    %=  s
-      active  `[1 [%property run]]
-      records.saved  (~(put by records.saved.s) 1 rec(status %running))
-    ==
-  =/  got  (get-record (interrupt:job s now:bol) 1)
+  =/  s  (stored %fail)
+  =/  got  (get-record (interrupt:job s now:bol call-time:engine) 1)
   ;:  weld
     (expect !>(=(%shrinking status.got)))
     (expect !>(=(~ result.got)))
+  ==
+::
+++  test-interrupt-pending-early-abort
+  ::  An abort sooner than the call limit was not a timeout: Ctrl-C or the
+  ::  loom interrupts the run under any policy.
+  ^-  tang
+  =/  early  (sub call-time:engine ~s1)
+  =/  fail  (get-record (interrupt:job (stored %fail) now:bol early) 1)
+  =/  discard
+    (get-record (interrupt:job (stored %discard) now:bol early) 1)
+  ;:  weld
+    (expect !>(?=([~ %interrupted %running ~ ~] result.fail)))
+    (expect !>(?=([~ %interrupted %running ~ ~] result.discard)))
+  ==
+::
+++  test-error-wake-measures-spent
+  ::  The agent times an abort from the tick's wake to the error wake.
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =/  error=(unit tang)  `~[leaf+"aborted"]
+  =/  s  (stored %discard)
+  =/  limit  call-time:engine
+  =/  hung  a(state s(timer `[10 (sub now:bol limit)], next-token.saved 11))
+  =/  quick  a(state s(timer `[10 now:bol], next-token.saved 11))
+  =/  slow  (on-arvo.hung /quiz/tick/10 [%behn %wake error])
+  =/  fast  (on-arvo.quick /quiz/tick/10 [%behn %wake error])
+  =/  quick-rec  (get-record state:+.fast 1)
+  ;:  weld
+    (expect !>(=(%running status:(get-record state:+.slow 1))))
+    (expect !>(?=([~ %interrupted %running ~ ~] result.quick-rec)))
   ==
 ::
 ++  test-interrupt-without-pending-unchanged
@@ -755,6 +779,6 @@
   =/  cfg  config.run
   =.  run  run(config cfg(on-timeout %discard))
   =.  s  s(active `[1 [%property run]])
-  =/  got  (get-record (interrupt:job s now:bol) 1)
+  =/  got  (get-record (interrupt:job s now:bol time.run) 1)
   (expect !>(?=([~ %interrupted %running ~ ~] result.got)))
 --

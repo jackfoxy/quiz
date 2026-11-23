@@ -243,6 +243,47 @@
     (expect !>(?=([~ %failed [%false ~ ~] * *] result.failed)))
   ==
 ::
+++  boundary
+  ::  Every budget is one sample: requested, attempts, drops, duplicates.
+  |=  [fate=vase policy=timeout-policy:engine]
+  ^-  state:engine
+  =/  cfg  (config 1 1 1 1)
+  (init:engine 0v1 cfg(on-timeout policy) [fate `sized `no-alts ~ %pass])
+::
+++  test-boundary-precedence-split
+  ::  The last permitted attempt is judged before budgets apply: split
+  ::  runs end as %interrupt runs do, with nothing left pending.
+  ^-  tang
+  =/  fates=(list vase)  ~[!>(|=(@ud &)) !>(|=(@ud %drop)) !>(|=(@ud |))]
+  %-  zing
+  %+  turn  fates
+  |=  fate=vase
+  ^-  tang
+  =/  plain  (complete (boundary fate %interrupt))
+  =/  fail  (complete (boundary fate %fail))
+  =/  discard  (complete (boundary fate %discard))
+  ;:  weld
+    (expect-eq !>(result.plain) !>(result.fail))
+    (expect-eq !>(result.plain) !>(result.discard))
+    (expect-eq !>(counts.plain) !>(counts.fail))
+    (expect-eq !>(counts.plain) !>(counts.discard))
+    (expect !>(&(=(~ pending.fail) =(~ pending.discard))))
+  ==
+::
+++  test-timeout-last-attempt
+  ::  A hang on the only permitted attempt is still handled by the policy.
+  ^-  tang
+  =/  fate  !>(|=(@ud &))
+  =/  failed
+    (complete (timed-out:engine (step:engine (boundary fate %fail))))
+  =/  discarded
+    (complete (timed-out:engine (step:engine (boundary fate %discard))))
+  ;:  weld
+    (expect !>(?=([~ %failed [%timeout ~] * *] result.failed)))
+    (expect !>(?=([~ %exhausted %attempts %.y] result.discarded)))
+    (expect-eq !>(`counters:engine`[1 0 1 0 0 0]) !>(counts.discarded))
+  ==
+::
 ++  test-fixed-seed-resume
   ^-  tang
   =/  give  !>(|=([size=@ud rng=_og] (rad:rng 65.536)))
@@ -505,7 +546,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-5) !>(version:engine))
+    (expect-eq !>(%quiz-engine-6) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))

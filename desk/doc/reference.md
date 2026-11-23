@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-2`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-6`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -483,8 +483,9 @@ cap; the configurable property cap applies inside the engine.
 
 CPU limits are enforced by Vere's `%jinx` hint. A call that exceeds its limit,
 a Ctrl-C in the Vere terminal, or loom exhaustion aborts the whole Gall event.
-The run is then recorded as `%interrupted` (see below), and the queue
-continues. Clay builds of saved files and suites have no CPU limit; interrupt
+The run is then recorded as `%interrupted` (see below), unless its
+[timeout policy](#timeout-policy-on-timeout) handles a fate's timeout, and the
+queue continues. Clay builds of saved files and suites have no CPU limit; interrupt
 them with Ctrl-C. There is no per-run memory limit below the loom, and no
 sandbox that isolates the ship from the code it runs. Use a disposable
 development ship for examples and experimental properties.
@@ -741,7 +742,17 @@ choose instead with `conf.on-timeout`:
 
 Under either policy each sample is evaluated on its own tick, one kind of
 work per tick, so an aborted tick has exactly one culprit: the sample stored
-for it. Generation, alts and rendering still interrupt the run. Each timed-out
+for it. Generation, alts and rendering still interrupt the run. A sample
+stored on the last permitted attempt is still evaluated before any budget
+ends the run, so the outcome and counters match `%interrupt` when nothing
+hangs.
+
+The runtime does not report why it aborted a tick. `%quiz` applies the policy
+only when the aborted tick ran, by wall clock, at least the call limit; CPU
+time never exceeds wall time, so a shorter abort was Ctrl-C or loom
+exhaustion, and the run ends `%interrupted`. A Ctrl-C pressed after the call
+limit has elapsed cannot be told apart from a timeout and is handled by the
+policy. Each timed-out
 sample or candidate costs a full call limit (10 s by default), so set a short
 call limit in **Settings** for such documents. Timing is not reproducible bit
 for bit, so replay of a timeout run reproduces its policy and evidence, not

@@ -161,7 +161,8 @@
   ::  operator interrupt or memory exhaustion. The event rolled back, so
   ::  blame what that tick ran: the active job's slice, or else the build
   ::  of the queue head. Never retry: deterministic work would hang again.
-  |=  [s=state now=@da]
+  ::  `spent` is the wall time from the tick's wake to the error wake.
+  |=  [s=state now=@da spent=@dr]
   ^-  state
   =/  current  active.s
   ?~  current
@@ -171,11 +172,14 @@
   =/  id  id.u.current
   =/  rec  (~(got by records.saved.s) id)
   ::  A stored sample or candidate means the aborted tick was its fate: the
-  ::  run's timeout policy decides, and the run goes on.
+  ::  run's timeout policy decides, and the run goes on. The tang does not
+  ::  name the cause, but wall time is never less than CPU time, so an
+  ::  abort sooner than the call limit was Ctrl-C or the loom: interrupt.
   =/  work  work.u.current
   ?:  ?&  ?=(%property -.work)
           ?=(^ pending.+.work)
           !=(%interrupt on-timeout.config.+.work)
+          (gte spent time.+.work)
       ==
     =/  running  (timed-out:engine +.work)
     =.  rec

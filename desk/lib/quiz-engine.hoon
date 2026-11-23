@@ -150,7 +150,7 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-5
+  %quiz-engine-6
 ::
 ++  defaults
   ^-  conf
@@ -258,11 +258,15 @@
   ::  %allow none do, and the duplicates budget is ignored.
   ::  The failure sample is included in attempted. Terminal states are stable.
   ::  A shrinking step calls alts once OR considers one candidate.
+  ::  A stored sample was generated within budget: judge it before budgets
+  ::  apply, or a split run would never judge its last permitted attempt.
   |=  s=state
   ^-  state
+  ?:  !=(~ result.s)  s
+  ::  `!=` rather than `?=`: narrowing `pending` would block the write below.
+  ?:  !=(~ pending.s)  (judge-pending s)
   =.  s  (finish s)
   ?:  !=(~ result.s)  s
-  ?:  ?=(^ pending.s)  (judge-pending s)
   ?:  !=(~ shrink.s)  (shrink-step s)
   =/  [fill-rng=_og next-rng=_og]  (split-rng:legacy rng.s)
   =/  time  time.s

@@ -88,7 +88,7 @@ Scries return `%noun` cages:
 | `/x/run/<id>` | `record:quiz-app`; known path with absent ID returns no value |
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
-| `/x/version` | Engine semantics version (`%quiz-engine-2`) |
+| `/x/version` | Engine semantics version (`%quiz-engine-6`) |
 | `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |
 
 The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:
@@ -147,8 +147,11 @@ building, running, shrinking, or cancelling record `%cancelled` with reason
 
 Under a property's `on-timeout` policy (`%fail` or `%discard`), a fate that
 exceeds the call limit is handled as a sample outcome, not an interruption;
-see [the timeout policy](reference.md#timeout-policy-on-timeout). Everything
-below applies to all other aborts and to the default `%interrupt` policy.
+see [the timeout policy](reference.md#timeout-policy-on-timeout). An abort is
+taken as a timeout only when the time from the tick's scheduled wake to the
+error wake is at least the call limit; a shorter one was Ctrl-C or loom
+exhaustion. Everything below applies to all other aborts and to the default
+`%interrupt` policy.
 
 Every fate, norn, alts and sample-rendering call runs under a Vere `%jinx`
 CPU-time limit. Draft compilation and document arm checks have a build limit,

@@ -244,7 +244,9 @@
     =/  next=state:job  state(timer ~)
     ::  An error wake means the runtime aborted this tick's previous event.
     ?^  +>.sign-arvo
-      (publish:ops saved.state (interrupt:job next now.bowl) ~)
+      =/  late=?  (gth now.bowl when.u.timer)
+      =/  spent=@dr  ?:(late (sub now.bowl when.u.timer) ~s0)
+      (publish:ops saved.state (interrupt:job next now.bowl spent) ~)
     ::  One kind of work per tick, so an aborted tick has one culprit:
     ::  a slice of the active job, or the start of the next queued job.
     =/  working  active.next
