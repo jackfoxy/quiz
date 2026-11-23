@@ -1,11 +1,11 @@
 /-  urui
 /+  ufiles=urui-files, build=quiz-build
 |%
+::
+++  handle
   ::  urui's tomb probe uses the file's case as the outer scry date.
   ::  For a pinned numeric revision, keep that case on the inner beam
   ::  and use now for the outer tomb query. Shared urui stays unchanged.
-  ::
-++  handle
   |=  $:  policy=policy:ufiles
           bol=bowl:gall
           id=@ta
@@ -44,9 +44,8 @@
       ['readonly' b+&]
   ==
 ::
-  ::  Virtual workbench roots. Only work documents may be written.
-  ::
 ++  locate
+  ::  Virtual workbench roots. Only work documents may be written.
   |=  [bol=bowl:gall rel=path]
   ^-  (each location:ufiles failure:ufiles)
   =/  here=beak  [our.bol q.byk.bol [%da now.bol]]

@@ -153,6 +153,8 @@
   %quiz-engine-6
 ::
 ++  defaults
+  ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
+  ::  from 1, uncapped; %mug duplicates; a timeout interrupts the run.
   ^-  conf
   :*  100  10.000  1.000  1.000  1  0  %mug
       :*  262.144  10.000  1.000  100  65.536  16.384  16.384  262.144
@@ -483,6 +485,8 @@
   [%.n why]
 ::
 ++  stop-error
+  ::  End the run as an error at `stage`, or %limited when the failure
+  ::  exceeds the diagnostics cap.
   |=  [s=state stage=error-stage why=failure evidence=(unit counterexample)]
   ^-  state
   ?.  (fits diagnostics-bytes.bounds.config.s why)
@@ -509,6 +513,8 @@
   (sandbox time maker [sam custom])
 ::
 ++  shrink-step
+  ::  Ask alts for candidates, or try the next one. The candidate and depth
+  ::  budgets stop it as %limited; an exhausted list concludes the failure.
   |=  s=state
   ^-  state
   =/  work  (need shrink.s)

@@ -93,6 +93,8 @@
   ==
 ::
 ++  take-built
+  ::  Accept a %warp reply only for the pinned desk, revision and path, as
+  ::  a %vase, then discover its test arms.
   |=  [doc=document reply=riot:clay]
   ^-  result
   ?~  reply  [%invalid (issue:build %build path.doc [1 1] ~ ~)]

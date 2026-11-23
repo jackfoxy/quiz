@@ -11,6 +11,7 @@
       |%
       ::
       ++  parse-id
+        ::  A canonical, nonzero @ud run id from a path segment.
         |=  text=@ta
         ^-  (unit run-id:app)
         =/  parsed  (slaw %ud text)
@@ -61,6 +62,7 @@
         (send-build s(active `[id [%draft doc t.requests ~]]) i.requests)
       ::
       ++  send-build
+        ::  One Clay %warp, under a fresh token so a stale reply is ignored.
         |=  [s=state:job request=[ship desk (unit rave:clay)]]
         ^-  (quip card:agent:gall state:job)
         =/  token  next-token.saved.s
@@ -68,6 +70,8 @@
         ~[[%pass /quiz/build/(scot %ud token) %arvo %c %warp request]]
       ::
       ++  property-ready
+        ::  Start a built property. The request's seed and conf override the
+        ::  document's; replay inputs are captured before the first step.
         |=  [s=state:job id=run-id:app doc=prepared:build built=result:build]
         ^-  (quip card:agent:gall state:job)
         ?:  ?=(%invalid -.built)
@@ -146,16 +150,20 @@
 ++  on-init  `this
 ::
 ++  on-save
+  ::  Only durable state: jobs, timers and pending builds are transient.
   ^-  vase
   !>([%0 saved.state])
 ::
 ++  on-load
+  ::  Unfinished runs are cancelled with %reload; finished ones are kept.
   |=  old=vase
   ^-  (quip card:agent:gall _this)
   =/  loaded  !<(versioned-state:app old)
   (publish:ops +.loaded (restore:job +.loaded now.bowl) ~)
 ::
 ++  on-poke
+  ::  Local only. %quiz-submit admits a request and returns its id to
+  ::  %quiz-web; %quiz-action runs, cancels, deletes, clears or sets timeouts.
   |=  [=mark =vase]
   ^-  (quip card:agent:gall _this)
   ?>  =(our.bowl src.bowl)
@@ -195,6 +203,8 @@
   (publish:ops saved.state next ~)
 ::
 ++  on-watch
+  ::  Local only. /runs and /timeouts give the current value; /run/<id>
+  ::  gives one record.
   |=  =path
   ^-  (quip card:agent:gall _this)
   ?>  =(our.bowl src.bowl)
@@ -214,6 +224,7 @@
   ~[[%give %fact ~ %quiz-update !>(`update:app`[%run u.rec])]]
 ::
 ++  on-peek
+  ::  /x/runs, /x/limits, /x/version, /x/timeouts and /x/run/<id>.
   |=  =path
   ^-  (unit (unit cage))
   ?:  =(/x/runs path)  ``noun+!>(order.saved.state)
@@ -228,12 +239,16 @@
   ``noun+!>(u.rec)
 ::
 ++  on-leave  on-leave:def
+::
 ++  on-agent
+  ::  Admission poke acks from %quiz-web need no handling.
   |=  [=wire =sign:agent:gall]
   ^-  (quip card:agent:gall _this)
   `this
 ::
 ++  on-arvo
+  ::  A tick wake does one kind of work or, as an error wake, interrupts
+  ::  the job the aborted tick ran. A build reply continues that job's build.
   |=  [=wire =sign-arvo]
   ^-  (quip card:agent:gall _this)
   ?:  ?=([%quiz %tick @ ~] wire)

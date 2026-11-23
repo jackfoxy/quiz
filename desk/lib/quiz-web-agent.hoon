@@ -33,6 +33,8 @@
   [files=(unit pending:ufiles) api=(unit pending) limits=timeouts:app]
 ::
 ++  assets
+  ::  Public GET routes under /apps/quiz: page, client, help index, Ace
+  ::  and icons.
   ^-  (list [suffix=@t asset=asset:uhttp])
   =/  js  'text/javascript; charset=utf-8'
   =/  plain  'text/plain; charset=utf-8'
@@ -60,6 +62,7 @@
   [suffix kind (as-octs:mimes:html body)]
 ::
 ++  reply
+  ::  A JSON response that is never cached or content-sniffed.
   |=  [id=@ta status=@ud body=json]
   ^-  (list card)
   =/  payload
@@ -76,6 +79,7 @@
   (give:uhttp id payload)
 ::
 ++  refuse
+  ::  An error response, `{error: code}`.
   |=  [id=@ta status=@ud code=@t]
   ^-  (list card)
   (reply id status (pairs:enjs:format ~[['error' s+code]]))
@@ -97,14 +101,15 @@
       ~
     `[%give %kick ~[watched] `who]
   (weld kicks cards)
-
 ::
 ++  watch-limits
+  ::  Follow %quiz's ship-wide timeouts.
   |=  bol=bowl:gall
   ^-  card
   [%pass /quiz-timeouts %agent [our.bol %quiz] %watch /timeouts]
 ::
 ++  conf-response
+  ::  A built document's context, conf and seed; a diagnostic is a 422.
   |=  [id=@ta got=result:build]
   ^-  (list card)
   ?:  ?=(%invalid -.got)
@@ -116,7 +121,6 @@
       ['config' (config-out:codec config.settings.got)]
       ['seed' ?~(seed.settings.got ~ s+(scot %uv u.seed.settings.got))]
   ==
-
 --
 =|  state
 =*  state  -
@@ -125,6 +129,7 @@
     def   ~(. (default-agent this %n) bowl)
 ::
 ++  on-init
+  ::  Bind /apps/quiz and follow the timeouts.
   ^-  (quip card _this)
   :_  this
   :~  [%pass /eyre/connect %arvo %e %connect `/apps/quiz dap.bowl]
@@ -137,6 +142,7 @@
   !>([%0 ~])
 ::
 ++  on-load
+  ::  Pending requests are dropped; rebind and resubscribe.
   |=  old=vase
   ^-  (quip card _this)
   =/  saved  !<([%0 ~] old)
@@ -147,6 +153,8 @@
   [[%pass /quiz-timeouts %agent [our.bowl %quiz] %leave ~] -.init]
 ::
 ++  on-poke
+  ::  %quiz-admitted answers the pending run with its id. Over HTTP, assets
+  ::  are public; everything else is for the authenticated owner only.
   |=  [mark=mark vase=vase]
   ^-  (quip card _this)
   ?:  =(%quiz-admitted mark)
@@ -181,6 +189,7 @@
   [(private-cards bowl -.handled) +.handled]
 ::
 ++  private-http
+  ::  POST to /api or /files only, with a bounded JSON body.
   |=  [id=@ta req=inbound-request:eyre url=@t]
   ^-  (quip card _this)
   ?.  |(=('/apps/quiz/api' url) =('/apps/quiz/files' url))
@@ -206,10 +215,13 @@
   (dispatch id u.cmd)
 ::
 ++  ids
+  ::  Run ids, scried from %quiz.
   ^-  (list @ud)
   .^((list @ud) %gx /(scot %p our.bowl)/quiz/(scot %da now.bowl)/runs/noun)
 ::
 ++  dispatch
+  ::  Reads answer at once. Mutations go through %quiz; conf and suite
+  ::  discovery wait on Clay. Each holds the single API slot up to 30 s.
   |=  [id=@ta cmd=command:codec]
   ^-  (quip card _this)
   ?-  -.cmd
@@ -290,6 +302,7 @@
   ==
 ::
 ++  submit
+  ::  Poke %quiz with one action and hold the API slot for its ack.
   |=  [id=@ta act=action:app]
   ^-  (quip card _this)
   ?:  !=(~ api.state)  [(refuse id 503 'api-busy') this]
@@ -310,6 +323,8 @@
 --
 ::
 ++  on-agent
+  ::  Timeout facts refresh `limits`. A nack refuses the pending request;
+  ::  an ack answers it, except a run, which waits for %quiz-admitted.
   |=  [wire=wire sign=sign:agent:gall]
   ^-  (quip card _this)
   ?:  ?=([%quiz-timeouts ~] wire)
@@ -335,6 +350,8 @@
   (private-cards bowl response)
 ::
 ++  on-arvo
+  ::  File-store replies first; then Clay replies for the pending request,
+  ::  or its 30 s timeout.
   |=  [wire=wire sign=sign-arvo]
   ^-  (quip card _this)
   =/  taken

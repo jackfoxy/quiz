@@ -54,6 +54,7 @@
   r(notes.detail (snoc notes.detail.r text))
 ::
 ++  label
+  ::  Label the sample; a passing run counts samples per label.
   |=  [text=@t p=prop]
   ^-  report
   =/  r  (lift p)

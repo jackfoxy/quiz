@@ -21,17 +21,20 @@
 ++  max-body  524.288
 ::
 ++  object
+  ::  A JSON object's fields; anything else crashes.
   |=  value=json
   ^-  (map @t json)
   ?>  ?=([%o *] value)
   p.value
 ::
 ++  field
+  ::  A required field; a missing one crashes.
   |=  [fields=(map @t json) key=@t]
   ^-  json
   (~(got by fields) key)
 ::
 ++  text
+  ::  A JSON string; anything else crashes.
   |=  value=json
   ^-  @t
   ?>  ?=([%s *] value)
@@ -49,6 +52,7 @@
   (need (rush raw dem))
 ::
 ++  name
+  ::  A desk or arm name that passes safe-name.
   |=  value=json
   ^-  @tas
   =/  got  (text value)
@@ -56,6 +60,7 @@
   `@tas`got
 ::
 ++  path-in
+  ::  An array of segment strings that passes safe-path.
   |=  value=json
   ^-  path
   ?>  ?=([%a *] value)
@@ -64,6 +69,7 @@
   got
 ::
 ++  case-in
+  ::  `{kind, value}`: kind ud (number), da (date text) or tas (name).
   |=  value=json
   ^-  case
   =/  fields  (object value)
@@ -76,12 +82,14 @@
   ==
 ::
 ++  decode
+  ::  A command, or ~ for any malformed body.
   |=  value=json
   ^-  (unit command)
   =/  got  (mule |.((command-in value)))
   ?:(?=(%.y -.got) `p.got ~)
 ::
 ++  command-in
+  ::  Dispatch on `op`. Crashes on a malformed body; decode catches it.
   |=  value=json
   ^-  command
   =/  fields  (object value)
@@ -139,6 +147,7 @@
   ==
 ::
 ++  decimal
+  ::  A number as a decimal string, exact past JavaScript's 2^53.
   |=  value=@ud
   ^-  json
   =/  got  (numb:enjs:format value)
@@ -146,11 +155,13 @@
   s+p.got
 ::
 ++  path-out
+  ::  A path as an array of segment strings.
   |=  value=path
   ^-  json
   a+(turn value |=(part=@ta s+part))
 ::
 ++  context-out
+  ::  The pinned ship, desk and numeric revision.
   |=  value=context:build
   ^-  json
   %-  pairs:enjs:format
@@ -160,6 +171,7 @@
   ==
 ::
 ++  diagnostic-out
+  ::  Code, location, optional arm, trace lines and whether it was clipped.
   |=  value=diagnostic:build
   ^-  json
   %-  pairs:enjs:format
@@ -173,6 +185,7 @@
   ==
 ::
 ++  trace-out
+  ::  A tang as an array of lines wrapped at 80 columns.
   |=  value=tang
   ^-  json
   =/  blocks=(list wall)
@@ -181,6 +194,8 @@
   a+(turn lines |=(line=tape s+(crip line)))
 ::
 ++  failure-out
+  ::  The failure kind and its detail; scry requests and bad products
+  ::  are jammed @uv text.
   |=  value=failure:engine
   ^-  json
   %-  pairs:enjs:format
@@ -196,6 +211,7 @@
   ==
 ::
 ++  detail-out
+  ::  A report's notes and optional want/got texts.
   |=  value=detail:engine
   ^-  json
   %-  pairs:enjs:format
@@ -207,6 +223,7 @@
   ==
 ::
 ++  shortfalls-out
+  ::  Coverage rows: label, required percent, observed percent (floored).
   |=  rows=(list shortfall:engine)
   ^-  json
   :-  %a
@@ -219,6 +236,7 @@
   ==
 ::
 ++  examples-out
+  ::  One example sample per label.
   |=  rows=examples:app
   ^-  json
   :-  %a
@@ -243,6 +261,7 @@
   ==
 ::
 ++  sample-out
+  ::  Rendered text and the jammed noun as @uv text.
   |=  value=sample:app
   ^-  json
   %-  pairs:enjs:format
@@ -251,6 +270,7 @@
   ==
 ::
 ++  evidence-out
+  ::  The failure, the original sample and the shrunk sample.
   |=  value=evidence:app
   ^-  json
   %-  pairs:enjs:format
@@ -260,6 +280,7 @@
   ==
 ::
 ++  outcome-out
+  ::  `kind` plus that outcome's fields; absent evidence is null.
   |=  value=outcome:app
   ^-  json
   %-  pairs:enjs:format
@@ -312,6 +333,8 @@
   ==
 ::
 ++  request-out
+  ::  A request as submitted: desk, revision, seed, conf, replay origin
+  ::  and source.
   |=  value=request:app
   ^-  json
   %-  pairs:enjs:format
@@ -344,6 +367,8 @@
   ==
 ::
 ++  record-out
+  ::  A run record with counters, distribution, outcome and the pinned
+  ::  source snapshot. Suites report sample metrics as unavailable.
   |=  value=record:app
   ^-  json
   %-  pairs:enjs:format
@@ -383,6 +408,7 @@
   ==
 ::
 ++  config-in
+  ::  A complete conf, every field required, checked by valid-config.
   |=  value=json
   ^-  conf:engine
   =/  fields  (object value)
@@ -413,6 +439,7 @@
   cfg
 ::
 ++  timeout-in
+  ::  interrupt, fail or discard.
   |=  value=json
   ^-  timeout-policy:engine
   =/  tag  (text value)
@@ -423,6 +450,7 @@
   ==
 ::
 ++  policy-in
+  ::  The duplicate policy: mug, exact or allow.
   |=  value=json
   ^-  policy:engine
   =/  tag  (text value)
@@ -433,6 +461,7 @@
   ==
 ::
 ++  config-out
+  ::  A conf, field for field as config-in reads it.
   |=  value=conf:engine
   ^-  json
   %-  pairs:enjs:format
@@ -448,6 +477,7 @@
   ==
 ::
 ++  bounds-out
+  ::  Every limit in a conf's bounds.
   |=  value=limits:engine
   ^-  json
   %-  pairs:enjs:format
@@ -465,6 +495,7 @@
   ==
 ::
 ++  timeouts-out
+  ::  The three ship-wide CPU limits, in whole seconds.
   |=  value=timeouts:app
   ^-  json
   %-  pairs:enjs:format
@@ -488,6 +519,7 @@
   ==
 ::
 ++  suite-counts
+  ::  Arm totals by status.
   |=  value=counters:suite
   ^-  json
   %-  pairs:enjs:format

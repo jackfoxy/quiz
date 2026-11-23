@@ -23,12 +23,14 @@
   ==
 ::
 ++  initial
+  ::  No runs or jobs; ids and tokens start at 1; default timeouts.
   ^-  state
   [[1 1 ~ ~ ~ default-timeouts] ~ ~ ~]
 ::
 ++  queue-max  100
 ::
 ++  default-timeouts
+  ::  Property call 10 s, draft build 30 s, suite arm 1 min.
   ^-  timeouts:app
   [call-time:engine ~s30 ~m1]
 ::
@@ -97,6 +99,7 @@
   ==
 ::
 ++  activate
+  ::  Start the queue head building, unless a job is already active.
   |=  [s=state now=@da]
   ^-  state
   ?:  !=(~ active.s)  s
@@ -126,6 +129,8 @@
   $(ids t.ids, s s(records.saved (~(del by records.saved.s) i.ids)))
 ::
 ++  finish
+  ::  Record the outcome, drop the run from active and the queue, then
+  ::  prune history to the run's retained-runs bound.
   |=  [s=state id=run-id:app out=outcome:app now=@da]
   ^-  state
   =/  rec  (~(got by records.saved.s) id)
@@ -146,6 +151,8 @@
   (retain s cap)
 ::
 ++  cancel
+  ::  Missing and finished runs are no-ops. A queued run ends now; an
+  ::  active one is marked %cancelling and stops at its next slice.
   |=  [s=state id=run-id:app now=@da]
   ^-  state
   =/  found  (~(get by records.saved.s) id)
@@ -246,6 +253,8 @@
   [label q.sam (crip ~(ram re (sell sam)))]
 ::
 ++  persist-outcome
+  ::  An engine outcome without vases: evidence and examples keep their
+  ::  nouns and rendered text.
   |=  [out=outcome:engine kept=(map @t vase)]
   ^-  outcome:app
   ?-  -.out

@@ -8,6 +8,8 @@
   ::  Document workbench. urui owns editors, files, dialogs and persistence.
   ::
 ++  config
+  ::  urui app config: identity, layout, slots, shortcuts, help URL, Ace
+  ::  assets and the file store.
   ^-  app-config:urui
   :*  [%quiz 'Quiz' '/apps/quiz' 'quiz.session' 2]
       [350 150 180 10 25 70 262.144]
@@ -48,6 +50,8 @@
   ==
 ::
 ++  slots
+  ::  Session state the browser keeps: urui's layout, plus the Clay
+  ::  context and selected run.
   ^-  (list slot:urui)
   :~  ['paneWidth' %urui %scalar ~]
       ['paneHeight' %urui %scalar ~]
@@ -74,6 +78,8 @@
   ==
 ::
 ++  files
+  ::  One document kind. Only /work is writable; examples, help and Clay
+  ::  sources are read-only.
   ^-  files:urui
   :*  '/apps/quiz/files'
       :~  :*  name=%property
@@ -100,6 +106,7 @@
   ==
 ::
 ++  starter
+  ::  A new document: the smallest passing property.
   ^-  @t
   %-  of-wain:format
   :~  '|%'
@@ -110,6 +117,8 @@
   ==
 ::
 ++  file-policy
+  ::  urui's policy plus the bare-path alias, Hoon stored as cord and
+  ::  Markdown as mime, 512 KiB files, and quiz's virtual roots.
   ^-  policy:ufiles
   =/  policy  (make-policy:ufiles files /data/quiz |)
   %=  policy
@@ -120,11 +129,13 @@
   ==
 ::
 ++  pinned
+  ::  A band pinned open, with no hide toggle.
   |=  [name=@tas item=band-item:urui]
   ^-  band:urui
   [name [~ & ''] item]
 ::
 ++  reference-pane
+  ::  Explorer views: My documents, Examples, Documentation, Clay source.
   ^-  pane:urui
   :*  %reference  'explorer-pane'  'Quiz explorer'  %read-only  ~
       :~  %+  pinned  %tabs
@@ -143,6 +154,7 @@
   ==
 ::
 ++  editor-pane
+  ::  Document tabs, editor, source location and run controls.
   ^-  pane:urui
   :*  %editor  'editor-pane'  'Document editor'  %read-write  `%property
       :~  %+  pinned  %tabs
@@ -167,6 +179,7 @@
   ==
 ::
 ++  result-pane
+  ::  Run history and details; quiz-runs.js fills it.
   ^-  pane:urui
   :*  %result  'result-pane'  'Run results'  %read-only  ~
       :~  (pinned %head [%heading `'Run results' ~ ~])
@@ -181,6 +194,7 @@
   ==
 ::
 ++  help
+  ::  Fallback help when %docs is absent; the live docs load in place.
   ^-  marl
   :~  ;div#fallback-help-content
         ;p: Install %docs for the full Quiz help and reference.
@@ -220,6 +234,7 @@
   ==
 ::
 ++  spec
+  ::  The whole shell: header, panes, help, styles, scripts and Settings.
   ^-  shell-spec:urui
   =/  favicon-url=tape
     "/apps/quiz/favicon.png?v={(trip (scot %uv (mug favicon)))}"
@@ -270,15 +285,18 @@
   ==
 ::
 ++  page
+  ::  The workbench HTML.
   ^-  @t
   (crip (en-xml:html (build:shell spec)))
 ::
 ++  ace-config
+  ::  Ace's loader configuration, from config's Ace spec.
   ^-  @t
   =/  cfg  config
   (config-js:uace ace-spec.cfg)
 ::
 ++  css
+  ::  urui's shared styles, then quiz's own.
   ^-  @t
   %+  rap  3
   :~  (compose:ucss ~[%tokens %controls %shell %explorer %tabs %dialogs])
@@ -327,6 +345,7 @@
   ==
 ::
 ++  javascript
+  ::  The served app.js: config, urui runtime, runs view, client.
   ^-  @t
   (rap 3 ~[(emit:ucfg spec) core:ujs runs client])
 --

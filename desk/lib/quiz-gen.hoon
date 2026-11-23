@@ -215,6 +215,7 @@
   $(len (dec len), rng next, out [(item size here) out])
 ::
 ++  nonempty
+  ::  A list-of with 1 to high elements; high is at least 1.
   |*  [high=@ud item=$-([@ud _og] *)]
   (list-of 1 (max 1 high) item)
 ::
@@ -233,6 +234,8 @@
   (silt items)
 ::
 ++  map-of
+  ::  Up to high entries; duplicate keys collapse to one. The molds
+  ::  keep +malt off wet key and value types.
   |*  $:  key-kind=mold  value-kind=mold  high=@ud
           key=$-([@ud _og] *)  value=$-([@ud _og] *)
       ==
@@ -279,12 +282,14 @@
 ::  +|  Composition
 ::
 ++  pair
+  ::  A cell of two generators' outputs, on independent streams.
   |*  [a=$-([@ud _og] *) b=$-([@ud _og] *)]
   |=  [size=@ud rng=_og]
   =/  [one=_og two=_og]  (split rng)
   [(a size one) (b size two)]
 ::
 ++  trip
+  ::  A triple of three generators' outputs, on independent streams.
   |*  [a=$-([@ud _og] *) b=$-([@ud _og] *) c=$-([@ud _og] *)]
   |=  [size=@ud rng=_og]
   =/  [one=_og rest=_og]  (split rng)
@@ -434,6 +439,7 @@
   (turn ((shrink-list item) ~(tap in items)) silt)
 ::
 ++  shrink-map
+  ::  Through the entry list, shrinking keys and values pairwise.
   |*  [key=$-(* (list)) value=$-(* (list))]
   |=  items=(map _+<.key _+<.value)
   (turn ((shrink-list (shrink-pair key value)) ~(tap by items)) malt)
@@ -451,6 +457,7 @@
   (skim (inner value) pred)
 ::
 ++  shrink-nothing
+  ::  No candidates: the value is already minimal.
   |=  *
   ~
 ::

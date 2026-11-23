@@ -29,6 +29,7 @@
   [code path at arm ?:(fits trace ~) !fits]
 ::
 ++  safe-name
+  ::  A desk name: a symbol of at most 64 bytes.
   |=  text=@t
   ^-  ?
   ?&  (lte (met 3 text) 64)
@@ -36,6 +37,7 @@
   ==
 ::
 ++  safe-path
+  ::  1 to 32 segments, each 1 to 64 bytes of a-z, 0-9 and -.
   |=  path=path
   ^-  ?
   ?&  !=(~ path)
@@ -99,6 +101,7 @@
   [%.y [our `@tas`desk -.cass]]
 ::
 ++  import-rule
+  ::  Zero or more `/rune body` lines, each followed by a gap.
   |*  [rune=rule body=rule]
   ;~  pose
     ;~(sfix (more gap ;~(pfix fas rune gap body)) gap)
@@ -106,6 +109,7 @@
   ==
 ::
 ++  taut-rule
+  ::  One import: `*name` (no face), `face=name`, or `name` as its own face.
   ;~  pose
     (stag ~ ;~(pfix tar sym))
     ;~(plug (stag ~ sym) ;~(pfix tis sym))
@@ -113,6 +117,8 @@
   ==
 ::
 ++  header-rule
+  ::  The prelude: /- then /+ then /= then /* lines, as dependencies
+  ::  in that order.
   =/  sur
     %+  here
       |=  [loc=pint names=(list taut:clay)]
@@ -158,6 +164,8 @@
   ==
 ::
 ++  prepare
+  ::  Validate the path, parse the prelude, check each import's path and
+  ::  mark, then parse the body. Reads nothing from Clay.
   |=  [where=context path=path source=@t]
   ^-  (each prepared diagnostic)
   =/  bad  (validate desk.where [%ud revision.where] path %hoon source)
@@ -198,6 +206,8 @@
   $(lines t.lines, row +(row))
 ::
 ++  valid-config
+  ::  Every budget and bound within the defaults' ceilings, every bound
+  ::  positive, size-start at least 1, size-max 0 or at least size-start.
   |=  cfg=conf:engine
   ^-  ?
   =/  max  defaults:engine
@@ -254,6 +264,9 @@
   (~(nest ut output) | actual)
 ::
 ++  check-core
+  ::  Check the compiled core's arms in order: fate, norn, alts, conf,
+  ::  cover, expect. Absent optional arms keep defaults; the first bad arm
+  ::  is the diagnostic. The norn must produce the fate's sample type.
   |=  [doc=prepared core=vase]
   ^-  result
   =/  names  (sloe p.core)
