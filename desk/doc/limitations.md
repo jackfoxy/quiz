@@ -68,6 +68,14 @@ authoritative behavior and recovery guidance.
   its own. Values that constrain each other, such as a search tree's keys and
   the key being deleted, may stop at larger values than a coordinated
   shrinker would reach.
+- **Agent harness is pure.** `quiz-harness` drives a Gall agent's door with
+  generated events. It does not run real effects: threads, Khan, wires that
+  wait for other agents, and timers are not simulated. Real effects would
+  break determinism, exact replay and the `%jinx` containment model. A scry
+  made by the agent under test is refused, so the sample ends `%scry`; test
+  such arms with the scry results supplied in the handler, or refactor them.
+  The CPU limit covers the whole fate, so long event lists need a lower
+  `requested`.
 - **Generated functions are finite tables.** `quiz-fun` makes a table
   plus a default, which cannot express every gate. Keys never shrink, so a
   counterexample keeps the inputs its cases name. A gate supplied by the

@@ -40,6 +40,8 @@ settings, not universal outcomes of similar-looking properties.
 | [21-small-domain-allow](../examples/props/21-small-domain-allow.hoon) | Passed, 100 accepted from four samples | `duplicates %allow` evaluates repeats of a small domain |
 | [22-size-capped](../examples/props/22-size-capped.hoon) | Passed, 100 accepted; size held at 30 | `size-max` keeps size-driven lists short; `sized` and `vector` |
 | [23-map-fusion](../examples/props/23-map-fusion.hoon) | Passed, 100 accepted | Generated functions: two `turn`s equal one over `cork` |
+| [25-counter-agent](../examples/props/25-counter-agent.hoon) | Passed, 100 accepted; 5 duplicates | Pure agent harness: model-based pokes against a counter agent's door |
+| [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
 The composed example's list is generated as `(list @ud)` but enters its fate
@@ -153,6 +155,14 @@ stays at 30; uncapped it would pass 60,000 by the hundredth sample. Its fate
 takes a `*` sample and molds it, because a `(list @ud)` sample type would
 exceed the sample-byte limit.
 
+`25-counter-agent` and `26-counter-agent-bug` drive the agent in
+[`fixtures/quiz-harness/counter.hoon`](../fixtures/quiz-harness/counter.hoon)
+through [`quiz-harness`](reference.md#agent-harness-quiz-harness). The agent
+keeps a count and ignores an add above ten. The first property generates adds
+of 0 to 9 and resets, so model and agent agree; the second generates adds of
+up to 99, and the lost update shows as a mismatch. Its alts is `shrink-list`
+over each operation, with each amount shrunk toward zero.
+
 `23-map-fusion` and `24-filter-map-swap` generate their function arguments
 with `quiz-fun` and take `*` samples molded to
 `[items=(list @ud) f=(fun @ud @ud) …]`. In 24 the law "filter after map
@@ -195,6 +205,8 @@ queue, report, coverage, generator-library, size and function rows in
 | 22-size-capped | 100 | 100 | 0 | 0 | 0 | 0 | — |
 | 23-map-fusion | 100 | 100 | 0 | 0 | 0 | 0 | — |
 | 24-filter-map-swap | 8 | 7 | 0 | 0 | 37 | 5 | 3 items → `~[8]`, `f = {_ -> 0}`, `p = {8 -> %.y, _ -> %.n}` |
+| 25-counter-agent | 105 | 100 | 0 | 5 | 0 | 0 | — |
+| 26-counter-agent-bug | 2 | 1 | 0 | 0 | 21 | 4 | `[%add 11]` (expected 11, actual 0) |
 
 ## Existing suites
 

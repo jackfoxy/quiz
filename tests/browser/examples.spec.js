@@ -26,6 +26,8 @@ const examples = [
   ['props', '22-size-capped', 'passed'],
   ['props', '23-map-fusion', 'passed'],
   ['failing', '24-filter-map-swap', 'failed', 'false'],
+  ['props', '25-counter-agent', 'passed'],
+  ['failing', '26-counter-agent-bug', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -70,7 +72,8 @@ for (const [root, name, outcome, why] of examples) {
     if (why) expect(got.outcome.evidence.why.kind).toBe(why);
     if (outcome === 'passed')
       expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
-        '21-small-domain-allow', '22-size-capped', '23-map-fusion'].includes(name) ? 100 : 20);
+        '21-small-domain-allow', '22-size-capped', '23-map-fusion',
+        '25-counter-agent'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -121,6 +124,14 @@ for (const [root, name, outcome, why] of examples) {
       expect(got.outcome.evidence.why.detail.compared).toEqual({want:'~[0]', got:'~'});
       expect(got.counts).toMatchObject({'shrink-tried':37, 'shrink-steps':5});
       await expect(page.locator('#run-notes')).toContainText('p = {8 -> %.y, _ -> %.n}');
+    }
+    if (name === '26-counter-agent-bug') {
+      // The agent drops an add above ten; the shrunk sample is one add of 11.
+      expect(got.outcome.evidence.why.detail.compared).toEqual({want:'11', got:'0'});
+      expect(got.counts).toMatchObject({'shrink-tried':21, 'shrink-steps':4});
+    }
+    if (name === '25-counter-agent') {
+      expect(got.counts).toMatchObject({attempted:105, accepted:100, duplicate:5});
     }
     if (name === '22-size-capped') {
       expect(got.config['size-max']).toBe(30);

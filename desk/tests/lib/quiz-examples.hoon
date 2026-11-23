@@ -1,5 +1,6 @@
 /+  build=quiz-build, engine=quiz-engine, quiz, prop=quiz-prop, gen=quiz-gen,
-    fun=quiz-fun, *test
+    fun=quiz-fun, h=quiz-harness, *test
+/=  drive  /fixtures/quiz-harness/drive
 /*  queue-model  %hoon  /examples/props/10-queue-model/hoon
 /*  queue-bug  %hoon  /examples/failing/11-queue-model-bug/hoon
 /*  labels  %hoon  /examples/props/12-labels-coverage/hoon
@@ -15,6 +16,8 @@
 /*  capped  %hoon  /examples/props/22-size-capped/hoon
 /*  fusion  %hoon  /examples/props/23-map-fusion/hoon
 /*  swap  %hoon  /examples/failing/24-filter-map-swap/hoon
+/*  counter-src  %hoon  /examples/props/25-counter-agent/hoon
+/*  counter-bug-src  %hoon  /examples/failing/26-counter-agent-bug/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -26,6 +29,7 @@
   |=  [=path source=@t imports=(list vase)]
   ^-  state:engine
   =/  parsed  (prepare:build [~zod %quiz 1] path source)
+  ~|  ?:(?=(%.n -.parsed) p.parsed ~)
   ?>  ?=(%.y -.parsed)
   =/  built  (compile:build p.parsed imports)
   ::  On a build failure, show the builder's diagnostic.
@@ -233,6 +237,34 @@
     (expect-eq !>(`*`shrunk) !>(q.shrunk.result))
     %+  expect-eq
       !>(`failure:engine`[%false notes `['~[0]' '~']])
+    !>(why.result)
+  ==
+::
+++  test-counter-agent
+  ::  Adds stay at most nine, where the agent and the model agree.
+  ^-  tang
+  =/  path=path  /examples/props/'25-counter-agent'/hoon
+  =/  done
+    (run path counter-src ~[!>(engine) !>(gen) !>(prop) !>(h) !>(drive)])
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[105 100 0 5 0 0]) !>(counts.done))
+  ==
+::
+++  test-counter-agent-bug
+  ::  The lost update shrinks to one add of eleven.
+  ^-  tang
+  =/  path=path  /examples/failing/'26-counter-agent-bug'/hoon
+  =/  done
+    (run path counter-bug-src ~[!>(engine) !>(gen) !>(prop) !>(h) !>(drive)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  shrunk  ;;((list [%add @ud]) q.shrunk.result)
+  ;:  weld
+    (expect-eq !>(`counters:engine`[2 1 0 0 21 4]) !>(counts.done))
+    (expect-eq !>(~[[%add 11]]) !>(shrunk))
+    %+  expect-eq
+      !>(`failure:engine`[%false ~ `['11' '0']])
     !>(why.result)
   ==
 --

@@ -21,6 +21,7 @@ a bowl.
 | Generation, classification, counters, shrinking, limits | `lib/quiz-engine.hoon` (bump `++version`) | `tests/lib/quiz-engine.hoon`, `tests/lib/quiz-shrink.hoon` |
 | Report combinators (`quiz-prop`): notes, expected/actual, labels | `lib/quiz-prop.hoon` (report type lives in the engine) | `tests/lib/quiz-prop.hoon`, `tests/lib/quiz-engine.hoon` |
 | Generators and shrinkers (`quiz-gen`) | `lib/quiz-gen.hoon`; no engine change, no version bump | `tests/lib/quiz-gen.hoon`, `tests/lib/quiz-examples.hoon` |
+| Agent harness (`quiz-harness`) | `lib/quiz-harness.hoon`, `fixtures/quiz-harness/`; no engine change | `tests/lib/quiz-harness.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generated functions (`quiz-fun`) | `lib/quiz-fun.hoon`; no engine change, no version bump | `tests/lib/quiz-fun.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generator and default-shrinker characterization (frozen `lib/quiz.hoon`) | none: record surprises in the docs | `tests/lib/quiz-norns.hoon`, `tests/lib/quiz-sink.hoon` |
 | Bundled property examples | `examples/props/`, `examples/failing/` | `tests/lib/quiz-examples.hoon` (queue models), browser `examples.spec.js`; re-measure `doc/examples.md` |

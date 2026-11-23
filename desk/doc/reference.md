@@ -339,6 +339,35 @@ QuickCheck's `coarbitrary` in table form. Tables cannot express every gate:
 they are finitely supported, and a gate the property did not generate is
 never randomized.
 
+### Agent harness (`quiz-harness`)
+
+[`quiz-harness`](../lib/quiz-harness.hoon) (`/+ h=quiz-harness`) drives a Gall
+agent's door through model-based properties. It is pure: a property never
+performs a real effect, a scry made by the agent is refused, and replay stays
+exact. The bowl comes from the sample, never from the clock.
+
+| Arm | Meaning |
+| --- | --- |
+| `event` | `[%poke mark vase]`, `[%watch path]`, `[%leave path]` or `[%peek path]` |
+| `(bowl-at our src now eny dap)` | A bowl with the fields a door reads; `now` and `eny` come from the sample |
+| `(run start handle events)` | Fold events through `handle`, a gate from the event and the saved state to cards and the next saved state. Returns `[%& cards state]`, or `[%| tang]` when a step crashes |
+| `(cards-of cards tag)` | Cards with that head tag, such as `%give` or `%pass` |
+| `(facts-on cards path)` | `%give %fact` cards published on exactly `path` |
+
+`handle` rebuilds the door for each event: `on-load` the saved vase, run the
+event arm, then `on-save`. That is how Gall reloads state, so each sample
+starts fresh and needs no cleanup. A door arm that crashes ends its run as
+`[%| tang]` rather than a property crash. Wrap a door in a fixture file and
+import it with `/=  drive  /fixtures/...`; see
+[counter](../fixtures/quiz-harness/counter.hoon) and
+[drive](../fixtures/quiz-harness/drive.hoon). Executable models:
+[25-counter-agent](../examples/props/25-counter-agent.hoon) and
+[26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon).
+
+A `fate` reads its saved state with `;;(vase state)`, and `!<` works on that
+vase afterwards. Read the sample as a noun with `;;`, not `!<`, where the
+sample is typed `*`: `!<` checks the vase's type.
+
 **Wet-gate notes.** `set-of`, `map-of` and `sorted` take element molds because
 `silt`, `malt` and `sort` cannot be type-checked over a wet element type.
 Generators taking a literal list (`elements`, `one-of`, `frequency`,
@@ -732,6 +761,7 @@ already checked parts/configuration and own scheduling and persistence.
 | --- | --- |
 | [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit cover) expect=?(%pass %fail)]`; `judge` classifies reports; terminal states are stable |
 | [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
+| [quiz-harness](../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
 | [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |
 | [quiz-gen](../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |

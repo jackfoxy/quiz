@@ -428,6 +428,7 @@ The following are Quiz applications of general property-testing techniques;
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
 | Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. |
 | Small domains | `21-small-domain-allow` checks De Morgan's law over two loobeans. Only four samples exist; `duplicates %allow` evaluates repeats, so 100 checks pass and the labels show every case. |
+| Agent model | `25-counter-agent` runs generated pokes against a counter agent's door and compares its state with a model. `26-counter-agent-bug` finds a lost update, an add above ten the agent drops, and shrinks to a single `[%add 11]`. The harness is pure: real effects are out of scope ([limitations](limitations.md)). |
 | Higher-order functions | `23-map-fusion` and `24-filter-map-swap` generate the function arguments themselves with `quiz-fun`. |
 | Size control | `22-size-capped` checks a quadratic sort against `sort` on lists as long as the size. `size-max 30` keeps the lists short; `quiz-gen`'s `capped`, `resize` and `scale` do the same for one generator. |
 

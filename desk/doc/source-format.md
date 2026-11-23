@@ -29,7 +29,10 @@ Reports, `++cover` and `++expect` are explained in
 Build reports with `/+  prop=quiz-prop`, generators and shrinkers with
 `/+  gen=quiz-gen`, and generated functions with `/+  fun=quiz-fun`; see the
 [app generator library](reference.md#app-generator-library-quiz-gen) and
-[generated functions](reference.md#generated-functions-quiz-fun). `cover` and `expect` come from the
+[generated functions](reference.md#generated-functions-quiz-fun). An agent's
+door comes from `/=  drive  /fixtures/quiz-harness/drive`, with
+[quiz-harness](reference.md#agent-harness-quiz-harness) imported by `/+`.
+`cover` and `expect` come from the
 document and are unaffected by Run-panel configuration overrides.
 
 A missing `conf` uses `[~ defaults:quiz-engine]`. A null seed asks the caller to
