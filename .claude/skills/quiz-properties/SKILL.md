@@ -70,8 +70,12 @@ The builder type-checks every arm before anything runs. A mistake is an
 - `conf`: `[seed=(unit @uv) config=conf:engine]`. Always edit a copy of
   `defaults:engine`. A partial record does not type-check, and a field above
   its ceiling is `%conf-range`. Besides the budgets it sets `size-start`
-  (default 1), `size-max` (0 = uncapped) and `duplicates` (`%mug`,
-  `%exact` or `%allow`), as in `cfg(size-max 30, duplicates %allow)`.
+  (default 1), `size-max` (0 = uncapped), `duplicates` (`%mug`, `%exact` or
+  `%allow`) and `on-timeout` (`%interrupt`, `%fail` or `%discard`), as in
+  `cfg(size-max 30, duplicates %allow)`. Under `%fail` a hanging fate is a
+  `timeout` failure, and under `%discard` it is dropped; each costs a full
+  call limit, so use a short one. See
+  [timeout policy](../../../desk/doc/reference.md#timeout-policy-on-timeout).
 
 The prelude allows only `/-`, `/+`, `/=`, `/*`, in that order, all from the
 selected desk at the pinned revision. Full rules:

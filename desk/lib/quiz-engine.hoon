@@ -22,6 +22,12 @@
       samples-per-slice=@ud
   ==
 ::
++$  timeout-policy
+  ::  What a sample whose fate exceeds the call limit does. %interrupt is
+  ::  the default: the whole run ends %interrupted. %fail shrinks it as a
+  ::  %timeout failure; %discard counts it as dropped and carries on.
+  ?(%interrupt %fail %discard)
+::
 +$  policy
   ::  How repeated samples are treated. %mug skips a repeated mug, %exact
   ::  skips only an equal noun, %allow evaluates every sample.
@@ -36,6 +42,7 @@
       size-max=@ud
       duplicates=policy
       bounds=limits
+      on-timeout=timeout-policy
   ==
 ::
 +$  verdict-product  ?(? %drop)
@@ -85,6 +92,7 @@
 ::
 +$  failure
   $%  [%false =detail]
+      [%timeout ~]
       [%crash trace=tang]
       [%scry request=*]
       [%bad-product product=*]
@@ -136,12 +144,13 @@
       time=@dr
       seen-tags=distribution
       examples=(map @t vase)
+      pending=(unit vase)
   ==
 ::
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-4
+  %quiz-engine-5
 ::
 ++  defaults
   ^-  conf
@@ -149,6 +158,7 @@
       :*  262.144  10.000  1.000  100  65.536  16.384  16.384  262.144
           4.194.304  100  25
       ==
+      %interrupt
   ==
 ::
 ++  call-time
@@ -174,7 +184,7 @@
   =/  size  ?:(=(0 size-max.config) start (min size-max.config start))
   %-  finish
   :*  seed  config  compiled  (slot 6 fate.compiled)  size  ~(. og seed)
-      ~  0  *counters  ~  ~  call-time  [~ ~]  ~
+      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~
   ==
 ::
 ++  classify
@@ -252,6 +262,7 @@
   ^-  state
   =.  s  (finish s)
   ?:  !=(~ result.s)  s
+  ?:  ?=(^ pending.s)  (judge-pending s)
   ?:  !=(~ shrink.s)  (shrink-step s)
   =/  [fill-rng=_og next-rng=_og]  (split-rng:legacy rng.s)
   =/  time  time.s
@@ -293,7 +304,26 @@
     ==
   ?:  (gth seen-used.s seen-bytes.bounds.config.s)
     s(result `[%limited %seen-bytes ~])
-  =/  [found=verdict =tags]  (judge (sandbox time q.fate.compiled.s q.sam))
+  ::  Under the split policy the fate runs on a later tick, from `pending`.
+  ?.  =(%interrupt on-timeout.config.s)  s(pending `sam)
+  (evaluate s sam)
+::
+++  judge-pending
+  ::  The fate on the sample or candidate a split tick stored.
+  |=  s=state
+  ^-  state
+  =/  sam=vase  (need pending.s)
+  =.  s  s(pending ~)
+  ?^  shrink.s  (judge-candidate s sam)
+  (evaluate s sam)
+::
+++  evaluate
+  ::  Judge a generated sample. A pass counts and tallies, a drop counts,
+  ::  and a failure starts shrinking.
+  |=  [s=state sam=vase]
+  ^-  state
+  =/  hash  (mug q.sam)
+  =/  [found=verdict =tags]  (judge (sandbox time.s q.fate.compiled.s q.sam))
   ?-  found
     %pass  (finish (tally s(accepted.counts +(accepted.counts.s)) sam tags))
     %drop  (finish s(dropped.counts +(dropped.counts.s)))
@@ -301,6 +331,41 @@
              s(result `[%limited %diagnostics-bytes ~])
            s(shrink `[[found sam sam] (~(put in *(set @)) hash) ~])
   ==
+::
+++  timed-out
+  ::  The fate on `pending` exceeded its call limit. The aborted tick rolled
+  ::  back, so the state still holds the sample. A discarded sample counts
+  ::  as dropped; a discarded candidate is skipped. Under %fail a hanging
+  ::  sample starts shrinking as a %timeout failure, and a hanging candidate
+  ::  is accepted only while the failure is also a %timeout: a candidate
+  ::  that hangs for a different kind of failure is skipped.
+  |=  s=state
+  ^-  state
+  =/  sam=vase  (need pending.s)
+  =.  s  s(pending ~)
+  ?:  ?=(%discard on-timeout.config.s)
+    ?~  shrink.s  s(dropped.counts +(dropped.counts.s))
+    s
+  ?~  shrink.s
+    s(shrink `[[[%timeout ~] sam sam] *(set @) ~])
+  ?.  ?=([%timeout ~] why.evidence.u.shrink.s)  s
+  =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
+  ::  The candidate list is for the old best sample: ask alts again.
+  s(shrink `u.shrink.s(shrunk.evidence sam, pending ~))
+::
+++  judge-candidate
+  ::  Judge one shrink candidate whose weight was already checked. The
+  ::  failure follows the shrunk sample, as its detail describes it.
+  |=  [s=state sam=vase]
+  ^-  state
+  =/  work  (need shrink.s)
+  =/  found  -:(judge (sandbox time.s q.fate.compiled.s q.sam))
+  ?@  found  s(shrink `work)
+  ?.  (fits diagnostics-bytes.bounds.config.s found)
+    s(shrink ~, result `[%limited %diagnostics-bytes `evidence.work])
+  ?.  =(-.found -.why.evidence.work)  s(shrink `work)
+  =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
+  s(shrink `work(shrunk.evidence sam, why.evidence found, pending ~))
 ::
 ++  grow
   ::  The next sample's size: about 1.1 times larger, plus one, held at
@@ -484,12 +549,7 @@
   ?:  (~(has in visited.work) hash)  s(shrink `work)
   =.  visited.work  (~(put in visited.work) hash)
   ?.  (lth (weight q.sam) (weight q.shrunk.evidence))  s(shrink `work)
-  =/  found  -:(judge (sandbox time q.fate.compiled.s q.sam))
-  ?@  found  s(shrink `work)
-  ?.  (fits diagnostics-bytes.bounds.config.s found)
-    s(shrink ~, result `[%limited %diagnostics-bytes `evidence])
-  ?.  =(-.found -.why.evidence)  s(shrink `work)
-  =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
-  ::  The failure follows the shrunk sample, as its detail describes it.
-  s(shrink `work(shrunk.evidence sam, why.evidence found, pending ~))
+  ::  Split: the candidate waits in `pending` for its own tick.
+  ?.  =(%interrupt on-timeout.config.s)  s(shrink `work, pending `sam)
+  (judge-candidate s(shrink `work) sam)
 --

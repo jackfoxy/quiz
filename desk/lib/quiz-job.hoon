@@ -170,9 +170,26 @@
     (finish s i.todo [%interrupted %building ~ ~] now)
   =/  id  id.u.current
   =/  rec  (~(got by records.saved.s) id)
+  ::  A stored sample or candidate means the aborted tick was its fate: the
+  ::  run's timeout policy decides, and the run goes on.
+  =/  work  work.u.current
+  ?:  ?&  ?=(%property -.work)
+          ?=(^ pending.+.work)
+          !=(%interrupt on-timeout.config.+.work)
+      ==
+    =/  running  (timed-out:engine +.work)
+    =.  rec
+      %=  rec
+        counts  [%property counts.running seen-tags.running size.running]
+        updated  now
+        status  ?:(=(~ shrink.running) %running %shrinking)
+      ==
+    %=  s
+      records.saved  (~(put by records.saved.s) id rec)
+      active  `[id [%property running]]
+    ==
   =/  during=?(%building %running %shrinking)
     ?:(?=(?(%running %shrinking) status.rec) status.rec %building)
-  =/  work  work.u.current
   =/  proof=(unit evidence:app)
     ?.  ?=(%property -.work)  ~
     =/  shrink  shrink.work
@@ -261,7 +278,12 @@
       =/  running  +.work
       ::  A settings change applies from the next slice.
       =.  time.running  call.timeouts.saved.s
-      =/  left  samples-per-slice.bounds.config.running
+      ::  A split run does one kind of work per tick, so an abort has one
+      ::  culprit.
+      =/  left
+        ?:  =(%interrupt on-timeout.config.running)
+          samples-per-slice.bounds.config.running
+        1
       =/  shrinking  !=(~ shrink.running)
       =.  running
         |-  ^-  state:engine

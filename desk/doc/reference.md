@@ -419,7 +419,7 @@ only sequences that satisfy the pop precondition.
 ```hoon
 $:  requested=@ud  attempts-max=@ud  drops-max=@ud  duplicates-max=@ud
     size-start=@ud  size-max=@ud  duplicates=?(%mug %exact %allow)
-    bounds=limits
+    bounds=limits  on-timeout=?(%interrupt %fail %discard)
 ==
 ```
 
@@ -437,6 +437,7 @@ lowered but not raised above their engine defaults.
 | `size-start` | 1 | First sample's size; at least 1 |
 | `size-max` | 0 | Largest size; 0 means uncapped, otherwise at least `size-start` |
 | `duplicates` | `%mug` | Duplicate policy: `%mug`, `%exact` or `%allow` |
+| `on-timeout` | `%interrupt` | What a sample whose fate exceeds the call limit does: `%interrupt` ends the run; `%fail` shrinks it as a `%timeout` failure; `%discard` drops it and continues |
 | `bounds.source-bytes` | 262,144 | Source cord bytes; builder ceiling and effective replay capture check |
 | `bounds.requested-max` | 10,000 | Ceiling for requested checks |
 | `bounds.shrink-candidates` | 1,000 | Candidates considered, even if skipped |
@@ -578,7 +579,7 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 | `exhausted` | Budget `attempts`, `drops` or `duplicates`, plus `all-dropped` |
 | `invalid` | Located build/configuration diagnostic |
 | `cancelled` | Reason `request` or `reload` |
-| `interrupted` | The runtime aborted the run's event: a CPU limit, Ctrl-C or memory exhaustion. `during` (`building`, `running`, `shrinking`), optional best evidence, optional suite arm |
+| `interrupted` | The runtime aborted the run's event: a CPU limit, Ctrl-C or memory exhaustion. `during` (`building`, `running`, `shrinking`), optional best evidence, optional suite arm. Under `on-timeout %fail` or `%discard` a fate's CPU limit does not interrupt the run; see the timeout policy below |
 | `suite` | Aggregate status, arm counters and per-arm outcomes |
 
 The durable Hoon [record](../sur/quiz-app.hoon) contains `id`, `request`, nullable
@@ -723,6 +724,29 @@ Ace adds editing bindings such as undo/redo and search; Settings selects the
 default or Vim keymap. Replay and cancel have no shortcut: they act on a
 selected run. [Quiz keys](keyboard/quiz-keys.md) explains why Open is Alt-O.
 The [workbench guide](workbench.md) describes editing and dirty protection.
+
+### Timeout policy (`on-timeout`)
+
+By default a fate that exceeds the call limit aborts the whole run as
+`%interrupted`, and the hanging sample is not recorded. The document can
+choose instead with `conf.on-timeout`:
+
+- `%fail`: the hanging sample is a failure, `[%timeout ~]`, and shrinking
+  starts from it. A hanging candidate is accepted only while the failure is
+  still a timeout. A candidate that hangs for a different failure is skipped.
+  The result is `failed` with a `%timeout` cause, and its JSON kind is
+  `timeout`.
+- `%discard`: the hanging sample is counted as dropped, and the run goes on.
+  A discarded shrink candidate is skipped.
+
+Under either policy each sample is evaluated on its own tick, one kind of
+work per tick, so an aborted tick has exactly one culprit: the sample stored
+for it. Generation, alts and rendering still interrupt the run. Each timed-out
+sample or candidate costs a full call limit (10 s by default), so set a short
+call limit in **Settings** for such documents. Timing is not reproducible bit
+for bit, so replay of a timeout run reproduces its policy and evidence, not
+its wall-clock time. A timed-out sample has no separate counter: it appears
+as `dropped` under `%discard`, and as the failure under `%fail`.
 
 ### Troubleshooting
 

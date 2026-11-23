@@ -700,4 +700,61 @@
     !>((turn examples.result head))
     (expect-eq !>(`(list *)`~[2 1]) !>(values))
   ==
+::
+++  test-interrupt-pending-discards
+  ::  An abort on a stored sample under %discard drops it and runs on.
+  ^-  tang
+  =/  s  (running 2 0)
+  =/  current  (need active.s)
+  ?>  ?=(%property -.work.current)
+  =/  run=state:engine  +.work.current
+  =/  cfg  config.run
+  =.  run  run(pending `!>(0), config cfg(on-timeout %discard))
+  =/  rec  (get-record s 1)
+  =.  s
+    %=  s
+      active  `[1 [%property run]]
+      records.saved  (~(put by records.saved.s) 1 rec(status %running))
+    ==
+  =/  got  (get-record (interrupt:job s now:bol) 1)
+  ?>  ?=(%property -.counts.got)
+  ;:  weld
+    (expect-eq !>(`@ud`1) !>(dropped.+<.counts.got))
+    (expect !>(=(%running status.got)))
+    (expect !>(=(~ result.got)))
+  ==
+::
+++  test-interrupt-pending-fails-as-timeout
+  ::  Under %fail the same abort starts shrinking with a %timeout failure.
+  ^-  tang
+  =/  s  (running 2 0)
+  =/  current  (need active.s)
+  ?>  ?=(%property -.work.current)
+  =/  run=state:engine  +.work.current
+  =/  cfg  config.run
+  =.  run  run(pending `!>(0), config cfg(on-timeout %fail))
+  =/  rec  (get-record s 1)
+  =.  s
+    %=  s
+      active  `[1 [%property run]]
+      records.saved  (~(put by records.saved.s) 1 rec(status %running))
+    ==
+  =/  got  (get-record (interrupt:job s now:bol) 1)
+  ;:  weld
+    (expect !>(=(%shrinking status.got)))
+    (expect !>(=(~ result.got)))
+  ==
+::
+++  test-interrupt-without-pending-unchanged
+  ::  An abort with nothing stored is still %interrupted under any policy.
+  ^-  tang
+  =/  s  (running 2 5)
+  =/  current  (need active.s)
+  ?>  ?=(%property -.work.current)
+  =/  run=state:engine  +.work.current
+  =/  cfg  config.run
+  =.  run  run(config cfg(on-timeout %discard))
+  =.  s  s(active `[1 [%property run]])
+  =/  got  (get-record (interrupt:job s now:bol) 1)
+  (expect !>(?=([~ %interrupted %running ~ ~] result.got)))
 --

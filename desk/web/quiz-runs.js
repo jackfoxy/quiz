@@ -351,6 +351,11 @@
     };
     // A false verdict may carry the fate's notes and an expected/actual pair.
     const failure = (parent, why) => {
+      if (why?.kind === 'timeout') {
+        line(parent, 'Failure', 'timeout');
+        line(parent, 'Meaning', 'The fate did not return within the call limit for this sample.');
+        return;
+      }
       const detail = why?.kind === 'false' ? why.detail : null;
       if (!detail?.notes?.length && !detail?.compared) {
         block(parent, 'run-failure', 'Failure', JSON.stringify(why, null, 2));

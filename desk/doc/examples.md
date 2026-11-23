@@ -12,7 +12,7 @@ the duplicate example requests two and intentionally reaches its small budget,
 and the queue models, coverage, generator-library, size and function
 examples request 100.
 The results below were checked through the browser/Gall application on
-`%zuse 408`, engine `%quiz-engine-4`. They describe these exact sources and
+`%zuse 408`, engine `%quiz-engine-5`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
 
 | Document | Expected outcome | What it demonstrates |
@@ -41,6 +41,7 @@ settings, not universal outcomes of similar-looking properties.
 | [22-size-capped](../examples/props/22-size-capped.hoon) | Passed, 100 accepted; size held at 30 | `size-max` keeps size-driven lists short; `sized` and `vector` |
 | [23-map-fusion](../examples/props/23-map-fusion.hoon) | Passed, 100 accepted | Generated functions: two `turn`s equal one over `cork` |
 | [25-counter-agent](../examples/props/25-counter-agent.hoon) | Passed, 100 accepted; 5 duplicates | Pure agent harness: model-based pokes against a counter agent's door |
+| [27-timeout-fail](../examples/props/27-timeout-fail.hoon) | Failed, timeout; shrinks to `n=11` | `on-timeout %fail`: a fate that never returns is a `%timeout` failure, shrunk to the smallest hanging input. Needs a short call limit; each hanging candidate costs it |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -207,6 +208,7 @@ queue, report, coverage, generator-library, size and function rows in
 | 24-filter-map-swap | 8 | 7 | 0 | 0 | 37 | 5 | 3 items → `~[8]`, `f = {_ -> 0}`, `p = {8 -> %.y, _ -> %.n}` |
 | 25-counter-agent | 105 | 100 | 0 | 5 | 0 | 0 | — |
 | 26-counter-agent-bug | 2 | 1 | 0 | 0 | 21 | 4 | `[%add 11]` (expected 11, actual 0) |
+| 27-timeout-fail | — | — | — | — | — | — | `n=11` with a 2 s call limit; run in the browser, not pinned in `-test` (a hanging fate would abort the test event) |
 
 ## Existing suites
 

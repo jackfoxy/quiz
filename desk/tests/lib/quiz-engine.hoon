@@ -8,7 +8,9 @@
 ++  config
   |=  [requested=@ud attempts=@ud drops=@ud duplicates=@ud]
   ^-  conf:engine
-  [requested attempts drops duplicates 1 0 %mug bounds:defaults:engine]
+  :*  requested  attempts  drops  duplicates  1  0  %mug
+      bounds:defaults:engine  %interrupt
+  ==
 ::
 ++  sizes
   ::  The size each of the next `n` samples is generated at.
@@ -503,9 +505,115 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-4) !>(version:engine))
+    (expect-eq !>(%quiz-engine-5) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))
+  ==
+::
+++  split-config
+  ::  Under %fail, generation and evaluation are separate ticks.
+  |=  policy=timeout-policy:engine
+  ^-  conf:engine
+  =/  cfg  (config 3 10 5 5)
+  cfg(on-timeout policy)
+::
+++  test-split-generation-then-evaluation
+  ::  A split tick stores the sample; the next tick evaluates it.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud &))
+  =/  s  (init:engine 0v1 (split-config %fail) [fate `sized `no-alts ~ %pass])
+  =/  stored  (step:engine s)
+  =/  done  (step:engine stored)
+  ;:  weld
+    (expect !>(?=(^ pending.stored)))
+    (expect-eq !>(`counters:engine`[1 0 0 0 0 0]) !>(counts.stored))
+    (expect !>(=(~ pending.done)))
+    (expect-eq !>(`counters:engine`[1 1 0 0 0 0]) !>(counts.done))
+  ==
+::
+++  test-interrupt-policy-never-splits
+  ::  Under the default policy a sample is judged in the same tick.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud &))
+  =/  s  (init:engine 0v1 (config 3 10 5 5) [fate `sized `no-alts ~ %pass])
+  =/  next  (step:engine s)
+  ;:  weld
+    (expect !>(=(~ pending.next)))
+    (expect-eq !>(`counters:engine`[1 1 0 0 0 0]) !>(counts.next))
+  ==
+::
+++  test-split-matches-interrupt
+  ::  With no timeouts, a split run reaches the same outcome and counters.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud (lth a 50)))
+  =/  split  (finished (split-config %fail) [fate `sized `no-alts ~ %pass])
+  =/  plain
+    (finished (split-config %interrupt) [fate `sized `no-alts ~ %pass])
+  ;:  weld
+    (expect-eq !>(result.plain) !>(result.split))
+    (expect-eq !>(counts.plain) !>(counts.split))
+  ==
+::
+++  test-timeout-discard-sample
+  ::  A discarded sample counts as dropped and clears pending.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud &))
+  =/  s
+    (init:engine 0v1 (split-config %discard) [fate `sized `no-alts ~ %pass])
+  =/  stored  (step:engine s)
+  =/  got  (timed-out:engine stored)
+  ;:  weld
+    (expect !>(=(~ pending.got)))
+    (expect-eq !>(`counters:engine`[1 0 1 0 0 0]) !>(counts.got))
+    (expect !>(=(~ result.got)))
+  ==
+::
+++  test-timeout-fail-starts-shrinking
+  ::  A hanging sample under %fail shrinks as a %timeout failure.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud &))
+  =/  s  (init:engine 0v1 (split-config %fail) [fate `sized `no-alts ~ %pass])
+  =/  got  (timed-out:engine (step:engine s))
+  ?>  ?=(^ shrink.got)
+  ;:  weld
+    (expect !>(=(~ pending.got)))
+    (expect !>(?=([%timeout ~] why.evidence.u.shrink.got)))
+    %+  expect-eq  !>(q.original.evidence.u.shrink.got)
+    !>(q.shrunk.evidence.u.shrink.got)
+  ==
+::
+++  test-timeout-candidate-accepted-as-timeout
+  ::  A hanging candidate shrinks the timed-out sample further.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud &))
+  =/  s  (init:engine 0v1 (split-config %fail) [fate `sized `no-alts ~ %pass])
+  =/  start  (timed-out:engine (step:engine s))
+  =/  work  (need shrink.start)
+  =/  cand  !>(`@ud`0)
+  =.  shrink.start  `work(pending `~[cand])
+  =.  pending.start  `cand
+  =/  got  (timed-out:engine start)
+  ;:  weld
+    (expect-eq !>(`@ud`1) !>(shrink-steps.counts.got))
+    (expect-eq !>(`@ud`0) !>(q.shrunk.evidence:(need shrink.got)))
+    (expect !>(=(~ pending:(need shrink.got))))
+  ==
+::
+++  test-timeout-candidate-other-category-skipped
+  ::  A hanging candidate of a %false failure is skipped, not accepted.
+  ^-  tang
+  =/  fate  !>(|=(a=@ud |))
+  =/  s  (init:engine 0v1 (split-config %fail) [fate `sized `no-alts ~ %pass])
+  =/  failed=state:engine  (step:engine s)
+  =/  cand  !>(`@ud`0)
+  =.  shrink.failed
+    `[[[%false ~ ~] !>(`@ud`5) !>(`@ud`5)] *(set @) `~[cand]]
+  =.  pending.failed  `cand
+  =/  got  (timed-out:engine failed)
+  ;:  weld
+    (expect !>(=(~ pending.got)))
+    (expect-eq !>(`@ud`5) !>(q.shrunk.evidence:(need shrink.got)))
+    (expect-eq !>(`@ud`0) !>(shrink-steps.counts.got))
   ==
 --

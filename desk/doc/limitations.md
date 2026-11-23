@@ -10,6 +10,12 @@ authoritative behavior and recovery guidance.
   the requested number of accepted checks. It does not establish that the
   property holds for every input. See
   [counters, status and outcomes](reference.md#counters-status-and-outcomes).
+- **A timeout policy costs a full call limit per hanging sample.** Under
+  `on-timeout %fail` or `%discard`, every hanging sample or candidate waits
+  the whole call limit (default 10 s) before it is handled, and a shrink can
+  hang many times. Set a short call limit in **Settings** for such documents.
+  The policy covers the fate only; generation, norn, alts and rendering still
+  interrupt the run.
 - **CPU limits stop a stuck call, but block the ship until they fire.** Each
   fate, norn, alts or rendering call has a `%jinx` CPU limit (default 10 s).
   Draft compilation defaults to 30 s and a suite arm to 1 minute. All three

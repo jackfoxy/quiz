@@ -429,6 +429,7 @@ The following are Quiz applications of general property-testing techniques;
 | Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. |
 | Small domains | `21-small-domain-allow` checks De Morgan's law over two loobeans. Only four samples exist; `duplicates %allow` evaluates repeats, so 100 checks pass and the labels show every case. |
 | Agent model | `25-counter-agent` runs generated pokes against a counter agent's door and compares its state with a model. `26-counter-agent-bug` finds a lost update, an add above ten the agent drops, and shrinks to a single `[%add 11]`. The harness is pure: real effects are out of scope ([limitations](limitations.md)). |
+| Hanging code | `27-timeout-fail` gives a fate that never returns for inputs above ten. `on-timeout %fail` reports each hang as a `timeout` failure and shrinks to `n=11`. The browser test also checks `%discard`, which drops hanging samples and carries on. Use a short call limit. See [timeout policy](reference.md#timeout-policy-on-timeout). |
 | Higher-order functions | `23-map-fusion` and `24-filter-map-swap` generate the function arguments themselves with `quiz-fun`. |
 | Size control | `22-size-capped` checks a quadratic sort against `sort` on lists as long as the size. `size-max 30` keeps the lists short; `quiz-gen`'s `capped`, `resize` and `scale` do the same for one generator. |
 

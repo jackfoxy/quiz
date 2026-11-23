@@ -145,6 +145,11 @@ building, running, shrinking, or cancelling record `%cancelled` with reason
 
 ## Aborted events and `%interrupted`
 
+Under a property's `on-timeout` policy (`%fail` or `%discard`), a fate that
+exceeds the call limit is handled as a sample outcome, not an interruption;
+see [the timeout policy](reference.md#timeout-policy-on-timeout). Everything
+below applies to all other aborts and to the default `%interrupt` policy.
+
 Every fate, norn, alts and sample-rendering call runs under a Vere `%jinx`
 CPU-time limit. Draft compilation and document arm checks have a build limit,
 and each suite arm an arm limit. All three come from the ship-wide `timeouts`

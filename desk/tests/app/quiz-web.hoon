@@ -216,7 +216,7 @@
   ^-  tang
   =/  got  (config-in:codec (config-out:codec defaults:engine))
   =/  cfg  defaults:engine
-  =.  cfg  cfg(size-start 3, size-max 40, duplicates %exact)
+  =.  cfg  cfg(size-start 3, size-max 40, duplicates %exact, on-timeout %fail)
   =/  out  (config-out:codec cfg)
   ?>  ?=([%o *] out)
   =/  bad  [%o (~(put by p.out) 'duplicates' s+'never')]
@@ -224,6 +224,7 @@
     (expect-eq !>(defaults:engine) !>(got))
     (expect-eq !>(cfg) !>((config-in:codec out)))
     (expect-eq !>(s+'exact') !>((~(got by p.out) 'duplicates')))
+    (expect-eq !>(s+'fail') !>((~(got by p.out) 'on-timeout')))
     (expect !>(=(~ (mole |.((config-in:codec bad))))))
   ==
 ::

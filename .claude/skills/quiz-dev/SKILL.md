@@ -135,6 +135,12 @@ reproduce an abort: `%jinx` would abort the `-test` event itself. Test the
 recovery path with a synthetic error wake, as `tests/app/quiz.hoon` does, and
 check real aborts on the fake ship.
 
+**Run keeps going after timeouts, or a sample is `timeout`.** The document
+has `on-timeout %fail` or `%discard`. Each hanging sample waits the whole call
+limit, so a shrink can take many limits. Lower the call limit in Settings. A
+`timeout` failure is the policy's result, not a crash. Under `%interrupt`
+(the default) the same hang ends the run `%interrupted`.
+
 **`%exhausted` or `%limited` when you expected a pass.** This is usually
 correct engine behaviour. Check the property with
 [quiz-properties](../quiz-properties/SKILL.md) before you change the engine.

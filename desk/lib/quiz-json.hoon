@@ -191,6 +191,7 @@
         %crash        (trace-out trace.value)
         %scry         s+(scot %uv (jam request.value))
         %bad-product  s+(scot %uv (jam product.value))
+        %timeout      ~
       ==
   ==
 ::
@@ -406,9 +407,20 @@
             (natural (field bounds 'retained-runs'))
             (natural (field bounds 'samples-per-slice'))
         ==
+        (timeout-in (field fields 'on-timeout'))
     ==
   ?>  (valid-config:build cfg)
   cfg
+::
+++  timeout-in
+  |=  value=json
+  ^-  timeout-policy:engine
+  =/  tag  (text value)
+  ?+  tag  ~|(%bad-on-timeout !!)
+    %interrupt  %interrupt
+    %fail       %fail
+    %discard    %discard
+  ==
 ::
 ++  policy-in
   |=  value=json
@@ -431,6 +443,7 @@
       ['size-start' (numb:enjs:format size-start.value)]
       ['size-max' (numb:enjs:format size-max.value)]
       ['duplicates' s+duplicates.value]
+      ['on-timeout' s+on-timeout.value]
       ['bounds' (bounds-out bounds.value)]
   ==
 ::

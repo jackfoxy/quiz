@@ -76,7 +76,8 @@ immutable `revision`), `defaults` (the complete engine configuration), and
 Bounds are `source-bytes`, `requested-max`, `shrink-candidates`,
 `shrink-depth`, `sample-bytes`, `rendered-bytes`, `diagnostics-bytes`,
 `alts-bytes`, `seen-bytes`, `retained-runs`, `samples-per-slice`.
-`duplicates` is the string `"mug"`, `"exact"` or `"allow"`; every other
+`duplicates` is the string `"mug"`, `"exact"` or `"allow"`, and `on-timeout`
+is `"interrupt"`, `"fail"` or `"discard"`; every other
 configuration value is a JSON integer. `requested` may be raised up to
 `requested-max`; attempts, drop/duplicate budgets, and bounds cannot exceed
 their engine defaults. `size-start` must be at least 1; `size-max` is 0
@@ -215,7 +216,8 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
   `arms` with `name`, `status`, `trace`, `clipped`.
 
 Evidence samples have rendered `text` and `noun-jam` (a jammed noun as `@uv`).
-`why` has `kind` (`false`, `crash`, `scry`, `bad-product`) and `detail`. For
+`why` has `kind` (`false`, `timeout`, `crash`, `scry`, `bad-product`) and
+`detail`. A `timeout` has a null `detail`. For
 `false` it is `{"notes":[…],"compared":null|{"want","got"}}`; otherwise trace
 lines, or a jammed noun string. Rendering and retained
 samples obey engine bounds. `passed` means the requested checks passed, not a
