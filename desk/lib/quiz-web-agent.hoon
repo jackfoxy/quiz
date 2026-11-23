@@ -237,10 +237,14 @@
   ^-  (quip card _this)
   ?-  -.cmd
     %runs
+      ::  Rows label the history; clients fetch a whole record by `status`.
+      =/  path=path
+        /(scot %p our.bowl)/quiz/(scot %da now.bowl)/summaries/noun
+      =/  rows  .^((list summary:app) %gx path)
+      =/  ids=(list json)  (turn (turn rows head) decimal:codec)
+      =/  runs=(list json)  (turn rows summary-out:codec)
       :_  this
-      %:  reply  id  200
-        (pairs:enjs:format ~[['ids' a+(turn ids decimal:codec)]])
-      ==
+      (reply id 200 (pairs:enjs:format ~[['ids' a+ids] ['runs' a+runs]]))
     %status
       ?.  (lien ids (cury test id.cmd))
         [(refuse id 404 'run-not-found') this]

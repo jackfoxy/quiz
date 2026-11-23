@@ -89,8 +89,9 @@ Scries return `%noun` cages:
 | --- | --- |
 | `/x/run/<id>` | `record:quiz-app`; known path with absent ID returns no value |
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
+| `/x/summaries` | Newest-first `(list summary)`: id, source kind, status and outcome tag per run |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
-| `/x/version` | Engine semantics version (`%quiz-engine-7`) |
+| `/x/version` | Engine semantics version (`%quiz-engine-8`) |
 | `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |
 
 The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:
@@ -115,8 +116,11 @@ all discovered arms. Numeric filenames need cord path components, for example
 ## Scheduling, bounds, and persistence
 
 There is one active job and a FIFO queue of at most 100 waiting jobs. Property
-slices perform at most `samples-per-slice` engine steps (default 25); shrinking
-steps use the same budget. A slice also ends when it first finds a
+slices start at 8 engine steps and adapt: when the span from one slice's wake
+to the next is under 50 ms the next slice doubles, and over 250 ms it halves,
+never above `samples-per-slice` (default and ceiling 1,000). Results do not
+depend on slicing; only how often progress is committed. Shrinking steps use
+the same budget, and under a split timeout policy every slice is one step. A slice also ends when it first finds a
 counterexample, so that evidence is committed before any alts call. Suites run
 one arm per slice. A self-addressed Behn wake yields between slices, with a
 nominal 10 ms delay. Each wake does one kind of work: it either advances the

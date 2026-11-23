@@ -15,19 +15,37 @@
       [%suite state:suite]
   ==
 ::
++$  pace
+  ::  The next property slice's step count, and the last slice's wake time.
+  ::  0 and the bunt date mean not yet measured.
+  [slice=@ud last=@da]
+::
 +$  state
   $:  saved=state-0:app
       active=(unit [id=run-id:app work=work])
       timer=(unit [token=@ud when=@da])
       build-token=(unit @ud)
+      =pace
   ==
 ::
 ++  initial
   ::  No runs or jobs; ids and tokens start at 1; default timeouts.
   ^-  state
-  [[1 1 ~ ~ ~ default-timeouts] ~ ~ ~]
+  [[1 1 ~ ~ ~ default-timeouts] ~ ~ ~ *pace]
 ::
 ++  queue-max  100
+::
+++  slice-start
+  ::  Steps in a job's first property slice, before any timing.
+  8
+::
+++  slice-quick
+  ::  Wake-to-wake span below which the next slice doubles.
+  (div ~s1 20)
+::
+++  slice-slow
+  ::  Wake-to-wake span above which the next slice halves.
+  (div ~s1 4)
 ::
 ++  default-timeouts
   ::  Property call 10 s, draft build 30 s, suite arm 1 min.
@@ -112,6 +130,17 @@
       (fall on-timeout.patch on-timeout.base)
   ==
 ::
+++  summarize
+  ::  A record's history row.
+  |=  rec=record:app
+  ^-  summary:app
+  =/  result  result.rec
+  =/  outcome=(unit @tas)
+    ?~  result  ~
+    ?:  ?=(%suite -.u.result)  `status.u.result
+    `-.u.result
+  [id.rec -.source.request.rec status.rec outcome]
+::
 ++  activate
   ::  Start the queue head building, unless a job is already active.
   |=  [s=state now=@da]
@@ -123,6 +152,7 @@
   =.  rec  rec(status %building, updated now)
   %=  s
     active  `[id.rec [%waiting ~]]
+    pace  *pace
     queue.saved  t.todo
     records.saved  (~(put by records.saved.s) id.rec rec)
   ==
@@ -247,7 +277,7 @@
     |=  rec=record:app
     ?:  =(%done status.rec)  rec
     rec(status %done, result `[%cancelled %reload], updated now, finished `now)
-  (retain [saved(queue ~) ~ ~ ~] retained-runs.bounds:defaults:engine)
+  (retain [saved(queue ~) ~ ~ ~ *pace] retained-runs.bounds:defaults:engine)
 ::
 ++  persist-evidence
   ::  Drop type information; the engine rendered each kept sample once.
@@ -287,6 +317,23 @@
       ==
   ==
 ::
+++  adapt
+  ::  Size the next property slice from the span since the last wake. That
+  ::  span holds the previous slice's event, so a quick one doubles the
+  ::  slice and a slow one halves it, within the engine's ceiling. Results
+  ::  do not depend on slicing, only how often progress is committed.
+  |=  [s=state now=@da]
+  ^-  state
+  =/  slice  ?:(=(0 slice.pace.s) slice-start slice.pace.s)
+  ?:  =(*@da last.pace.s)  s(pace [slice now])
+  =/  span  (sub now (min now last.pace.s))
+  =/  ceiling  samples-per-slice.bounds:defaults:engine
+  =.  slice
+    ?:  (lth span slice-quick)  (min ceiling (mul 2 slice))
+    ?:  (gth span slice-slow)  (max 1 (div slice 2))
+    slice
+  s(pace [slice now])
+::
 ++  advance
   ::  A property slice consumes at most the configured number of steps.
   ::  It also ends when a counterexample is first found, so the evidence
@@ -307,10 +354,10 @@
       =.  time.running  call.timeouts.saved.s
       ::  A split run does one kind of work per tick, so an abort has one
       ::  culprit.
+      =/  cap  samples-per-slice.bounds.config.running
       =/  left
-        ?:  =(%interrupt on-timeout.config.running)
-          samples-per-slice.bounds.config.running
-        1
+        ?.  =(%interrupt on-timeout.config.running)  1
+        (min cap ?:(=(0 slice.pace.s) slice-start slice.pace.s))
       =/  shrinking  !=(~ shrink.running)
       =.  running
         |-  ^-  state:engine

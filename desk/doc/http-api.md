@@ -173,7 +173,10 @@ with 400 `invalid-command`. The workbench's **Settings** dialog uses both.
 {"op":"cancel","id":"42"}
 ```
 
-`runs` returns 200 `{"ids":["42","41"]}` newest first. `status` returns 200
+`runs` returns 200 `{"ids":["42","41"],"runs":[...]}` newest first. Each
+`runs` row is `{"id","kind","status","outcome"}`: `kind` is the source kind,
+`outcome` the result's kind (a suite's `passed`/`failed`) or `null` while
+unfinished. Rows label history; fetch a whole record with `status`. `status` returns 200
 with one record, or 404 `{"error":"run-not-found"}`. `cancel` returns 202
 `{"accepted":true}` after acknowledgement. As in the typed API, cancelling an
 unknown or completed ID is an idempotent no-op. Poll a known run to observe

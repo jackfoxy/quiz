@@ -284,6 +284,17 @@
       ['shrunk' (sample-out shrunk.value)]
   ==
 ::
+++  summary-out
+  ::  A history row: decimal id, source kind, status, nullable outcome.
+  |=  value=summary:app
+  ^-  json
+  %-  pairs:enjs:format
+  :~  ['id' (decimal id.value)]
+      ['kind' s+kind.value]
+      ['status' s+status.value]
+      ['outcome' ?~(outcome.value ~ s+u.outcome.value)]
+  ==
+::
 ++  outcome-out
   ::  `kind` plus that outcome's fields; absent evidence is null.
   |=  value=outcome:app

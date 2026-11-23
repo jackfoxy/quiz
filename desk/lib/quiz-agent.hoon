@@ -231,10 +231,16 @@
   ~[[%give %fact ~ %quiz-update !>(`update:app`[%run u.rec])]]
 ::
 ++  on-peek
-  ::  /x/runs, /x/limits, /x/version, /x/timeouts and /x/run/<id>.
+  ::  /x/runs, /x/summaries, /x/limits, /x/version, /x/timeouts and
+  ::  /x/run/<id>. Summaries follow `order`, newest first.
   |=  =path
   ^-  (unit (unit cage))
   ?:  =(/x/runs path)  ``noun+!>(order.saved.state)
+  ?:  =(/x/summaries path)
+    =/  rows=(list summary:app)
+      %+  turn  order.saved.state
+      |=(id=run-id:app (summarize:job (~(got by records.saved.state) id)))
+    ``noun+!>(rows)
   ?:  =(/x/limits path)  ``noun+!>(defaults:engine)
   ?:  =(/x/version path)  ``noun+!>(version:engine)
   ?:  =(/x/timeouts path)  ``noun+!>(timeouts.saved.state)
@@ -273,6 +279,7 @@
     ::  a slice of the active job, or the start of the next queued job.
     =/  working  active.next
     ?:  ?&(?=(^ working) !?=(%waiting -.work.u.working))
+      =.  next  (adapt:job next now.bowl)
       (publish:ops saved.state (advance:job next now.bowl) ~)
     =.  next  (activate:job next now.bowl)
     =/  current  active.next

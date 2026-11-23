@@ -12,7 +12,14 @@ function mockApi() {
   const api = async (req) => {
     calls.push(req);
     if (offline) throw new Error('offline');
-    if (req.op === 'runs') return {ids: [...records.keys()].reverse()};
+    if (req.op === 'runs') {
+      const ids = [...records.keys()].reverse();
+      return {ids, runs: ids.map((id) => {
+        const rec = records.get(id);
+        return {id, kind: rec.kind, status: rec.status,
+          outcome: rec.outcome?.status || rec.outcome?.kind || null};
+      })};
+    }
     if (req.op === 'status') return structuredClone(records.get(req.id));
     if (req.op === 'document-conf') {
       if (holdConf) await new Promise(resolve => { releaseConf = resolve; });

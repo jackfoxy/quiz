@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-7`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-8`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -448,7 +448,7 @@ lowered but not raised above their engine defaults.
 | `bounds.alts-bytes` | 262,144 | Jammed candidate-list bytes |
 | `bounds.seen-bytes` | 4,194,304 | Jammed bytes of the samples `%exact` keeps |
 | `bounds.retained-runs` | 100 | Completed records retained after this property finishes |
-| `bounds.samples-per-slice` | 25 | Engine steps per scheduling slice, including shrink work |
+| `bounds.samples-per-slice` | 1,000 | Ceiling on engine steps per scheduling slice, including shrink work; slices start at 8 and adapt (see the agent API) |
 
 Requested, attempt, drop, duplicate, shrink-candidate and shrink-depth limits
 may be zero. Byte caps, retained-runs and samples-per-slice must be positive.
@@ -660,7 +660,7 @@ numeric revisions. Suites can rerun, but cannot use property replay.
 
 `%quiz` accepts local-ship `%quiz-action` pokes: `%run`, `%cancel`, `%delete`,
 `%clear`, and `%timeouts` to set the CPU limits. Facts use `%quiz-update` on
-`/runs`, `/run/<id>` or `/timeouts`. Scries are `/x/runs`, `/x/run/<id>`,
+`/runs`, `/run/<id>` or `/timeouts`. Scries are `/x/runs`, `/x/summaries`, `/x/run/<id>`,
 `/x/limits`, `/x/version`, `/x/timeouts`; Gall paths use dotted Hoon
 `@ud` formatting where needed. Exact types, examples and authorization are in
 [the agent API](agent-api.md).

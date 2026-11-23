@@ -253,6 +253,39 @@
     (expect !>(=(~ (on-peek.a /x/run/1/extra))))
   ==
 ::
+++  test-slices-adapt
+  ::  Quick wakes double the slice up to the ceiling; slow ones halve it.
+  ^-  tang
+  =/  t0  now:bol
+  =/  first  (adapt:job initial:job t0)
+  =/  quick  (adapt:job first (add t0 ~s0..0100))
+  =/  slow  (adapt:job quick (add t0 ~s1))
+  =/  full  first(pace [1.000 t0])
+  =/  capped  (adapt:job full (add t0 ~s0..0100))
+  ;:  weld
+    (expect-eq !>(8) !>(slice.pace.first))
+    (expect-eq !>(16) !>(slice.pace.quick))
+    (expect-eq !>(8) !>(slice.pace.slow))
+    (expect-eq !>(1.000) !>(slice.pace.capped))
+  ==
+::
+++  test-summaries-scry
+  ::  One row per run, newest first, with the outcome once finished.
+  ^-  tang
+  =/  s  (queued 2)
+  =.  s  (finish:job s 1 [%passed ~ ~] now:bol)
+  =/  a  ~(. agent bol)
+  =.  a  a(state s)
+  =/  got  (on-peek.a /x/summaries)
+  ?>  ?=([~ ~ *] got)
+  =/  rows  !<((list summary:app) q.u.u.got)
+  %+  expect-eq
+    !>  ^-  (list summary:app)
+        :~  [2 %draft %queued ~]
+            [1 %draft %done `%passed]
+        ==
+  !>(rows)
+::
 ++  test-id-thousands
   ^-  tang
   =/  s  initial:job
@@ -716,6 +749,8 @@
     %=  s
       active  `[1 [%property run]]
       records.saved  (~(put by records.saved.s) 1 rec(status %running))
+      ::  One slice large enough for all ten samples.
+      pace  [25 *@da]
     ==
   =/  done  (get-record (advance:job s now:bol) 1)
   ?>  ?=(%property -.counts.done)

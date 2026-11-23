@@ -93,6 +93,8 @@
     const detail = node('article', 'run-detail');
     results.append(actions, connection, history, detail);
     const records = new Map();
+    // History rows from `runs`; whole records are fetched only when selected.
+    let summaries = new Map();
     let ids = [];
     let busy = false;
     let online = false;
@@ -156,7 +158,10 @@
       if (currentTab !== tab.id) {
         const restoredSelection = currentTab === null && selection();
         currentTab = tab.id; clearInspection(); tell('');
-        if (!restoredSelection && tab.runIds?.length) select(tab.runIds[0]);
+        if (!restoredSelection && tab.runIds?.length) {
+          select(tab.runIds[0]);
+          if (!records.has(tab.runIds[0])) void refresh();
+        }
       }
       updateButtons(); renderDetail();
     }
@@ -390,9 +395,10 @@
       staleNote = null;
       detail.replaceChildren();
       if (!rec) {
-        detail.append(node('p', 'run-empty', id
-          ? 'Selected run is unavailable or no longer retained. Refresh history.'
-          : 'No run selected. Run a property or a saved suite to see results.'));
+        detail.append(node('p', 'run-empty', !id
+          ? 'No run selected. Run a property or a saved suite to see results.'
+          : summaries.has(id) ? 'Loading run…'
+            : 'Selected run is unavailable or no longer retained. Refresh history.'));
         updateButtons(); return;
       }
       const title = node('h2', 'run-result-status', `Run ${rec.id}: ${rec.outcome?.kind === 'suite'
@@ -473,17 +479,17 @@
     }
     function render() {
       const key = JSON.stringify([selection(), ids.map((id) => {
-        const rec = records.get(id);
-        return [id, rec?.kind, rec?.outcome?.status, rec?.outcome?.kind, rec?.status];
+        const row = summaries.get(id);
+        return [id, row?.kind, row?.outcome, row?.status];
       })]);
       if (key === historyKey) { renderDetail(); return; }
       historyKey = key;
       history.replaceChildren();
       if (!ids.length) history.append(node('p', 'history-empty', 'History is empty.'));
       for (const id of ids) {
-        const rec = records.get(id);
-        const item = button('', `#${id} ${rec?.kind || ''} — ${rec?.outcome?.status || rec?.outcome?.kind || rec?.status || 'loading'}`,
-          () => { select(id); runtime.session.queue(); render(); });
+        const row = summaries.get(id);
+        const item = button('', `#${id} ${row?.kind || ''} — ${row?.outcome || row?.status || 'loading'}`,
+          () => { select(id); runtime.session.queue(); render(); if (!records.has(id)) void refresh(); });
         item.dataset.runId = id; item.setAttribute('aria-pressed', String(selection() === id)); history.append(item);
       }
       renderDetail();
@@ -494,7 +500,7 @@
     function schedule() {
       clearTimeout(timer);
       if (stopped || document.hidden || window.__URUI_DOUBLES_TEST__) return;
-      const working = ids.some((id) => records.get(id)?.status !== 'done');
+      const working = ids.some((id) => summaries.get(id)?.status !== 'done');
       timer = setTimeout(() => { void refresh(); }, !online ? 5000 : working ? pollDelay : idleDelay);
     }
     async function refresh() {
@@ -503,14 +509,13 @@
         try {
           const result = await post('/apps/quiz/api', {op: 'runs'});
           ids = result.ids;
+          summaries = new Map((result.runs || []).map((row) => [row.id, row]));
           for (const id of [...records.keys()]) if (!ids.includes(id)) records.delete(id);
-          // Completed records are immutable. Limit concurrency for active/new records.
-          const needed = ids.filter((id) => !records.has(id) || records.get(id).status !== 'done');
-          for (let i = 0; i < needed.length; i += 4) {
-            await Promise.all(needed.slice(i, i + 4).map(async (id) => {
-              try { records.set(id, await post('/apps/quiz/api', {op: 'status', id})); }
-              catch (error) { if (error.status !== 404) throw error; records.delete(id); }
-            }));
+          // Only the selected run needs its whole record; a finished one never changes.
+          const id = selection();
+          if (ids.includes(id) && records.get(id)?.status !== 'done') {
+            try { records.set(id, await post('/apps/quiz/api', {op: 'status', id})); }
+            catch (error) { if (error.status !== 404) throw error; records.delete(id); }
           }
           online = true; connection.textContent = 'Connected — showing confirmed server records.';
           render();

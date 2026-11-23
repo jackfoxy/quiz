@@ -163,7 +163,7 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-7
+  %quiz-engine-8
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
@@ -171,7 +171,7 @@
   ^-  conf
   :*  100  10.000  1.000  1.000  1  0  %mug
       :*  262.144  10.000  1.000  100  65.536  16.384  16.384  262.144
-          4.194.304  100  25
+          4.194.304  100  1.000
       ==
       %interrupt
   ==

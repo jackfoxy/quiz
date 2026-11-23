@@ -562,7 +562,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-7) !>(version:engine))
+    (expect-eq !>(%quiz-engine-8) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))

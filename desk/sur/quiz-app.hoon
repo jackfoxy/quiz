@@ -97,6 +97,15 @@
       finished=(unit @da)
   ==
 ::
++$  summary
+  ::  One history row, enough to label a run without its whole record.
+  ::  `outcome` is the result's kind, or a suite's passed/failed status.
+  $:  id=run-id
+      kind=?(%draft %file %suite)
+      =status
+      outcome=(unit @tas)
+  ==
+::
 +$  update
   $%  [%run record]
       [%runs ids=(list run-id)]
