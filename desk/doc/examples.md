@@ -9,8 +9,8 @@ Clay paths linked below, not the workbench's virtual root names.
 Every property fixes seed `0v123` in its `conf`. Leave the panel overrides blank
 to reproduce its configuration. The ordinary target is 20 accepted checks;
 the duplicate example requests two and intentionally reaches its small budget,
-and the queue models, coverage, generator-library and size examples request
-100.
+and the queue models, coverage, generator-library, size and function
+examples request 100.
 The results below were checked through the browser/Gall application on
 `%zuse 408`, engine `%quiz-engine-4`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
@@ -39,6 +39,8 @@ settings, not universal outcomes of similar-looking properties.
 | [20-dependent](../examples/failing/20-dependent.hoon) | Failed, false; one-element list | `seeded`, `regen` and `shrink-seeded`: dependent shrinking |
 | [21-small-domain-allow](../examples/props/21-small-domain-allow.hoon) | Passed, 100 accepted from four samples | `duplicates %allow` evaluates repeats of a small domain |
 | [22-size-capped](../examples/props/22-size-capped.hoon) | Passed, 100 accepted; size held at 30 | `size-max` keeps size-driven lists short; `sized` and `vector` |
+| [23-map-fusion](../examples/props/23-map-fusion.hoon) | Passed, 100 accepted | Generated functions: two `turn`s equal one over `cork` |
+| [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
 The composed example's list is generated as `(list @ud)` but enters its fate
 through a noun boundary and is checked there. Recursive vase types can include
@@ -151,11 +153,21 @@ stays at 30; uncapped it would pass 60,000 by the hundredth sample. Its fate
 takes a `*` sample and molds it, because a `(list @ud)` sample type would
 exceed the sample-byte limit.
 
+`23-map-fusion` and `24-filter-map-swap` generate their function arguments
+with `quiz-fun` and take `*` samples molded to
+`[items=(list @ud) f=(fun @ud @ud) …]`. In 24 the law "filter after map
+equals map after filter" fails on the eighth sample. Shrinking with
+`shrink-list` and `shrink-fun` ends at items `~[8]`, `f = {_ -> 0}` and
+`p = {8 -> %.y, _ -> %.n}`. Mapping first turns 8 into 0, which `p` rejects;
+filtering first keeps 8 and maps it, so expected `~[0]`, actual `~`. The item
+stays 8 because keys never shrink: 8 is the key `p`'s case names.
+
 ## Recorded property counters
 
 Seed `0v123`, no UI overrides. Columns use the definitions in the reference.
 [`tests/lib/quiz-examples.hoon`](../tests/lib/quiz-examples.hoon) pins the
-queue, report, coverage, generator-library and size rows in `-test`.
+queue, report, coverage, generator-library, size and function rows in
+`-test`.
 
 | Document | Attempted | Accepted | Dropped | Duplicate | Shrink tried | Shrink steps | Original → shrunk |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -181,6 +193,8 @@ queue, report, coverage, generator-library and size rows in `-test`.
 | 20-dependent | 1 | 0 | 0 | 0 | 5 | 2 | `[~[19] seed 1]` → `[~[0] seed 0]` |
 | 21-small-domain-allow | 100 | 100 | 0 | 0 | 0 | 0 | — |
 | 22-size-capped | 100 | 100 | 0 | 0 | 0 | 0 | — |
+| 23-map-fusion | 100 | 100 | 0 | 0 | 0 | 0 | — |
+| 24-filter-map-swap | 8 | 7 | 0 | 0 | 37 | 5 | 3 items → `~[8]`, `f = {_ -> 0}`, `p = {8 -> %.y, _ -> %.n}` |
 
 ## Existing suites
 

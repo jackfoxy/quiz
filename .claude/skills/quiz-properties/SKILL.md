@@ -159,6 +159,13 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
 
 API: [app generator library](../../../desk/doc/reference.md#app-generator-library-quiz-gen).
 
+For a property over a function argument (`turn`, `skim`, folds), generate
+the function with `quiz-fun` (`/+ fun=quiz-fun`): `(fun-of:fun keys vals n)`
+gives a table, `(to-gate:fun f)` a gate for the fate, `(shrink-fun:fun @ud
+shrink-atom:gen)` its shrinker, and `(fun-text:fun !>(f))` text for `note`.
+Type the sample `*` and mold it. Model:
+[24-filter-map-swap](../../../desk/examples/failing/24-filter-map-swap.hoon).
+
 The legacy combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`,
 `const`, `cell`, `freq`, `pick`, `list`. Signatures:
 [norns and composition](../../../desk/doc/reference.md#norns-and-composition).

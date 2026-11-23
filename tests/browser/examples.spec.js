@@ -24,6 +24,8 @@ const examples = [
   ['failing', '20-dependent', 'failed', 'false'],
   ['props', '21-small-domain-allow', 'passed'],
   ['props', '22-size-capped', 'passed'],
+  ['props', '23-map-fusion', 'passed'],
+  ['failing', '24-filter-map-swap', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -68,7 +70,7 @@ for (const [root, name, outcome, why] of examples) {
     if (why) expect(got.outcome.evidence.why.kind).toBe(why);
     if (outcome === 'passed')
       expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
-        '21-small-domain-allow', '22-size-capped'].includes(name) ? 100 : 20);
+        '21-small-domain-allow', '22-size-capped', '23-map-fusion'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -111,6 +113,14 @@ for (const [root, name, outcome, why] of examples) {
       expect(got.config.duplicates).toBe('allow');
       expect(got.counts.duplicate).toBe(0);
       expect(got.distribution.labels).toEqual({both:28, 'a only':21, 'b only':28, neither:23});
+    }
+    if (name === '24-filter-map-swap') {
+      // Generated functions shrink like data; the notes print the tables.
+      expect(got.outcome.evidence.why.detail.notes)
+        .toEqual(['f = {_ -> 0}', 'p = {8 -> %.y, _ -> %.n}']);
+      expect(got.outcome.evidence.why.detail.compared).toEqual({want:'~[0]', got:'~'});
+      expect(got.counts).toMatchObject({'shrink-tried':37, 'shrink-steps':5});
+      await expect(page.locator('#run-notes')).toContainText('p = {8 -> %.y, _ -> %.n}');
     }
     if (name === '22-size-capped') {
       expect(got.config['size-max']).toBe(30);

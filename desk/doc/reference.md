@@ -307,6 +307,38 @@ generator. `shrink-seeded` shrinks only the outer value and size, so every
 candidate rebuilds a consistent inner value. The inner value itself is not
 shrunk directly.
 
+### Generated functions (`quiz-fun`)
+
+[`quiz-fun`](../lib/quiz-fun.hoon) (`/+ fun=quiz-fun`) generates functions
+for higher-order properties. As in QuickCheck's `Fun`, a function is a
+finite table plus a default:
+
+```hoon
+(fun:fun a b)  ::  [cases=(list [key=a val=b]) else=b]
+```
+
+A table is plain data: it replays exactly, renders, and shrinks. `apply`
+returns the value of the first case whose key equals the input, else the
+default. Executable models:
+[23-map-fusion](../examples/props/23-map-fusion.hoon) and
+[24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon).
+
+| Arm | Meaning |
+| --- | --- |
+| `(apply f key)` | Look a key up |
+| `(to-gate f)` | The table as a gate, for `turn`, `skim`, `cork` and the like |
+| `(fun-of keys vals n)` | Up to `min(n, size)` cases from the key and value generators, then a default; a repeated key is shadowed by its first case |
+| `(fun-on domain vals)` | A total table over a finite domain, one case per element, in order |
+| `(shrink-fun key-mold value-shrinker)` | The constant function `[~ else]`, then fewer cases (as `shrink-list`), smaller case values, then a smaller default. Keys never change. Every candidate weighs less |
+| `(fun-text !>(f))` | `'{3 -> 1, 5 -> 2, _ -> 0}'`, for `note`; pass a vase so values render with their types |
+
+A table holds a list, so a sample type containing one is recursive: type the
+fate's sample `*` and mold it with `;;`, as both examples do. Each value is
+drawn from its own stream, so different keys get independent values; this is
+QuickCheck's `coarbitrary` in table form. Tables cannot express every gate:
+they are finitely supported, and a gate the property did not generate is
+never randomized.
+
 **Wet-gate notes.** `set-of`, `map-of` and `sorted` take element molds because
 `silt`, `malt` and `sort` cannot be type-checked over a wet element type.
 Generators taking a literal list (`elements`, `one-of`, `frequency`,
@@ -700,6 +732,7 @@ already checked parts/configuration and own scheduling and persistence.
 | --- | --- |
 | [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit cover) expect=?(%pass %fail)]`; `judge` classifies reports; terminal states are stable |
 | [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
+| [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |
 | [quiz-gen](../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |

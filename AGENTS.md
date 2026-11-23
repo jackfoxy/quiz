@@ -17,7 +17,8 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 | `desk/lib/quiz-engine.hoon` | Resumable stepper, classification, bounded shrinking, limits | quiz |
 | `desk/lib/quiz-build.hoon` | Property document prelude, pinned Clay context, type checks | quiz |
 | `desk/lib/quiz-prop.hoon` | Report combinators for fates: notes, expected/actual, labels, coverage | quiz |
-| `desk/lib/quiz-gen.hoon` | Total generators, typed shrinkers, `alts-of` adaptor | quiz |
+| `desk/lib/quiz-gen.hoon` | Total generators, size combinators, typed shrinkers, `alts-of` adaptor | quiz |
+| `desk/lib/quiz-fun.hoon` | Generated functions as shrinkable tables | quiz |
 | `desk/lib/quiz-suite.hoon`, `desk/lib/quiz-replay.hoon` | `test-*` suite runner; replay capture | quiz |
 | `desk/lib/quiz-job.hoon` | Pure FIFO queue, slices, cancellation, retention, reload | quiz |
 | `desk/lib/quiz-agent.hoon`, `desk/app/quiz.hoon` | `%quiz` Gall adapter and export | quiz |

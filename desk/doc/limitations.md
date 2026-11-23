@@ -68,6 +68,10 @@ authoritative behavior and recovery guidance.
   its own. Values that constrain each other, such as a search tree's keys and
   the key being deleted, may stop at larger values than a coordinated
   shrinker would reach.
+- **Generated functions are finite tables.** `quiz-fun` makes a table
+  plus a default, which cannot express every gate. Keys never shrink, so a
+  counterexample keeps the inputs its cases name. A gate supplied by the
+  code under test is never randomized.
 - **Spell out sample types.** A fate sample typed with a mold that carries a
   large subject, such as zuse's `ship`, or with a recursive type, such as
   `(list @ud)`, makes every sample vase exceed the sample-byte limit. Use the

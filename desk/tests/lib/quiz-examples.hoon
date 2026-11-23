@@ -1,5 +1,5 @@
 /+  build=quiz-build, engine=quiz-engine, quiz, prop=quiz-prop, gen=quiz-gen,
-    *test
+    fun=quiz-fun, *test
 /*  queue-model  %hoon  /examples/props/10-queue-model/hoon
 /*  queue-bug  %hoon  /examples/failing/11-queue-model-bug/hoon
 /*  labels  %hoon  /examples/props/12-labels-coverage/hoon
@@ -13,6 +13,8 @@
 /*  dependent  %hoon  /examples/failing/20-dependent/hoon
 /*  allow  %hoon  /examples/props/21-small-domain-allow/hoon
 /*  capped  %hoon  /examples/props/22-size-capped/hoon
+/*  fusion  %hoon  /examples/props/23-map-fusion/hoon
+/*  swap  %hoon  /examples/failing/24-filter-map-swap/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -206,5 +208,31 @@
     (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
     (expect-eq !>(`counters:engine`[100 100 0 0 0 0]) !>(counts.done))
     (expect-eq !>(`@ud`30) !>(size.done))
+  ==
+::
+++  test-map-fusion
+  ^-  tang
+  =/  path=path  /examples/props/'23-map-fusion'/hoon
+  =/  done  (run path fusion ~[!>(engine) !>(gen) !>(fun)])
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[100 100 0 0 0 0]) !>(counts.done))
+  ==
+::
+++  test-filter-map-swap
+  ::  Keys never shrink, so the item stays 8: the key p's case names.
+  ^-  tang
+  =/  path=path  /examples/failing/'24-filter-map-swap'/hoon
+  =/  done  (run path swap ~[!>(engine) !>(gen) !>(fun) !>(prop)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  shrunk  [~[8] [~ 0] [~[[8 &]] |]]
+  =/  notes  ~['f = {_ -> 0}' 'p = {8 -> %.y, _ -> %.n}']
+  ;:  weld
+    (expect-eq !>(`counters:engine`[8 7 0 0 37 5]) !>(counts.done))
+    (expect-eq !>(`*`shrunk) !>(q.shrunk.result))
+    %+  expect-eq
+      !>(`failure:engine`[%false notes `['~[0]' '~']])
+    !>(why.result)
   ==
 --

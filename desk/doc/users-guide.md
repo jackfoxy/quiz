@@ -428,6 +428,7 @@ The following are Quiz applications of general property-testing techniques;
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
 | Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. |
 | Small domains | `21-small-domain-allow` checks De Morgan's law over two loobeans. Only four samples exist; `duplicates %allow` evaluates repeats, so 100 checks pass and the labels show every case. |
+| Higher-order functions | `23-map-fusion` and `24-filter-map-swap` generate the function arguments themselves with `quiz-fun`. |
 | Size control | `22-size-capped` checks a quadratic sort against `sort` on lists as long as the size. `size-max 30` keeps the lists short; `quiz-gen`'s `capped`, `resize` and `scale` do the same for one generator. |
 
 These are design suggestions, informed by FsCheck's
@@ -448,11 +449,20 @@ shrinker cannot delete a command from a list. See the
 fate; Quiz has no dedicated state-machine, external-system driver, parallel or
 asynchronous property API.
 
+**Testing higher-order code:** generate the function argument too.
+[`quiz-fun`](reference.md#generated-functions-quiz-fun) makes functions as
+small tables, such as `{8 -> %.y, _ -> %.n}`, that shrink like data.
+[23-map-fusion](../examples/props/23-map-fusion.hoon) checks that two `turn`s
+equal one `turn` over `cork` for generated `f` and `g`.
+[24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) refutes
+"filter after map equals map after filter": its notes print the shrunk
+tables, `f = {_ -> 0}` and `p = {8 -> %.y, _ -> %.n}`, with item `~[8]`.
+
 Labels, classify, collect, tabulate, threshold coverage, expected failure and
 conjunction/disjunction are available through
 [`quiz-prop`](reference.md#reports-labels-and-coverage). Other FsCheck
 facilities are **unsupported**: `Arbitrary` registration, automatic .NET
-derivation/reflection, generated functions and function shrinking, statistical
+derivation/reflection, generated functions beyond finite tables, statistical
 coverage checks, expected-exception combinators, nested quantification inside
 a fate, xUnit/NUnit adapters and `IRunner` callbacks. Do not paste FsCheck
 API examples into Hoon. The [reference](reference.md) is the Quiz API authority.
