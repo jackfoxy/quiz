@@ -834,4 +834,76 @@
     (expect-eq !>(`(list trace-row:engine)`~) !>((trace off)))
     (expect-eq !>((scag 3 (trace on))) !>((trace few)))
   ==
+::
+++  previewed
+  ::  Run a preview to completion.
+  |=  [=parts:engine count=@ud verdicts=? alts=?]
+  ^-  state:engine
+  =/  cfg  (config 5 20 5 5)
+  =/  s  (init:engine 0v1 cfg parts)
+  =.  s  (previewing:engine s count verdicts alts)
+  =/  left  200
+  |-
+  ?:  !=(~ result.s)  s
+  ?>  (gth left 0)
+  $(s (step:engine s), left (dec left))
+::
+++  test-preview-samples
+  ::  The run's sizes and samples, with verdicts and labels when asked.
+  ^-  tang
+  =/  done  (previewed [parity `sized ~ ~ %pass] 4 & |)
+  =/  result  (need result.done)
+  ?>  ?=(%preview -.result)
+  =/  rows  rows.result
+  =/  values  (turn rows |=(r=preview-row:engine value.r))
+  =/  sizes  (turn rows |=(r=preview-row:engine size.r))
+  =/  verdicts  (turn rows |=(r=preview-row:engine verdict.r))
+  =/  labels  (turn rows |=(r=preview-row:engine labels.r))
+  =/  odd  `(list @t)`~['odd' 'odd']
+  =/  even  `(list @t)`~['even' 'even']
+  ;:  weld
+    (expect-eq !>(`(list *)`~[1 2 3 4]) !>(values))
+    (expect-eq !>(`(list @ud)`~[1 2 3 4]) !>(sizes))
+    %+  expect-eq  !>(`(list (unit @tas))`~[`%pass `%pass `%pass `%pass])
+    !>(verdicts)
+    (expect-eq !>(`(list (list @t))`~[odd even odd even]) !>(labels))
+    (expect-eq !>(~) !>(candidates.result))
+    (expect-eq !>(`@ud`0) !>(accepted.counts.done))
+  ==
+::
+++  test-preview-repeats-and-cap
+  ::  Repeats are flagged, not skipped; verdicts are left out unless asked;
+  ::  a preview makes at most preview-max samples.
+  ^-  tang
+  =/  seven  !>(|=([@ud _og] ^-(@ud 7)))
+  =/  fate  !>(|=(a=@ud |))
+  =/  done  (previewed [fate `seven ~ ~ %pass] 3 | |)
+  =/  result  (need result.done)
+  ?>  ?=(%preview -.result)
+  =/  cfg  (config 5 20 5 5)
+  =/  fresh  (init:engine 0v1 cfg [fate `seven ~ ~ %pass])
+  =/  big  (previewing:engine fresh 500 | |)
+  ;:  weld
+    %+  expect-eq  !>(`(list ?)`~[| & &])
+    !>((turn rows.result |=(r=preview-row:engine repeat.r)))
+    %+  expect-eq  !>(`(list (unit @tas))`~[~ ~ ~])
+    !>((turn rows.result |=(r=preview-row:engine verdict.r)))
+    (expect-eq !>(preview-max:engine) !>(count:(need preview.big)))
+  ==
+::
+++  test-preview-alts
+  ::  The first sample's candidates, marked lighter or not; a crashing norn
+  ::  ends the preview as a norn error.
+  ^-  tang
+  =/  alts  !>(|=(v=vase ^-((list vase) ~[v(q 0) v(q 9)])))
+  =/  done  (previewed [parity `sized `alts ~ %pass] 2 | &)
+  =/  result  (need result.done)
+  ?>  ?=(%preview -.result)
+  =/  crash  !>(|=([@ud _og] ^-(@ud !!)))
+  =/  bad  (previewed [parity `crash ~ ~ %pass] 2 | |)
+  =/  want=(list candidate-row:engine)  ~[[0 'n=0' `1 &] [9 'n=9' `10 |]]
+  ;:  weld
+    (expect-eq !>(want) !>(candidates.result))
+    (expect !>(?=([~ %error %norn *] result.bad)))
+  ==
 --

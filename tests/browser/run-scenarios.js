@@ -157,6 +157,24 @@ async function scenario(env, mock, name) {
     assert.equal(suite.request.config,undefined);
     assert.match(el('run-unavailable').textContent,/unavailable for suites/);
     assert.equal(el('run-replay').disabled,true);
+    assert.equal(el('run-preview').disabled,true,'no preview for suites');
+    field('mode','draft'); field('previewCount','3'); field('previewShow','verdicts');
+    await runs.preview();
+    const previewId = docs.active('property').runIds[0];
+    assert.deepEqual(mock.records.get(previewId).request.mode,
+      {kind:'preview',count:3,verdicts:true,alts:false});
+    mock.records.get(previewId).status='done';
+    mock.records.get(previewId).outcome={kind:'preview',candidates:[{sample:{text:'n=0'},weight:'1',lighter:true}],
+      rows:[{size:1,sample:{text:'n=1'},repeat:false,verdict:'pass',labels:['odd']},
+        {size:2,sample:{text:'n=1'},repeat:true,verdict:'false',labels:[]}]};
+    await runs.refresh();
+    const shown = env.descendants(el('run-preview-rows')).map(n=>n.textContent).join(' ');
+    assert.match(shown, /skipped by a run/);
+    assert.match(shown, /odd/);
+    assert.match(env.descendants(el('run-preview-candidates')).map(n=>n.textContent).join(' '), /lighter/);
+    assert.equal(el('run-replay').disabled,true,'a preview is not replayed');
+    field('previewCount','101'); await runs.preview();
+    assert.match(el('run-message').textContent,/between 1 and 100/);
   }
   runtime.session.save();
   const saved = JSON.parse(env.saved.get('quiz.session'));

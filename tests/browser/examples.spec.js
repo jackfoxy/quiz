@@ -210,6 +210,31 @@ for (const [root, name, outcome, why] of examples) {
     fs.writeFileSync(info.outputPath('run.json'), JSON.stringify(evidence,null,2)+'\n');
   });
 }
+test('Preview shows samples, verdicts and shrink candidates', async ({page}) => {
+  const login = await page.request.post('/~/login', {form:{password:process.env.QUIZ_CODE}});
+  expect(login.ok()).toBeTruthy();
+  await page.goto('/apps/quiz/');
+  await page.waitForFunction(() => window.quiz?.ready);
+  await page.evaluate(() => window.quiz.ready);
+  await page.evaluate(path => window.quiz.documents.open('property', path),
+    ['failing', '08-seeded-threshold', 'hoon']);
+  await page.locator('#run-previewCount').fill('5');
+  await page.locator('#run-preview').click();
+  const record = () => page.evaluate(() => {
+    const id = JSON.parse(localStorage.getItem('quiz.session')).runSelection;
+    return window.quiz.runs.records.get(id);
+  });
+  await expect.poll(async () => (await record())?.status, {timeout:45000}).toBe('done');
+  const got = await record();
+  expect(got.request.mode).toEqual({kind:'preview', count:5, verdicts:true, alts:true});
+  expect(got.outcome.kind).toBe('preview');
+  expect(got.outcome.rows.map(row => row.size)).toEqual([1, 2, 3, 4, 5]);
+  expect(got.outcome.rows.every(row => typeof row.verdict === 'string')).toBeTruthy();
+  expect(got.outcome.candidates.length).toBeGreaterThan(0);
+  expect(got.counts.accepted).toBe(0);
+  await expect(page.locator('#run-preview-rows')).toContainText('Size');
+  await expect(page.locator('#run-replay')).toBeDisabled();
+});
 test('Run panel overrides the duplicates policy', async ({page}) => {
   // 05-duplicates exhausts under %mug; evaluating repeats lets it pass.
   const login = await page.request.post('/~/login', {form:{password:process.env.QUIZ_CODE}});

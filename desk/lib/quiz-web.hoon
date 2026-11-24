@@ -314,7 +314,8 @@
         margin-top: 1rem;
       }
       #run-controls { display: grid; grid-template-columns: 1fr 1fr;
-        gap: .5rem; padding: .75rem; flex: 0 0 auto; }
+        gap: .5rem; padding: .75rem; flex: 0 0 auto;
+        max-height: 45vh; overflow: auto; }
       #run-controls { width: 100%; }
       #run-controls label { font-size: .8rem; min-width: 0; }
       #run-controls input, #run-controls select { width: 100%; }

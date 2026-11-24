@@ -32,6 +32,7 @@ The request fields, in order, are:
 | `config` | `(unit patch)`; optional per-field settings override |
 | `seed` | `(unit @uv)`; optional seed override, including zero |
 | `replay-of` | `(unit @ud)`; replay an existing property's captured inputs |
+| `mode` | `[%run ~]`, or `[%preview count=@ud verdicts=? alts=?]` for a [generator preview](reference.md#generator-preview) |
 
 Absent overrides use the document's `conf`, then engine defaults. Entropy is
 captured on admission; a document seed takes precedence over that entropy.
@@ -41,6 +42,12 @@ holds one `unit` per top-level `conf` field (`bounds` is one whole `limits`);
 a client changing one field sets just that field. A merged result outside the
 engine ranges ends the run `%invalid` with `%conf-range`. Suites expose neither a controlled seed
 nor property counters: their record's `seed` and `config` are absent.
+
+A `%preview` request is an ordinary queued job: it runs in slices, can be
+cancelled or interrupted, and ends with the outcome
+`[%preview rows candidates]`. It makes at most 100 samples, never shrinks,
+and ignores `requested` and the attempt, drop and duplicate budgets. Its
+summary's kind is `%preview`. A suite cannot be previewed.
 
 When `replay-of` is present, its stored source, path, context, seed, and settings
 replace the other request fields. Missing/pruned records and records without
@@ -89,7 +96,7 @@ Scries return `%noun` cages:
 | --- | --- |
 | `/x/run/<id>` | `record:quiz-app`; known path with absent ID returns no value |
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
-| `/x/summaries` | Newest-first `(list summary)`: id, source kind, status and outcome tag per run |
+| `/x/summaries` | Newest-first `(list summary)`: id, source kind (`%preview` for a preview), status and outcome tag per run |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
 | `/x/version` | Engine semantics version (`%quiz-engine-13`) |
 | `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |
@@ -104,9 +111,10 @@ The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:
 ```
 
 ```hoon
-:quiz &quiz-action [%run [%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ ~ ~]
+:quiz &quiz-action [%run [%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ ~ ~ [%run ~]]
 :quiz &quiz-action [%cancel 1]
-:quiz &quiz-action [%run [%draft ''] %quiz [%ud 1] ~ ~ `1]
+:quiz &quiz-action [%run [%draft ''] %quiz [%ud 1] ~ ~ `1 [%run ~]]
+:quiz &quiz-action [%run [%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ ~ ~ [%preview 10 & &]]
 ```
 
 Replace revision `1` with an available revision. An empty suite arm list runs

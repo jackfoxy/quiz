@@ -102,9 +102,13 @@
             status  %running
             updated  now.bowl
           ==
+        =/  run  (init:engine seed cfg parts.built)
+        =/  =mode:app  mode.request.rec
+        =?  run  ?=(%preview -.mode)
+          (previewing:engine run count.mode verdicts.mode alts.mode)
         :-  ~
         %=  s
-          active  `[id [%property (init:engine seed cfg parts.built)]]
+          active  `[id [%property run]]
           records.saved  (~(put by records.saved.s) id rec)
         ==
       ::

@@ -16,6 +16,11 @@ authoritative behavior and recovery guidance.
   hang many times. Set a short call limit in **Settings** for such documents.
   The policy covers the fate only; generation, norn, alts and rendering still
   interrupt the run.
+- **A preview judges in the same step and ignores the timeout policy.** With
+  verdicts, a [generator preview](reference.md#generator-preview) runs the
+  fate in the step that makes the sample. A fate that exceeds the call limit
+  interrupts the preview, whatever `on-timeout` says. A preview makes at most
+  100 samples, shows at most 20 shrink candidates, and cannot be replayed.
 - **CPU limits stop a stuck call, but block the ship until they fire.** Each
   fate, norn, alts or rendering call has a `%jinx` CPU limit (default 10 s).
   Draft compilation defaults to 30 s and a suite arm to 1 minute. All three

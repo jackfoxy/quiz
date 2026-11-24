@@ -4,7 +4,7 @@
 ::
 ++  request
   ^-  request:app
-  [[%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ `0v0 ~]
+  [[%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ `0v0 ~ [%run ~]]
 ::
 ++  command
   ^-  json
@@ -17,6 +17,22 @@
   =/  got  (decode:codec command)
   =/  wanted=(unit command:codec)  `[%run request]
   (expect-eq !>(wanted) !>(got))
+::
+++  test-preview-mode
+  ::  The mode round-trips; an absent mode is a run.
+  ^-  tang
+  =/  base=request:app  request
+  =/  preview=request:app  base(mode [%preview 20 & |])
+  =/  req  (request-out:codec preview)
+  ?>  ?=([%o *] req)
+  =/  with  [%o (~(put by p.req) 'op' s+'run')]
+  =/  without  [%o (~(del by (~(put by p.req) 'op' s+'run')) 'mode')]
+  =/  as-preview=(unit command:codec)  `[%run preview]
+  =/  as-run=(unit command:codec)  `[%run request]
+  ;:  weld
+    (expect-eq !>(as-preview) !>((decode:codec with)))
+    (expect-eq !>(as-run) !>((decode:codec without)))
+  ==
 ::
 ++  test-source-kinds
   ^-  tang
@@ -150,6 +166,9 @@
         [%cancelled %reload]
         [%interrupted %shrinking `proof ~]
         [%interrupted %running ~ `%test-loop]
+        :+  %preview
+          ~[[1 1 '1' | `%pass ~['odd']] [2 1 '1' & ~ ~]]
+        ~[[0 '0' `1 &] [5 '5' ~ |]]
     ==
   %-  zing
   %+  turn  outcomes

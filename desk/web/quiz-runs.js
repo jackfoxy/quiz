@@ -6,6 +6,7 @@
   const seedPattern = /^0v[0-9a-v]+(?:\.[0-9a-v]+)*$/;
   const modes = ['draft', 'file', 'suite'];
   const policies = ['mug', 'exact', 'allow'];
+  const previewShows = ['all', 'verdicts', 'samples'];
   const cleanFields = (saved = {}) => {
     const value = saved.runSettings || {};
     const bounded = (key, pattern, max) => typeof value[key] === 'string'
@@ -21,7 +22,9 @@
         duplicates: policies.includes(value.duplicates) ? value.duplicates : '',
         seed: bounded('seed', seedPattern, 256),
         arms: typeof value.arms === 'string' && value.arms.length <= 6400
-          && /^[a-z0-9,\s-]*$/.test(value.arms) ? value.arms : ''
+          && /^[a-z0-9,\s-]*$/.test(value.arms) ? value.arms : '',
+        previewCount: bounded('previewCount', /^[1-9][0-9]*$/, 3),
+        previewShow: previewShows.includes(value.previewShow) ? value.previewShow : 'all'
       },
       runIds: Array.isArray(saved.runIds)
         ? [...new Set(saved.runIds.filter((id) => typeof id === 'string'
@@ -71,15 +74,22 @@
       const option = node('option', '', label); option.value = value; dups.append(option);
     }
     addField('arms', 'Suite arms (comma separated; blank = all)');
+    addField('previewCount', 'Preview samples (1-100, blank = 20)').inputMode = 'numeric';
+    const shows = addField('previewShow', 'Preview shows', 'select');
+    for (const [value, label] of [['all', 'Samples, verdicts and shrink candidates'],
+      ['verdicts', 'Samples and verdicts'], ['samples', 'Samples only']]) {
+      const option = node('option', '', label); option.value = value; shows.append(option);
+    }
     const contextButton = button('run-latest', 'Use latest revision', latest);
     const inspectButton = button('run-inspect', 'Read document conf', inspect);
     const discoverButton = button('run-discover', 'Discover suite arms', discover);
     const runButton = button('run-start', 'Run draft property', run);
+    const previewButton = button('run-preview', 'Preview samples', preview);
     const note = node('p', 'run-source-note');
     const settingsNote = node('p', 'run-settings-note');
     const message = node('p', 'run-message'); message.setAttribute('role', 'status');
     const toolbar = node('div', 'run-toolbar');
-    toolbar.append(runButton, contextButton, inspectButton, discoverButton);
+    toolbar.append(runButton, previewButton, contextButton, inspectButton, discoverButton);
     controls.append(toolbar, note, settingsNote, message);
     const results = el('quiz-runs');
     const actions = node('div', 'result-actions');
@@ -170,10 +180,12 @@
       const suite = value.mode === 'suite';
       for (const key of ['requested', 'seed', 'sizeStart', 'sizeMax', 'duplicates']) fields[key].disabled = suite;
       fields.arms.disabled = !suite;
+      for (const key of ['previewCount', 'previewShow']) fields[key].disabled = suite;
       inspectButton.disabled = busy || suite || !online;
       discoverButton.disabled = busy || !suite || !pathFor(tab) || !online;
       runButton.disabled = busy || !online || !tab
         || (tab.path?.at(-1) === 'md') || (value.mode !== 'draft' && !pathFor(tab));
+      previewButton.disabled = runButton.disabled || suite;
       contextButton.disabled = busy;
       runButton.textContent = {draft: 'Run draft property', file: 'Run saved property', suite: 'Run saved suite'}[value.mode] || 'Run';
       note.textContent = value.mode === 'draft'
@@ -184,6 +196,7 @@
       cancelButton.disabled = busy || !online || !rec || done || rec.status === 'cancelling';
       rerunButton.disabled = busy || !online || !rec || !done;
       replayButton.disabled = busy || !online || !done || rec?.kind === 'suite'
+        || rec?.request?.mode?.kind === 'preview'
         || !rec?.snapshot || !rec?.config || !rec?.seed;
     }
     function requestFor(tab) {
@@ -275,14 +288,27 @@
         tell(`${errorText(error)}${error.uncertain ? '\nThe request may have been accepted. Refresh history before retrying; nothing was retried automatically.' : ''}`);
       } finally { busy = false; updateButtons(); }
     }
-    async function run() {
+    function run() { return submit(false); }
+    // A preview makes samples with the run's streams and sizes, but no budgets.
+    function preview() { return submit(true); }
+    async function submit(previewing) {
       const tab = active(); if (!tab) return;
       // Capture source and controls before the first await, even if tabs change.
       let req, value;
       try { req = requestFor(tab); value = {...settings(tab)}; }
       catch (error) { tell(error.message); return; }
+      if (previewing) {
+        const count = value.previewCount === '' ? 20 : Number(value.previewCount);
+        if (!Number.isSafeInteger(count) || count < 1 || count > 100) {
+          tell('Preview between 1 and 100 samples.'); return;
+        }
+        req.mode = {kind: 'preview', count,
+          verdicts: value.previewShow !== 'samples', alts: value.previewShow === 'all'};
+      }
       await action(async () => {
-        const {requested, sizeStart, sizeMax, duplicates} = value;
+        const {sizeStart, sizeMax, duplicates} = value;
+        // A preview's count replaces requested checks.
+        const requested = previewing ? '' : value.requested;
         if (req.source.kind !== 'suite' && [requested, sizeStart, sizeMax, duplicates].some((item) => item)) {
           const whole = (text) => /^(0|[1-9][0-9]*)$/.test(text) && Number.isSafeInteger(Number(text));
           const maximum = getDefaults()?.bounds?.['requested-max'];
@@ -322,7 +348,8 @@
       const owner = linked(rec.id);
       await action(() => mutate({op: 'run', source: rec.request.source,
         desk: rec.request.desk, revision: rec.request.revision,
-        config: rec.request.config, seed: rec.request.seed}, owner?.id));
+        config: rec.request.config, seed: rec.request.seed,
+        ...(rec.request.mode ? {mode: rec.request.mode} : {})}, owner?.id));
     }
     async function replay() {
       const rec = records.get(selection()); if (!rec || rec.kind === 'suite') return;
@@ -443,6 +470,26 @@
         for (const item of outcome.examples) list.append(node('li', '', `${item.label}: ${item.sample.text}`));
         detail.append(node('h3', '', 'First example per label'), list);
       }
+      if (outcome?.kind === 'preview') {
+        const table = node('table', 'run-preview-rows');
+        const head = node('tr', '');
+        for (const title of ['Size', 'Sample', 'Verdict', 'Labels', 'Repeat']) head.append(node('th', '', title));
+        table.append(head);
+        for (const row of outcome.rows) {
+          const tr = node('tr', '');
+          for (const text of [String(row.size), row.sample.text, row.verdict ?? '—',
+            row.labels.join(', '), row.repeat ? 'skipped by a run' : '']) tr.append(node('td', '', text));
+          table.append(tr);
+        }
+        detail.append(node('h3', '', `Preview: ${outcome.rows.length} samples`), table);
+        if (outcome.candidates?.length) {
+          const list = node('ol', 'run-preview-candidates');
+          for (const item of outcome.candidates) list.append(node('li', '', item.weight == null
+            ? `${item.sample.text || '(not shown)'}`
+            : `${item.sample.text} — weight ${item.weight}, ${item.lighter ? 'lighter' : 'not lighter: the engine would skip it'}`));
+          detail.append(node('h3', '', "First sample's shrink candidates"), list);
+        }
+      }
       if (outcome?.kind === 'cancelled') line(detail, 'Cancellation reason', outcome.reason);
       if (outcome?.kind === 'interrupted') {
         line(detail, 'Meaning', 'The runtime aborted this run: a call exceeded its CPU time limit, the operator pressed Ctrl-C, or memory ran out.');
@@ -549,7 +596,7 @@
       renderDetail();
     }
     return {activate, changed, refresh, run, cancel, rerun, replay,
-      inspect, discover, pathFor, requestFor, records,
+      inspect, discover, preview, pathFor, requestFor, records,
       start: async () => { activate(active()); await refresh(); },
       stop: () => { stopped = true; clearTimeout(timer); }};
   };

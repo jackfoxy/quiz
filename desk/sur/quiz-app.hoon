@@ -24,6 +24,14 @@
       on-timeout=(unit timeout-policy:engine)
   ==
 ::
++$  mode
+  ::  Run the property, or preview `count` samples without a run's
+  ::  budgets: with `verdicts` the fate judges each one, with `alts` the
+  ::  first one's shrink candidates are shown.
+  $%  [%run ~]
+      [%preview count=@ud verdicts=? alts=?]
+  ==
+::
 +$  request
   $:  source=source
       desk=@tas
@@ -31,6 +39,7 @@
       config=(unit patch)
       seed=(unit @uv)
       replay-of=(unit run-id)
+      =mode
   ==
 ::
 +$  timeouts
@@ -77,6 +86,10 @@
           arm=(unit term)
       ==
       [%suite outcome:suite]
+      $:  %preview
+          rows=(list preview-row:engine)
+          candidates=(list candidate-row:engine)
+      ==
   ==
 ::
 +$  snapshot
@@ -107,7 +120,7 @@
   ::  One history row, enough to label a run without its whole record.
   ::  `outcome` is the result's kind, or a suite's passed/failed status.
   $:  id=run-id
-      kind=?(%draft %file %suite)
+      kind=?(%draft %file %suite %preview)
       =status
       outcome=(unit @tas)
   ==

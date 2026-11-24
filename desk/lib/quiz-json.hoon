@@ -52,6 +52,42 @@
     ==
   (need (rush raw dem))
 ::
+++  flag
+  ::  A JSON boolean; anything else crashes.
+  |=  value=json
+  ^-  ?
+  ?>  ?=([%b *] value)
+  p.value
+::
+++  mode-in
+  ::  {"kind":"run"}, or {"kind":"preview","count","verdicts","alts"}.
+  |=  value=json
+  ^-  mode:app
+  =/  fields  (object value)
+  =/  kind  (text (field fields 'kind'))
+  ?:  =(%run kind)  [%run ~]
+  ?>  =(%preview kind)
+  :*  %preview
+      (natural (field fields 'count'))
+      (flag (field fields 'verdicts'))
+      (flag (field fields 'alts'))
+  ==
+::
+++  mode-out
+  |=  value=mode:app
+  ^-  json
+  %-  pairs:enjs:format
+  ?-  -.value
+    %run  ~[['kind' s+'run']]
+  ::
+      %preview
+    :~  ['kind' s+'preview']
+        ['count' (numb:enjs:format count.value)]
+        ['verdicts' b+verdicts.value]
+        ['alts' b+alts.value]
+    ==
+  ==
+::
 ++  name
   ::  A desk or arm name that passes safe-name.
   |=  value=json
@@ -144,9 +180,14 @@
         ?~  val  ~
         ?:  ?=(%~ u.val)  ~
         `(slav %uv (text u.val))
+      =/  mode=mode:app
+        =/  val  (~(get by fields) 'mode')
+        ?~  val  [%run ~]
+        ?:  ?=(%~ u.val)  [%run ~]
+        (mode-in u.val)
       =/  req=request:app
         :*  source  (name (field fields 'desk'))
-            (case-in (field fields 'revision'))  cfg  seed  ~
+            (case-in (field fields 'revision'))  cfg  seed  ~  mode
         ==
       ?:  =(op %run)  [%run req]
       [%document-conf req]
@@ -312,6 +353,28 @@
     ==
   ==
 ::
+++  preview-row-out
+  ::  One previewed sample; verdict is null unless verdicts were asked for.
+  |=  row=preview-row:engine
+  ^-  json
+  %-  pairs:enjs:format
+  :~  ['size' (numb:enjs:format size.row)]
+      ['sample' (sample-out [value.row text.row])]
+      ['repeat' b+repeat.row]
+      ['verdict' ?~(verdict.row ~ s+u.verdict.row)]
+      ['labels' a+(turn labels.row (lead %s))]
+  ==
+::
+++  candidate-out
+  ::  One alts candidate; the weight is a decimal string or null.
+  |=  row=candidate-row:engine
+  ^-  json
+  %-  pairs:enjs:format
+  :~  ['sample' (sample-out [value.row text.row])]
+      ['weight' ?~(weight.row ~ s+(crip (a-co:co u.weight.row)))]
+      ['lighter' b+lighter.row]
+  ==
+::
 ++  summary-out
   ::  A history row: decimal id, source kind, status, nullable outcome.
   |=  value=summary:app
@@ -350,6 +413,10 @@
     %invalid  ~[['diagnostic' (diagnostic-out +.value)]]
     %exhausted
       ~[['budget' s+budget.value] ['all-dropped' b+all-dropped.value]]
+    %preview
+      :~  ['rows' a+(turn rows.value preview-row-out)]
+          ['candidates' a+(turn candidates.value candidate-out)]
+      ==
     %limited
       :~  ['which' s+which.value]
           ['evidence' ?~(proof.value ~ (evidence-out u.proof.value))]
@@ -397,6 +464,7 @@
       ['seed' ?~(seed.value ~ s+(scot %uv u.seed.value))]
       ['config' ?~(config.value ~ (patch-out u.config.value))]
       ['replay-of' ?~(replay-of.value ~ (decimal u.replay-of.value))]
+      ['mode' (mode-out mode.value)]
       :-  'source'
       %-  pairs:enjs:format
       :-  ['kind' s+-.source.value]

@@ -18,7 +18,7 @@
 ::
 ++  request
   ^-  request:app
-  [[%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ ~ ~]
+  [[%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ ~ ~ [%run ~]]
 ::
 ++  queued
   |=  total=@ud
@@ -511,6 +511,35 @@
     (expect !>(=(seed.recorded seed.again)))
     (expect !>(=(replay.recorded replay.again)))
     (expect !>(=(config.recorded config.again)))
+  ==
+::
+++  test-preview-job
+  ::  A preview request starts the engine previewing; one slice ends it with
+  ::  its rows, and history lists it as a preview.
+  ^-  tang
+  =/  text  '|%  ++  fate  |=(@ud &)  --'
+  =/  doc  (prepare:build [~zod %quiz 1] /draft/hoon text)
+  ?>  ?=(%.y -.doc)
+  =/  s  (activate:job (queued 1) now:bol)
+  =/  rec  (get-record s 1)
+  =.  rec  rec(request request.rec(mode [%preview 3 & |], seed `0v0))
+  =.  s  s(records.saved (~(put by records.saved.s) 1 rec))
+  =/  a  ~(. agent bol)
+  =.  a  a(state s(active `[1 [%file p.doc]], build-token `10))
+  =/  core
+    !>  |%  ++  fate  |=(@ud &)  --
+  =/  reply=rant:clay
+    [[%a [%ud 1] %quiz] /draft/hoon %vase !>(core)]
+  =/  ready  (on-arvo.a /quiz/build/10 [%clay %writ `reply])
+  =/  done  (advance:job state:+.ready now:bol)
+  =/  out  (get-record done 1)
+  =/  result  (need result.out)
+  ?>  ?=(%preview -.result)
+  ;:  weld
+    (expect-eq !>(%done) !>(status.out))
+    (expect-eq !>(`@ud`3) !>((lent rows.result)))
+    (expect !>((levy rows.result |=(r=preview-row:engine =(`%pass verdict.r)))))
+    (expect-eq !>(%preview) !>(kind:(summarize:job out)))
   ==
 ::
 ++  test-replay-unavailable

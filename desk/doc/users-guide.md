@@ -233,6 +233,14 @@ arm; its sample `[name=@t tags=(list @tas)]` shrinks to
 `[name='' tags=~[%a %a %a]]`. Write a norn and alts when the domain is
 narrower than the type.
 
+Check a generator before trusting a run, as QuickCheck's `sample` does: press
+**Preview samples**. It shows up to 100 samples, made with the run's seed and
+sizes, with each one's verdict and labels and whether a run would skip it as a
+repeat, and the first sample's shrink candidates, each marked lighter or not.
+Lists that are always empty, text that is never printable, a fate that drops
+nearly everything, or candidates that are never lighter show up at once. See
+[generator preview](reference.md#generator-preview).
+
 Structural types alone do not express sortedness, positivity, valid dates or
 relationships between fields. Choose a generator for that semantic domain and
 keep the shrinker in the same domain. Bounded recursive generation should reduce
@@ -445,6 +453,7 @@ The following are Quiz applications of general property-testing techniques;
 | Data structures | `17-bst-delete-bug` checks a binary search tree against a sorted-set model and shrinks a failing deletion to three keys. |
 | Round trip | `18-parse-print` prints and parses decimal numbers, ships and knots made by aura generators. |
 | Filtering | Compare `04-discards` with `07-positive`: construct the domain directly when most inputs would be dropped. |
+| Generator preview | **Preview samples** on `08-seeded-threshold` lists its first samples, sizes and verdicts, and the default shrinker's candidates for the first one, without a run. |
 | Distribution | `12-labels-coverage` labels each list by length and requires short and long lists with `++cover`; `14-coverage-shortfall` shows a requirement the generator misses; `35-cover-table` requires shares of a tabulated value with `++cover-table`. Know the stock norns' shape first: a `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics](reference.md#measured-generator-characteristics). |
 | Readable failures | `13-expected-actual` uses `same` and `note`, so the run shows the expected and actual values, not just `false`. |
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |

@@ -257,7 +257,7 @@
     %set-timeouts  (submit id [%timeouts +.cmd])
     %replay
       =/  req=request:app
-        [[%draft ''] %quiz [%ud 1] ~ ~ `id.cmd]
+        [[%draft ''] %quiz [%ud 1] ~ ~ `id.cmd [%run ~]]
       (submit id [%run req])
     %run  (submit id [%run +.cmd])
     %document-conf

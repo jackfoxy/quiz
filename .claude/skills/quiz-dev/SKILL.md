@@ -160,6 +160,12 @@ document's `alts`, not the engine. A trace is empty when
 correct engine behaviour. Check the property with
 [quiz-properties](../quiz-properties/SKILL.md) before you change the engine.
 
+**A preview never finishes, or ends `%interrupted`.** A preview with verdicts
+runs the fate in the same step as the sample, so a hanging fate interrupts it
+whatever `on-timeout` says. Preview without verdicts to see the samples.
+Preview logic is `preview-step`/`preview-end` in the engine, started by
+`previewing` from `quiz-agent` when the request's `mode` is `%preview`.
+
 **Replay refused.** `%engine-version` means `++version` changed since the
 record was made. This is intentional. `%source-hash` means the stored text
 was altered. `%revision-unavailable` or `%desk-unavailable` means the pinned

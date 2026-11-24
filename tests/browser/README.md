@@ -31,8 +31,9 @@ Traces/screenshots are under ignored `test-results/`.
 Quiz execution doubles also cover correlated IDs beyond JavaScript's exact
 integer range, a concurrent producer, per-tab settings, full configuration
 preservation, stale snapshots, cancellation/replay/rerun, unavailable suite
-metrics, empty history, rejection, reload cancellation, interrupted runs
-and network failures.
+metrics, empty history, rejection, reload cancellation, interrupted runs,
+generator previews (the request's mode, the rows and candidates, the count
+bound, no replay) and network failures.
 The Playwright run suite exercises document configuration, real draft failure
 and shrinking, replay, rerun, session restoration, saved Clay suites,
 cancellation, compilation diagnostics and disconnected progress. Server run
@@ -43,7 +44,9 @@ inspection uses `document-conf`. See `desk/doc/http-api.md` for both contracts.
 
 `examples.spec.js` runs all thirty-five property documents and the three existing
 suites through the real UI, checks their expected outcomes and readonly roots,
-and repeats the seeded threshold with exact replay. Each case writes a
+and repeats the seeded threshold with exact replay. It also previews
+`08-seeded-threshold` (five rows, verdicts, shrink candidates, replay
+disabled). Each case writes a
 `run.json` artifact under its test-results directory. No teaching failure is
 included as a failing `-test` regression arm.
 

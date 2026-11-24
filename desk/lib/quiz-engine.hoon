@@ -166,6 +166,32 @@
 ::
 +$  error-stage  ?(%norn %generate %alts)
 ::
++$  preview-row
+  ::  One previewed sample: the size it was made at, its value and text,
+  ::  whether the duplicate policy would skip it, and, when asked for, the
+  ::  fate's verdict kind and labels.
+  $:  size=@ud
+      value=*
+      text=@t
+      repeat=?
+      verdict=(unit @tas)
+      labels=(list @t)
+  ==
+::
++$  candidate-row
+  ::  One alts candidate of the first previewed sample. Weight is absent,
+  ::  and lighter false, when the candidate could not be shown.
+  [value=* text=@t weight=(unit @ud) lighter=?]
+::
++$  preview
+  ::  A preview in progress: its request and the rows so far, newest first.
+  $:  count=@ud
+      verdicts=?
+      alts=?
+      rows=(list preview-row)
+      first=(unit [=vase weight=@ud])
+  ==
+::
 +$  outcome
   $%  [%passed warnings=(list shortfall)]
       [%uncovered shortfalls=(list shortfall)]
@@ -177,6 +203,7 @@
       ==
       [%limited which=limit-name evidence=(unit counterexample)]
       [%exhausted budget=?(%attempts %drops %duplicates) all-dropped=?]
+      [%preview rows=(list preview-row) candidates=(list candidate-row)]
   ==
 ::
 +$  state
@@ -195,6 +222,7 @@
       seen-tags=distribution
       examples=(map @t example)
       pending=(unit [=vase =shown])
+      preview=(unit preview)
   ==
 ::
 ++  version
@@ -236,8 +264,25 @@
   =/  size  ?:(=(0 size-max.config) start (min size-max.config start))
   %-  finish
   :*  seed  config  compiled  (slot 6 fate.compiled)  size  ~(. og seed)
-      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~
+      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~  ~
   ==
+::
+++  preview-max
+  ::  Most samples one preview makes.
+  100
+::
+++  candidate-max
+  ::  Most alts candidates a preview shows.
+  20
+::
+++  previewing
+  ::  Turn a fresh run into a preview of `count` samples, at most
+  ::  preview-max. A preview has no budgets, so a result init set from them
+  ::  is cleared.
+  |=  [s=state count=@ud verdicts=? alts=?]
+  ^-  state
+  =/  wanted  (min count preview-max)
+  s(result ~, preview `[wanted verdicts alts ~ ~])
 ::
 ++  classify
   ::  Retain the virtualized trace, blocked request, or unexpected product.
@@ -326,6 +371,7 @@
   |=  s=state
   ^-  state
   ?:  !=(~ result.s)  s
+  ?:  !=(~ preview.s)  (preview-step s)
   ::  `!=` rather than `?=`: narrowing `pending` would block the write below.
   ?:  !=(~ pending.s)  (judge-pending s)
   =.  s  (finish s)
@@ -375,6 +421,68 @@
   =/  got  (show s sam ~)
   ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
   s(pending `[sam p.got])
+::
+++  preview-step
+  ::  One preview step: make, show and, when asked, judge one sample, with
+  ::  the run's streams and sizes, so sample i is a run's sample i up to the
+  ::  run's first skipped repeat. A repeat is flagged, not skipped. After
+  ::  the last sample, ++preview-end.
+  |=  s=state
+  ^-  state
+  =/  p  (need preview.s)
+  ?:  (gte (lent rows.p) count.p)  (preview-end s p)
+  =/  [fill-rng=_og next-rng=_og]  (split-rng:legacy rng.s)
+  =/  made  (generate time.s size.s fill-rng sample.s norn.compiled.s)
+  ?.  ?=(%0 -.made)
+    =/  why  (classify made)
+    ?>  ?=(^ why)
+    (stop-error s (source-stage s) why ~)
+  =/  sam  !<(vase [p:!>(*vase) p.made])
+  =/  made-at  size.s
+  =.  s  s(rng next-rng, size (grow size.s size-max.config.s))
+  =.  attempted.counts.s  +(attempted.counts.s)
+  ?:  (gth (met 3 (jam q.sam)) sample-bytes.bounds.config.s)
+    s(result `[%limited %sample-bytes ~])
+  =/  hash  (mug q.sam)
+  =/  repeat=?
+    ?-  duplicates.config.s
+      %allow  |
+      %mug    (~(has by seen.s) hash)
+      %exact  (lien (~(get ja seen.s) hash) |=(n=* =(n q.sam)))
+    ==
+  =?  seen.s  !repeat  (~(add ja seen.s) hash q.sam)
+  =/  got  (show s sam ~)
+  ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
+  =/  judged=[(unit @tas) (list @t)]
+    ?.  verdicts.p  [~ ~]
+    =/  [found=verdict =tags]  (judge (sandbox time.s q.fate.compiled.s q.sam))
+    [`?@(found found -.found) labels.tags]
+  =/  row=preview-row  [made-at q.sam text.p.got repeat judged]
+  =/  first  ?^(first.p first.p `[sam weight.p.got])
+  s(preview `p(rows [row rows.p], first first))
+::
+++  preview-end
+  ::  End a preview. With `alts`, one alts call on the first sample; up to
+  ::  candidate-max candidates are shown, each marked lighter or not.
+  |=  [s=state p=preview]
+  ^-  state
+  =/  rows  (flop rows.p)
+  ?.  &(alts.p ?=(^ first.p))  s(preview ~, result `[%preview rows ~])
+  =/  [sam=vase top=@ud]  u.first.p
+  =/  made  (alternatives time.s sam alts.compiled.s)
+  ?.  ?=(%0 -.made)
+    =/  why  (classify made)
+    ?>  ?=(^ why)
+    (stop-error s %alts why ~)
+  =/  all  !<((list vase) [p:!>(*(list vase)) p.made])
+  =/  candidates=(list candidate-row)
+    %+  turn  (scag candidate-max all)
+    |=  c=vase
+    ^-  candidate-row
+    =/  got  (show s c ~)
+    ?:  ?=(%.n -.got)  [q.c '' ~ |]
+    [q.c text.p.got `weight.p.got (lth weight.p.got top)]
+  s(preview ~, result `[%preview rows candidates])
 ::
 ++  judge-pending
   ::  The fate on the sample or candidate a split tick stored.

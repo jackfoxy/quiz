@@ -290,6 +290,12 @@ shrink together ([29-bst-coordinated](../../../desk/examples/failing/29-bst-coor
   unsaved buffer) or **Saved property** (runs the file at the selected Clay
   revision). Saving does not move that revision; choose **Use latest
   revision**. Blank panel fields mean the document's `conf` is used.
+- **Preview first** when writing a norn or alts: **Preview samples** (or a
+  request `mode` of `[%preview count verdicts alts]`) shows up to 100 samples
+  with the run's seed and sizes, each one's verdict and labels and whether a
+  run would skip it as a repeat, and the first sample's shrink candidates
+  marked lighter or not. It is QuickCheck's `sample`, with no budgets and no
+  shrinking ([generator preview](../../../desk/doc/reference.md#generator-preview)).
 - **Dojo / Gall:** poke `%quiz-action` `[%run request]` and read
   `/x/run/<id>`. Exact nouns and examples:
   [agent-api.md](../../../desk/doc/agent-api.md).

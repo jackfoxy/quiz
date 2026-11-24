@@ -79,7 +79,7 @@
     ::  The record's replay inputs, not a patch, give the conf.
     :*  [%draft source.u.replay]  desk.where.u.replay
         [%ud revision.where.u.replay]  ~
-        `seed.u.replay  original
+        `seed.u.replay  original  [%run ~]
     ==
   ?:  ?&  ?=(%draft -.source.req)
           (gth (met 3 text.source.req) source-bytes.bounds:defaults:engine)
@@ -141,7 +141,10 @@
     ?~  result  ~
     ?:  ?=(%suite -.u.result)  `status.u.result
     `-.u.result
-  [id.rec -.source.request.rec status.rec outcome]
+  =/  kind
+    ?:  ?=(%preview -.mode.request.rec)  %preview
+    -.source.request.rec
+  [id.rec kind status.rec outcome]
 ::
 ++  activate
   ::  Start the queue head building, unless a job is already active.
@@ -306,7 +309,7 @@
   |=  [out=outcome:engine kept=(map @t example:engine)]
   ^-  outcome:app
   ?-  -.out
-    ?(%exhausted %passed-unexpectedly)  out
+    ?(%exhausted %passed-unexpectedly %preview)  out
     %passed     [%passed warnings.out (persist-examples kept)]
     %uncovered  [%uncovered shortfalls.out (persist-examples kept)]
     %failed  [%failed (persist-evidence +.out)]

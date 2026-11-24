@@ -636,7 +636,8 @@ attempts, then drops, then duplicates. Shrink candidate limits precede depth
 limits; an already known empty candidate list finishes normally first.
 
 Additional fixed boundaries: queue length 100 waiting jobs; at most 100 explicit
-suite arms; HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
+suite arms; at most 100 samples (`preview-max`) and 20 shrink candidates
+(`candidate-max`) per [generator preview](#generator-preview); HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
 pending API mutation/discovery/configuration inspection at a time and times it
 out after 30 seconds. The file wire permits one pending write and verifies it
 with a 10-second timeout. These are request timers, not Hoon execution limits.
@@ -792,6 +793,7 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 | `cancelled` | Reason `request` or `reload` |
 | `interrupted` | The runtime aborted the run's event: a CPU limit, Ctrl-C or memory exhaustion. `during` (`building`, `running`, `shrinking`), optional best evidence, optional suite arm. Under `on-timeout %fail` or `%discard` a fate's CPU limit does not interrupt the run; see the timeout policy below |
 | `suite` | Aggregate status, arm counters and per-arm outcomes |
+| `preview` | A [generator preview](#generator-preview)'s `rows` and `candidates` |
 
 The durable Hoon [record](../sur/quiz-app.hoon) contains `id`, `request`, nullable
 `snapshot` and `replay`, nullable effective `seed` and `config`, `engine-version`,
@@ -809,6 +811,36 @@ IDs/revisions are decimal strings; seeds/hashes use `@uv`; dates use `@da`.
 Do not convert IDs to JavaScript numbers. Diagnostics have `code`, `path`,
 `line`, `column`, nullable `arm`, rendered `trace` and `clipped`. An oversized
 trace is omitted with the clipped flag, not silently reported as empty success.
+
+### Generator preview
+
+A request whose `mode` is `[%preview count verdicts alts]` previews the
+generator, as QuickCheck's `sample` does, instead of running the property. It
+is an ordinary queued job and record: it runs in slices, can be cancelled or
+`interrupted`, and its history row's kind is `preview`.
+
+- It makes `count` samples, at most `preview-max` (100), with the run's RNG
+  split, size schedule and `++norn` or [type-directed fill](#type-directed-defaults-quiz-auto).
+  Sample *i* is therefore sample *i* of a run with the same seed and conf, up
+  to the run's first skipped repeat.
+- A repeat is flagged, not skipped: `repeat` says the conf's duplicate policy
+  would skip it.
+- With `verdicts`, the fate runs on each sample, in the same step, and the
+  row records the verdict kind (`pass`, `drop`, `false`, `crash`, `scry`,
+  `bad-product`) and the report's labels. A fate that exceeds the call limit
+  interrupts the preview, whatever `on-timeout` says.
+- With `alts`, after the last sample, one alts call on the first sample
+  (`++alts`, or `quiz-auto`'s `sink`) shows up to `candidate-max` (20)
+  candidates, each rendered, weighed and marked lighter or not. A candidate
+  that cannot be shown has no weight and is not lighter.
+- There are no budgets: `requested` and the attempt, drop and duplicate
+  budgets are ignored, and nothing is shrunk. Sample-bytes and rendered-bytes
+  limits and norn, generation or alts errors end a preview `limited` or
+  `error`, as they end a run.
+
+A row is `[size value text repeat verdict labels]`; a candidate is
+`[value text weight lighter]`. The workbench's **Preview samples** button
+shows both. Previews cannot be replayed.
 
 ### Suites
 
@@ -1009,7 +1041,7 @@ already checked parts/configuration and own scheduling and persistence.
 
 | Module | Responsibility / key entry points |
 | --- | --- |
-| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit coverage) expect=?(%pass %fail)]`, where `coverage` is `[cover tables confidence]`; `judge` classifies reports; terminal states are stable |
+| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `previewing [state count verdicts alts]` → a preview state; `step state` → state (`preview-step`/`preview-end` while previewing); `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit coverage) expect=?(%pass %fail)]`, where `coverage` is `[cover tables confidence]`; `judge` classifies reports; terminal states are stable |
 | [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
 | [quiz-harness](../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
 | [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |

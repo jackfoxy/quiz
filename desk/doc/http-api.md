@@ -122,6 +122,18 @@ document's configuration or engine defaults.
 {"op":"replay","id":"42"}
 ```
 
+An optional `mode` asks for a [generator preview](reference.md#generator-preview)
+instead of a run:
+
+```json
+{"kind":"preview","count":20,"verdicts":true,"alts":true}
+```
+
+An absent or `null` `mode`, or `{"kind":"run"}`, runs the property. `count`
+is at most 100. A preview has no budgets: `requested` and the attempt, drop and
+duplicate budgets in `config` are ignored, while sizes, the duplicate policy
+and byte bounds apply. Suites cannot be previewed.
+
 Replay uses the stored property text, immutable context, effective settings,
 seed, and engine version. Suite replay is refused. Neither operation accepts
 replacement replay inputs.
@@ -176,6 +188,7 @@ with 400 `invalid-command`. The workbench's **Settings** dialog uses both.
 
 `runs` returns 200 `{"ids":["42","41"],"runs":[...]}` newest first. Each
 `runs` row is `{"id","kind","status","outcome"}`: `kind` is the source kind,
+or `preview` for a preview,
 `outcome` the result's kind (a suite's `passed`/`failed`) or `null` while
 unfinished. Rows label history; fetch a whole record with `status`. `status` returns 200
 with one record, or 404 `{"error":"run-not-found"}`. `cancel` returns 202
@@ -186,7 +199,8 @@ its terminal outcome.
 A record contains:
 
 - `id`, source `kind`, `status`, `engine-version`, `created`, `updated`, `finished`.
-- `request`: submitted source, desk, revision, seed, configuration and replay ID.
+- `request`: submitted source, desk, revision, seed, configuration, replay ID
+  and `mode` (`{"kind":"run"}` or the preview's mode).
 - `snapshot`: null until available, then pinned `context`, `path`, exact `source`,
   and `source-hash` (`@uv`).
 - Effective `seed`, `config`, and `replay-of` (nullable).
@@ -207,7 +221,7 @@ and is null for suites:
 
 Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
 `failed-as-expected`, `error`, `limited`, `exhausted`, `invalid`, `cancelled`,
-`interrupted`, or `suite`. Additional fields follow the typed result:
+`interrupted`, `suite`, or `preview`. Additional fields follow the typed result:
 
 - `passed`: `warnings` (coverage shortfalls under `%warn`, usually empty) and
   `examples`.
@@ -230,6 +244,14 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
   nullable `arm` (the suite arm that was executing).
 - `suite`: aggregate `status`, `counts`, `sample-metrics: "unavailable"`, and
   `arms` with `name`, `status`, `trace`, `clipped`.
+- `preview`: `rows` and `candidates`. A row is
+  `{"size","sample","repeat","verdict","labels"}`: the size the sample was made
+  at, the sample (shaped like evidence samples), whether a run would skip it
+  as a repeat, the fate's verdict kind (`pass`, `drop`, `false`, `crash`,
+  `scry`, `bad-product`) or `null` without `verdicts`, and its labels. A
+  candidate is `{"sample","weight","lighter"}`; `weight` is a decimal string,
+  or `null` with `lighter` false when the candidate could not be shown.
+  `candidates` is empty without `alts`.
 
 Evidence samples have rendered `text` and `noun-jam` (a jammed noun as `@uv`).
 `why` has `kind` (`false`, `timeout`, `crash`, `scry`, `bad-product`) and

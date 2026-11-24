@@ -61,6 +61,21 @@ skip a repeated mug, skip only an equal sample, or evaluate every sample.
 Suite execution has no controlled seed or property sample counters; those
 controls are disabled.
 
+**Preview samples** shows what the generator makes before a run, as
+QuickCheck's `sample` does. It makes up to **Preview samples** (1–100, blank
+= 20) samples with the run's seed, sizes and generator, so each row is the
+sample a run would make at that position. **Preview shows** chooses how much
+else to show: the default, *Samples, verdicts and shrink candidates*, also
+runs the fate on each sample and shows its verdict and labels, then the first
+sample's shrink candidates, each marked lighter or not; *Samples and
+verdicts* leaves out the candidates; *Samples only* runs no fate. The result
+is a table of Size, Sample, Verdict, Labels and Repeat ("skipped by a run"
+where the duplicate policy would skip it), followed by **First sample's
+shrink candidates**. Requested checks are ignored; suites cannot be
+previewed. A preview is kept in history like a run; it cannot be replayed,
+and **Rerun request** previews again. See the
+[reference](reference.md#generator-preview).
+
 Results show only confirmed server status, effective configuration and seed,
 counters, diagnostics, and original/shrunk counterexamples. Under the
 counterexample, a collapsed **Shrink trace (last N steps)** lists the last
