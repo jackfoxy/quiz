@@ -103,6 +103,7 @@
             updated  now.bowl
           ==
         =/  run  (init:engine seed cfg parts.built)
+        =.  within.run  within.built
         =/  =mode:app  mode.request.rec
         =?  run  ?=(%preview -.mode)
           (previewing:engine run count.mode verdicts.mode alts.mode)

@@ -448,6 +448,7 @@
       line(detail, 'Engine version', rec['engine-version']);
       line(detail, 'Replay of', rec['replay-of'] || 'None');
       line(detail, 'Seed', rec.kind === 'suite' ? 'Unavailable for suites' : rec.seed);
+      if (rec['call-ms'] != null) line(detail, 'Call limit', `${rec['call-ms']} ms per call`);
       if (rec.config) block(detail, 'run-config', 'Effective configuration', JSON.stringify(rec.config, null, 2));
       if (rec['sample-metrics'] === 'unavailable') {
         detail.append(node('p', 'run-unavailable', 'Property sample counts, controlled seed and counterexamples are unavailable for suites.'));

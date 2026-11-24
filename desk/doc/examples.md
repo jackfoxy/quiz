@@ -41,7 +41,7 @@ settings, not universal outcomes of similar-looking properties.
 | [22-size-capped](../examples/props/22-size-capped.hoon) | Passed, 100 accepted; size held at 30 | `size-max` keeps size-driven lists short; `sized` and `vector` |
 | [23-map-fusion](../examples/props/23-map-fusion.hoon) | Passed, 100 accepted | Generated functions: two `turn`s equal one over `cork` |
 | [25-counter-agent](../examples/props/25-counter-agent.hoon) | Passed, 100 accepted; 5 duplicates | Pure agent harness: model-based pokes against a counter agent's door |
-| [27-timeout-fail](../examples/props/27-timeout-fail.hoon) | Failed, timeout; shrinks to `n=11` | `on-timeout %fail`: a fate that never returns is a `%timeout` failure, shrunk to the smallest hanging input. Needs a short call limit; each hanging candidate costs it |
+| [27-timeout-fail](../examples/props/27-timeout-fail.hoon) | Failed, timeout; shrinks to `n=11` | `on-timeout %fail`: a fate that never returns is a `%timeout` failure, shrunk to the smallest hanging input. `++within ~s0..8000` lowers its call limit to 0.5 s, since each hanging candidate costs it; no Settings change is needed |
 | [28-confident-coverage](../examples/props/28-confident-coverage.hoon) | Passed, 800 accepted; heads 377 | `++cover [%confident …]`: undecided at 100, 200 and 400 checks, covered at 800 by the Wilson lower bound |
 | [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
 | [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `dependent`, which bundles `seeded` and `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
@@ -267,7 +267,7 @@ queue, report, coverage, generator-library, size and function rows in
 | 24-filter-map-swap | 8 | 7 | 0 | 0 | 37 | 5 | 3 items → `~[8]`, `f = {_ -> 0}`, `p = {8 -> %.y, _ -> %.n}` |
 | 25-counter-agent | 105 | 100 | 0 | 5 | 0 | 0 | — |
 | 26-counter-agent-bug | 2 | 1 | 0 | 0 | 21 | 4 | `[%add 11]` (expected 11, actual 0) |
-| 27-timeout-fail | — | — | — | — | — | — | `n=11` with a 2 s call limit; run in the browser, not pinned in `-test` (a hanging fate would abort the test event) |
+| 27-timeout-fail | — | — | — | — | — | — | `n=11` under its 0.5 s `++within`, in 33.6 s; run in the browser, not pinned in `-test` (a hanging fate would abort the test event) |
 | 28-confident-coverage | 800 | 800 | 0 | 0 | 0 | 0 | — |
 | 29-bst-coordinated | 18 | 17 | 0 | 0 | 146 | 14 | 9 keys, delete 12 → `[~[1 0 2] 1]` |
 | 30-dependent-inner | 3 | 2 | 0 | 0 | 24 | 5 | `[8 seed 3 ~]` → `[1 0v0 0 [~ ~[90]]]` |

@@ -888,4 +888,27 @@
   =.  s  s(active `[1 [%property run]])
   =/  got  (get-record (interrupt:job s now:bol time.run) 1)
   (expect !>(?=([~ %interrupted %running ~ ~] result.got)))
+::
+++  test-within-lowers-call-limit
+  ::  A slice runs under the lower of the ship's limit and ++within, and
+  ::  records it; ++within never raises the ship's limit.
+  ^-  tang
+  =/  limit
+    |=  within=(unit @dr)
+    ^-  [@dr (unit @dr)]
+    =/  s  (running 1 0)
+    =/  current  (need active.s)
+    ?>  ?=(%property -.work.current)
+    =/  run=state:engine  +.work.current
+    =.  within.run  within
+    =.  s  s(active `[id.current [%property run]])
+    =.  s  (advance:job s now:bol)
+    =/  after  (need active.s)
+    ?>  ?=(%property -.work.after)
+    [time.+.work.after call:(get-record s 1)]
+  ;:  weld
+    (expect-eq !>([~s1 `~s1]) !>((limit `~s1)))
+    (expect-eq !>([~s10 `~s10]) !>((limit ~)))
+    (expect-eq !>([~s10 `~s10]) !>((limit `~s20)))
+  ==
 --

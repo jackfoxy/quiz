@@ -114,6 +114,8 @@
       created=@da
       updated=@da
       finished=(unit @da)
+      ::  The call limit a property's last slice ran under.
+      call=(unit @dr)
   ==
 ::
 +$  summary

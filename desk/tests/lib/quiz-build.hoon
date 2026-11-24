@@ -476,4 +476,22 @@
     (bad %confidence-range (run (doc "++  confidence  [16 90]")))
     (bad %confidence-range (run (doc "++  confidence  [9 0]")))
   ==
+::
+++  test-within
+  ::  ++within is a call limit from 10 ms to an hour, outside the conf.
+  ^-  tang
+  =/  fate  "|%  ++  fate  |=(@ud &)  "
+  =/  doc  |=(arms=tape (crip (weld fate (weld arms "  --"))))
+  =/  half  (run (doc "++  within  ~s0..8000"))
+  =/  none  (run (doc ""))
+  ?>  ?=(%ready -.half)
+  ?>  ?=(%ready -.none)
+  ;:  weld
+    (expect-eq !>(`(unit @dr)``~s0..8000) !>(within.half))
+    (expect-eq !>(`(unit @dr)`~) !>(within.none))
+    (expect-eq !>(config.settings.none) !>(config.settings.half))
+    (bad %within-type (run (doc "++  within  %fast")))
+    (bad %within-range (run (doc "++  within  ~h2")))
+    (bad %within-range (run (doc "++  within  ~s0..0001")))
+  ==
 --

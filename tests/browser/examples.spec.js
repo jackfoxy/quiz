@@ -261,14 +261,13 @@ test('Run panel overrides the duplicates policy', async ({page}) => {
   await page.locator('#run-sizeMax').fill('');
 });
 test('hanging samples fail with a timeout under on-timeout %fail', async ({page}) => {
-  // Each hanging sample costs the whole call limit, so set 2 s and restore.
-  test.setTimeout(300000);
+  // Example 27's ++within lowers its call limit to 0.5 s under the ship's
+  // 10 s default, so no Settings change is needed.
+  test.setTimeout(120000);
   const login = await page.request.post('/~/login', {form:{password:process.env.QUIZ_CODE}});
   expect(login.ok()).toBeTruthy();
-  const limits = (call) => page.request.post('/apps/quiz/api',
-    {data:{op:'set-timeouts', 'call-time':call, 'build-time':30, 'arm-time':60}});
-  expect((await limits(2)).status()).toBe(202);
-  try {
+  const started = Date.now();
+  {
     await page.goto('/apps/quiz/');
     await page.waitForFunction(() => window.quiz?.ready);
     await page.evaluate(() => window.quiz.ready);
@@ -279,15 +278,15 @@ test('hanging samples fail with a timeout under on-timeout %fail', async ({page}
       const id = JSON.parse(localStorage.getItem('quiz.session')).runSelection;
       return window.quiz.runs.records.get(id);
     });
-    await expect.poll(async () => (await record())?.status, {timeout:240000}).toBe('done');
+    await expect.poll(async () => (await record())?.status, {timeout:100000}).toBe('done');
     const got = await record();
     expect(got.outcome.kind).toBe('failed');
     expect(got.outcome.evidence.why.kind).toBe('timeout');
     expect(got.outcome.evidence.shrunk.text).toBe('n=11');
     expect(got.config['on-timeout']).toBe('fail');
-    await page.locator('#run-cancel').isVisible();
-  } finally {
-    expect((await limits(10)).status()).toBe(202);
+    expect(got['call-ms']).toBe(500);
+    await expect(page.locator('#run-detail')).toContainText('500 ms per call');
+    console.log(`27-timeout-fail took ${(Date.now() - started) / 1000} s`);
   }
 });
 test('hanging samples are discarded and counted as drops under %discard', async ({page}) => {

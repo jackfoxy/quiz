@@ -223,6 +223,8 @@
       examples=(map @t example)
       pending=(unit [=vase =shown])
       preview=(unit preview)
+      ::  A document's ++within: its calls' limit, below the ship's.
+      within=(unit @dr)
   ==
 ::
 ++  version
@@ -245,6 +247,19 @@
   ::  Default CPU limit per user call; the app sets `time` from its settings.
   ~s10
 ::
+++  call-limit
+  ::  The limit a slice's calls run under: the ship-wide limit, lowered by
+  ::  a document's ++within.
+  |=  [ship=@dr within=(unit @dr)]
+  ^-  @dr
+  ?~(within ship (min ship u.within))
+::
+++  within-min
+  ::  The shortest ++within: 10 ms.
+  (div ~s1 100)
+::
+++  within-max  ~h1
+::
 ++  label-max
   ::  Distinct labels, and distinct table rows, one run may record.
   100
@@ -264,7 +279,7 @@
   =/  size  ?:(=(0 size-max.config) start (min size-max.config start))
   %-  finish
   :*  seed  config  compiled  (slot 6 fate.compiled)  size  ~(. og seed)
-      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~  ~
+      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~  ~  ~
   ==
 ::
 ++  preview-max

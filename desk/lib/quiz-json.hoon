@@ -492,6 +492,10 @@
       ['created' s+(scot %da created.value)]
       ['updated' s+(scot %da updated.value)]
       ['finished' ?~(finished.value ~ s+(scot %da u.finished.value))]
+      ::  Whole milliseconds of the last slice's call limit, or null.
+      :-  'call-ms'
+      ?~  call.value  ~
+      (numb:enjs:format (div (mul u.call.value 1.000) ~s1))
       ['seed' ?~(seed.value ~ s+(scot %uv u.seed.value))]
       ['config' ?~(config.value ~ (config-out u.config.value))]
       :-  'replay-of'

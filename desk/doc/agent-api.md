@@ -137,6 +137,10 @@ and saved; duplicate, late, wrong-kind, and pre-reload replies are ignored.
 Cancellation of active work first publishes `%cancelling`; the next slice
 publishes `%done` with `[%cancelled %request]`, without another evaluation.
 
+Each property slice runs its calls under the ship-wide call limit, lowered by
+the document's `++within` when it has one, and records that limit as the
+record's `call` (`(unit @dr)`; `~` for suites and before the first slice).
+
 The default retained completed-record cap is 100. A property's effective
 `retained-runs` can lower the cap when that property completes. Pruning removes
 the oldest submitted completed records, never queued/active work. Suites use

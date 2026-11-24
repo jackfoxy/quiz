@@ -655,6 +655,17 @@ workbench's **Settings** dialog, with the `%timeouts` action, or with the HTTP
 A change applies from the next slice, build or arm. It does not reach a call
 that is already running.
 
+A property document can lower its own call limit with the optional arm
+`++within`, an `@dr` from 10 ms to 1 hour. Each slice runs its calls under the
+lower of `++within` and the ship-wide `call` limit, so `++within` never raises
+the ship's limit, and a Settings change still applies. It is not part of the
+replayable `conf`: replay rebuilds the source, so the arm carries over. It
+does not apply to draft builds or suites. A run's record keeps the limit its
+last slice ran under as `call` (JSON `call-ms`, whole milliseconds).
+Vere 4.6 honours sub-second limits: a looping Dojo expression under a 50 ms
+limit aborted after 0.1–0.4 s including Dojo overhead, under 500 ms after
+1.2 s, and under 2 s after 2.4 s.
+
 Byte limits apply after generation, rendering or list construction as relevant;
 `jam` also allocates. Only kept samples are rendered, each once, so a passing
 sample with no new label renders nothing and cannot hit `rendered-bytes`.
@@ -798,7 +809,8 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 The durable Hoon [record](../sur/quiz-app.hoon) contains `id`, `request`, nullable
 `snapshot` and `replay`, nullable effective `seed` and `config`, `engine-version`,
 `status`, tagged `counts` (for properties, the counters plus the label and
-table `distribution`), nullable `result`, and created/updated/finished times.
+table `distribution`), nullable `result`, created/updated/finished times, and
+nullable `call`, the call limit the property's last slice ran under.
 A snapshot contains context, path, exact source and its `shax` hash. A sample
 contains noun `value` and rendered `text`; durable records do not retain vase
 types. Invalid builds may have no effective settings or replay inputs.
@@ -998,8 +1010,12 @@ Other events queued before the aborted tick lengthen the span, so a Ctrl-C
 close to the limit may be taken as a timeout. A Ctrl-C pressed after the call
 limit has elapsed cannot be told apart from a timeout and is handled by the
 policy. Each timed-out
-sample or candidate costs a full call limit (10 s by default), so set a short
-call limit in **Settings** for such documents. Timing is not reproducible bit
+sample or candidate costs a full call limit (10 s by default), so give such a
+document a short `++within`, or set a short call limit in **Settings**. Each
+abort also costs its recovery (the error wake and the next tick), so a lower
+limit mainly helps fates that hang for long, not runs with many aborts:
+[27-timeout-fail](../examples/props/27-timeout-fail.hoon) under a 0.5 s
+`++within` took 33.6 s, about what it took under a 2 s Settings limit. Timing is not reproducible bit
 for bit, so replay of a timeout run reproduces its policy and evidence, not
 its wall-clock time. A timed-out sample has no separate counter: it appears
 as `dropped` under `%discard`, and as the failure under `%fail`.
@@ -1015,6 +1031,7 @@ as `dropped` under `%discard`, and as the failure under `%fail`.
 | `%cover-type`, `%cover-range` | `++cover` must be `[?(%warn %check %confident) (list [@t @ud])]`: at most 100 distinct, nonempty labels of at most 256 bytes, each percent at most 100. |
 | `%cover-table-type`, `%cover-table-range` | `++cover-table` must be `(list [@t @t @ud])`: at most 100 distinct `[table value]` rows, each name nonempty and at most 256 bytes, each percent at most 100. |
 | `%confidence-type`, `%confidence-range` | `++confidence` must be `[@ud @ud]`: certainty 1 to 15, tolerance 1 to 100. |
+| `%within-type`, `%within-range` | `++within` must be an `@dr` from 10 ms (`(div ~s1 100)`) to `~h1`. |
 | `%expect-type` | `++expect` must be `%pass` or `%fail`. |
 | `%uncovered` | Every check passed, but a required label or table value was too rare. Inspect the distribution; change the generator, not the requirement, unless the requirement was wrong. |
 | `%limited %labels` | A label was longer than 256 bytes, or a run produced more than 100 distinct labels or table rows. `collect` on a wide domain does this; label ranges instead. |

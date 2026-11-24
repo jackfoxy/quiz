@@ -107,7 +107,7 @@
         ?:  ?=(%suite -.source.req)
           [%suite *counters:suite %unavailable]
         [%property *counters:engine *distribution:engine 0]
-        ~  now  now  ~
+        ~  now  now  ~  ~
     ==
   :-  %.y
   %=  s
@@ -357,8 +357,10 @@
   ?+  -.work  s
     %property
       =/  running  +.work
-      ::  A settings change applies from the next slice.
-      =.  time.running  call.timeouts.saved.s
+      ::  A settings change applies from the next slice; a document's
+      ::  ++within can only lower it.
+      =.  time.running
+        (call-limit:engine call.timeouts.saved.s within.running)
       ::  A split run does one kind of work per tick, so an abort has one
       ::  culprit.
       =/  cap  samples-per-slice.bounds.config.running
@@ -377,6 +379,7 @@
           counts  [%property counts.running seen-tags.running size.running]
           updated  now
           status  ?:(=(~ shrink.running) %running %shrinking)
+          call  `time.running
         ==
       =.  s
         %=  s

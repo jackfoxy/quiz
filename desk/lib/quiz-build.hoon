@@ -17,12 +17,21 @@
 +$  prepared
   [where=context path=path source=@t deps=(list dependency) code=hoon]
 ::
-+$  product  [where=context settings=document-conf parts=parts:engine]
++$  product
+  ::  `within` is the document's ++within; it lowers the call limit and is
+  ::  never part of the replayable conf.
+  $:  where=context
+      settings=document-conf
+      parts=parts:engine
+      within=(unit @dr)
+  ==
 ::
 +$  result  $%([%ready product] [%invalid diagnostic])
 ::
 +$  arm-name
-  ?(%fate %norn %alts %conf %cover %cover-table %confidence %expect)
+  $?  %fate  %norn  %alts  %conf  %cover  %cover-table  %confidence
+      %within  %expect
+  ==
 ::
 ++  issue
   ::  Compiler traces include exact spans; at anchors the source/arm/import.
@@ -296,7 +305,8 @@
   ::  cover, cover-table, confidence, expect. Absent optional arms keep
   ::  defaults; the first bad arm is the diagnostic. The norn must produce
   ::  the fate's sample type. ++cover-table without ++cover uses %check;
-  ::  ++confidence matters only to a %confident ++cover.
+  ::  ++confidence matters only to a %confident ++cover. ++within is a
+  ::  call limit from within-min to within-max.
   |=  [doc=prepared core=vase]
   ^-  result
   =/  names  (sloe p.core)
@@ -305,12 +315,15 @@
   =/  parts=parts:engine  [*vase ~ ~ ~ %pass]
   =/  settings=document-conf  [~ defaults:engine]
   =/  wanted=(list arm-name)
-    ~[%fate %norn %alts %conf %cover %cover-table %confidence %expect]
+    :~  %fate  %norn  %alts  %conf  %cover  %cover-table  %confidence
+        %within  %expect
+    ==
+  =/  within=(unit @dr)  ~
   |-
   ?~  wanted
     ?:  (gth (met 3 source.doc) source-bytes.bounds.config.settings)
       [%invalid (issue %source-size path.doc [1 1] `%conf ~)]
-    [%ready where.doc settings parts]
+    [%ready where.doc settings parts within]
   =/  arm  i.wanted
   =/  rest  t.wanted
   ?.  (~(has in (silt names)) arm)  $(wanted rest)
@@ -352,6 +365,13 @@
       [%invalid (issue %confidence-range path.doc at `arm ~)]
     ?~  cover.parts  $(wanted rest)
     $(wanted rest, parts parts(cover `u.cover.parts(confidence confidence)))
+  ?:  ?=(%within arm)
+    ?.  (~(nest ut p:!>(*@dr)) | p.value)
+      [%invalid (issue %within-type path.doc at `arm ~)]
+    =/  limit  ;;(@dr q.value)
+    ?.  &((gte limit within-min:engine) (lte limit within-max:engine))
+      [%invalid (issue %within-range path.doc at `arm ~)]
+    $(wanted rest, within `limit)
   ?:  ?=(%expect arm)
     ?.  (~(nest ut p:!>(*expectation:engine)) | p.value)
       [%invalid (issue %expect-type path.doc at `arm ~)]

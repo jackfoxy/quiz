@@ -206,6 +206,9 @@ A record contains:
 - Effective `seed`, `config`, and `replay-of` (nullable).
 - `counts`, `sample-metrics` (`available` or `unavailable`), nullable
   `distribution`, and nullable `outcome`.
+- `call-ms`: the call limit, in whole milliseconds, that a property's last
+  slice ran under: the ship-wide limit, lowered by the document's `++within`.
+  Null until a property slice has run, and for suites.
 
 Property counts are `size` (the size the next generated sample will use),
 `attempted`, `accepted`, `dropped`, `duplicate`, `shrink-tried`,

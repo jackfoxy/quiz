@@ -63,7 +63,9 @@ lists each module's entry points.
   with a refusing scry gate, inside a `%jinx` CPU limit. Draft builds and
   suite arms have their own `%jinx` limits. All three are ship-wide
   `timeouts` in `%quiz` state, set from Settings; they are never part of a
-  replayable `conf`. A timeout, Ctrl-C or loom
+  replayable `conf`. A property document may lower its own call limit with
+  `++within`, never raise it; the effective limit is recomputed each slice
+  and kept out of `conf` too. A timeout, Ctrl-C or loom
   exhaustion aborts the whole Gall event and cannot be caught. `%quiz` learns
   of it from the error wake on its tick wire and records `%interrupted`.
   Keep one kind of work per tick, so that every abort has exactly one culprit.

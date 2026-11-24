@@ -375,7 +375,7 @@
   ^-  tang
   =/  parts=parts:engine  [!>(|=(n=@ud &)) ~ ~ ~ %pass]
   =/  got=result:build
-    [%ready [~zod %quiz 1] [`0v123 defaults:engine] parts]
+    [%ready [~zod %quiz 1] [`0v123 defaults:engine] parts ~]
   =/  cards  (conf-response:agent 'ticket' got)
   =/  body  (object:codec (need (de:json:html (response-body cards))))
   ;:  weld

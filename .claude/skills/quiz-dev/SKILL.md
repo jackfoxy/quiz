@@ -145,8 +145,11 @@ check real aborts on the fake ship.
 
 **Run keeps going after timeouts, or a sample is `timeout`.** The document
 has `on-timeout %fail` or `%discard`. Each hanging sample waits the whole call
-limit, so a shrink can take many limits. Lower the call limit in Settings. A
-`timeout` failure is the policy's result, not a crash. Under `%interrupt`
+limit, so a shrink can take many limits. Give the document a short
+`++within` (10 ms to 1 h; it can only lower the Settings limit), or lower the
+call limit in Settings. The record's `call` (JSON `call-ms`) shows the limit
+the last slice ran under. Each abort also costs its recovery, so many short
+hangs stay slow. A `timeout` failure is the policy's result, not a crash. Under `%interrupt`
 (the default) the same hang ends the run `%interrupted`.
 
 **Shrinking stopped too early.** Read the evidence's shrink trace (the

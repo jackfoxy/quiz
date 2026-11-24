@@ -8,7 +8,8 @@ undo and redo; Settings also offers Vim keys.
 (default 10), **Draft build** (30) and **Suite arm** (60). They are ship-wide,
 stored by `%quiz`, and apply to every run from the next slice, build or arm.
 Choose **Save limits** to apply them. A call that exceeds its limit ends the
-run as **interrupted**.
+run as **interrupted**. A property document's `++within` can lower its own
+property call limit below the Settings value, never raise it.
 
 **My documents** stores your Hoon and Markdown files under `/data/quiz` on
 the installed desk. **Open**, **Save**, and **Save As** use the file chooser;
@@ -77,7 +78,8 @@ and **Rerun request** previews again. See the
 [reference](reference.md#generator-preview).
 
 Results show only confirmed server status, effective configuration and seed,
-counters, diagnostics, and original/shrunk counterexamples. Under the
+counters, diagnostics, and original/shrunk counterexamples. A property run
+also shows **Call limit: N ms per call**, the limit its last slice ran under. Under the
 counterexample, a collapsed **Shrink trace (last N steps)** lists the last
 shrink steps, oldest first: each alts call with its candidate count, and each
 candidate's fate (`accepted`, `passed`, `heavier`, `visited`, …) with its

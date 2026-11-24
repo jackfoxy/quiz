@@ -74,8 +74,12 @@ The builder type-checks every arm before anything runs. A mistake is an
   `%allow`) and `on-timeout` (`%interrupt`, `%fail` or `%discard`), as in
   `cfg(size-max 30, duplicates %allow)`. Under `%fail` a hanging fate is a
   `timeout` failure, and under `%discard` it is dropped; each costs a full
-  call limit, so use a short one. See
-  [timeout policy](../../../desk/doc/reference.md#timeout-policy-on-timeout).
+  call limit, so use a short one: add `++within ~s0..8000` (an `@dr` from
+  10 ms to 1 h) to lower this document's call limit without touching the
+  ship-wide Settings. `++within` never raises the limit and is not part of
+  `conf`. See
+  [timeout policy](../../../desk/doc/reference.md#timeout-policy-on-timeout)
+  and [27-timeout-fail](../../../desk/examples/props/27-timeout-fail.hoon).
 
 The prelude allows only `/-`, `/+`, `/=`, `/*`, in that order, all from the
 selected desk at the pinned revision. Full rules:

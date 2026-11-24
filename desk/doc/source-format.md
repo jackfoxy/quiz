@@ -1,8 +1,8 @@
 # Property documents
 
 A document builds to a core with a required `++fate` gate. Optional arms are
-`++norn`, `++alts`, `++conf`, `++cover`, `++cover-table`, `++confidence` and
-`++expect`. Other arms may hold
+`++norn`, `++alts`, `++conf`, `++cover`, `++cover-table`, `++confidence`,
+`++within` and `++expect`. Other arms may hold
 helpers. See the executable
 [fixture](../fixtures/quiz-build/property.hoon).
 
@@ -25,6 +25,7 @@ The compiler checks types without calling the property, generator, or shrinker:
 | `cover` | `cover:quiz-engine`, `[mode=?(%warn %check %confident) rows=(list [label=@t percent=@ud])]`; at most 100 distinct nonempty labels of at most 256 bytes; percents at most 100 |
 | `cover-table` | `(list [table=@t value=@t percent=@ud])`; at most 100 distinct `[table value]` rows, names nonempty and at most 256 bytes; percents at most 100 |
 | `confidence` | `[certainty=@ud tolerance=@ud]`; certainty 1 to 15, tolerance 1 to 100 |
+| `within` | `@dr` from 10 ms to 1 hour: this document's call limit, at most the ship-wide one |
 | `expect` | `?(%pass %fail)` |
 
 Reports, `++cover`, `++cover-table`, `++confidence` and `++expect` are
@@ -36,8 +37,12 @@ Build reports with `/+  prop=quiz-prop`, generators and shrinkers with
 [generated functions](reference.md#generated-functions-quiz-fun). An agent's
 door comes from `/=  drive  /fixtures/quiz-harness/drive`, with
 [quiz-harness](reference.md#agent-harness-quiz-harness) imported by `/+`.
-`cover`, `cover-table`, `confidence` and `expect` come from the
+`cover`, `cover-table`, `confidence`, `within` and `expect` come from the
 document and are unaffected by Run-panel configuration overrides.
+`++within` lowers the property call limit for this document only; it never
+raises the ship-wide limit set in **Settings**, and it is not part of the
+replayable `conf`. See
+[configuration and limits](reference.md#configuration-and-limits).
 
 A missing `norn` fills the sample from its type, and a missing `alts`
 shrinks it by type, with

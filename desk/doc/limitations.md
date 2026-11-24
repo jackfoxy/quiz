@@ -13,7 +13,11 @@ authoritative behavior and recovery guidance.
 - **A timeout policy costs a full call limit per hanging sample.** Under
   `on-timeout %fail` or `%discard`, every hanging sample or candidate waits
   the whole call limit (default 10 s) before it is handled, and a shrink can
-  hang many times. Set a short call limit in **Settings** for such documents.
+  hang many times. Give such a document a short `++within`, or set a short
+  call limit in **Settings**. Each abort also costs its recovery (the error
+  wake and the next tick), so a lower limit helps a long hang more than many
+  short ones: example 27 took 33.6 s under a 0.5 s `++within`, about what it
+  took under a 2 s Settings limit.
   The policy covers the fate only; generation, norn, alts and rendering still
   interrupt the run.
 - **A preview judges in the same step and ignores the timeout policy.** With
@@ -24,8 +28,9 @@ authoritative behavior and recovery guidance.
 - **CPU limits stop a stuck call, but block the ship until they fire.** Each
   fate, norn, alts or rendering call has a `%jinx` CPU limit (default 10 s).
   Draft compilation defaults to 30 s and a suite arm to 1 minute. All three
-  are ship-wide and set in **Settings** (1 s to 1 hour). Until a limit fires,
-  the ship processes nothing else.
+  are ship-wide and set in **Settings** (1 s to 1 hour). A document's
+  `++within` (10 ms to 1 hour) can lower its own property call limit, never
+  raise it. Until a limit fires, the ship processes nothing else.
   Clay builds of saved files and suites have no CPU limit. See
   [configuration and limits](reference.md#configuration-and-limits).
 - **An aborted run keeps only committed progress.** A CPU limit, Ctrl-C or
