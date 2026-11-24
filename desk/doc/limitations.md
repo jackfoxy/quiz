@@ -61,6 +61,12 @@ authoritative behavior and recovery guidance.
   `sink` offers nothing for lists or unions. Prefer the
   [app generator library](reference.md#app-generator-library-quiz-gen),
   whose generators are total and whose `shrink-list` handles lists.
+- **The default shrinker treats floats as raw atoms.** Without `++alts`,
+  `sink` halves and decrements a float's bit pattern. A negative double can
+  shrink to NaN (`-0` minus one is all ones) or to a huge positive value, and
+  the engine accepts it when it fails the same way. Use `shrink-real` or
+  `shrink-real-single` from `quiz-gen`, as in
+  [31-float-associativity](../examples/failing/31-float-associativity.hoon).
 - **Duplicates are skipped by mug unless you choose otherwise.** Under the
   default `%mug` policy a small domain such as `?` exhausts before a larger
   request, and a mug collision skips a distinct noun. Set `duplicates %allow`

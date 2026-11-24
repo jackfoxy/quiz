@@ -31,6 +31,7 @@ const examples = [
   ['props', '28-confident-coverage', 'passed'],
   ['failing', '29-bst-coordinated', 'failed', 'false'],
   ['failing', '30-dependent-inner', 'failed', 'false'],
+  ['failing', '31-float-associativity', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -129,6 +130,11 @@ for (const [root, name, outcome, why] of examples) {
       // The bound stops at 1; the pinned dependent list shrinks to ~[90].
       expect(got.outcome.evidence.shrunk.text).toBe('[bound=1 seed=0v0 size=0 pin=[~ ~[90]]]');
       expect(got.counts).toMatchObject({'shrink-tried':24, 'shrink-steps':5});
+    }
+    if (name === '31-float-associativity') {
+      // Sized reals start exact; shrink-real ends at short decimals.
+      expect(got.outcome.evidence.shrunk.text).toBe('[a=.~-1.2 b=.~-1 c=.~1]');
+      expect(got.counts).toMatchObject({attempted:6, accepted:5, 'shrink-tried':33, 'shrink-steps':4});
     }
     if (name === '21-small-domain-allow') {
       expect(got.config.duplicates).toBe('allow');

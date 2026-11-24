@@ -159,6 +159,11 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
   the conf sets `size-max`. `capped`, `resize`, `scale` and `sized` control
   size for one generator
   ([22-size-capped](../../../desk/examples/props/22-size-capped.hoon)).
+- `real` and `real-single` are sized (small whole numbers and fractions
+  first); `real-bits` draws any finite double. Shrink floats with
+  `shrink-real`/`shrink-real-single`: the default `sink` halves a float's
+  bit pattern and can reach NaN
+  ([31-float-associativity](../../../desk/examples/failing/31-float-associativity.hoon)).
 - Spell sample types out (`ship=@p`, not `=ship`): a zuse mold carries its
   subject into the sample vase and hits `%sample-bytes`.
 - Dependent inputs: `seeded`, then `(regen make value seed size pin)` in the

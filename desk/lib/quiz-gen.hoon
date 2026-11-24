@@ -74,7 +74,40 @@
   (mul ~s1 (rad:rng +(size)))
 ::
 ++  real
-  ::  Any finite double, from random bits; size is ignored.
+  ::  A double that grows with size, as in QuickCheck: a whole number or a
+  ::  fraction a/b, equally likely, either sign, with |a| and b at most
+  ::  size. Size is capped at 2^53, where doubles stop being exact, so a
+  ::  value is never infinite. ++real-bits draws any finite double.
+  ^-  (norn @rd)
+  |=  [size=@ud rng=_og]
+  =/  top  (min (max 1 size) real-top)
+  =^  kind  rng  (rads:rng 2)
+  =^  minus  rng  (rads:rng 2)
+  =^  over  rng  (rads:rng +(top))
+  =/  value
+    ?:  =(0 kind)  (sun:rd over)
+    (~(div rd %n) (sun:rd over) (sun:rd +((rad:rng top))))
+  ?:(=(0 minus) value (sub:rd .~0 value))
+::
+++  real-single
+  ::  As ++real, rounded to a single, with size capped at 2^24.
+  ^-  (norn @rs)
+  %+  cook  (capped real-single-top real)
+  |=(d=@rd (~(bit rs %n) (sea:rd d)))
+::
+++  real-top
+  ::  Largest magnitude ++real draws: every whole double up to it is exact.
+  (bex mantissa-bits)
+::
+++  mantissa-bits
+  ::  A double's significand, counting the implicit leading bit.
+  53
+::
+++  real-single-top  (bex 24)
+::
+++  real-bits
+  ::  Any finite double, from random bits; size is ignored, so nearly every
+  ::  value is near 1e±300. Use it for extreme exponents and subnormals.
   ^-  (norn @rd)
   |=  [size=@ud rng=_og]
   =/  bits  (raw:rng 64)
@@ -83,7 +116,7 @@
   ?.  =(exponent 0x7ff)  bits
   (dis bits (not 0 64 (bex 52)))
 ::
-++  real-single
+++  real-single-bits
   ::  Any finite single, from random bits; size is ignored.
   ^-  (norn @rs)
   |=  [size=@ud rng=_og]
@@ -389,6 +422,60 @@
   ^-  (list @)
   ?:  (lte n floor)  ~
   (turn (shrink-atom (sub n floor)) (cury add floor))
+::
+++  shrink-real
+  ::  Toward simpler doubles: zero, the absolute value, smaller whole
+  ::  magnitudes, then the shortest decimal cut to 0, 1, ..., 6 places.
+  ::  Cutting the decimal, not the binary value, keeps 1.2 from becoming
+  ::  1.199. All move toward zero, so all are finite and, being closer to
+  ::  zero or positive, lighter; any that rounding left no lighter is
+  ::  dropped. Infinity and NaN offer only zero.
+  |=  x=@rd
+  ^-  (list @rd)
+  ?:  =(0x7ff (cut 0 [52 11] x))  ~[.~0]
+  =/  minus  =(1 (cut 0 [63 1] x))
+  =/  size  (dis x (dec (bex 63)))
+  =/  signed  |=(a=@rd ?:(|(!minus =(.~0 a)) a (con a (bex 63))))
+  =/  whole=@u  (abs:si (need (~(toi rd %z) size)))
+  ::  Past the mantissa, n - n/2^k rounds back to n: stop there.
+  =/  steps  (scag +(mantissa-bits) (shrink-atom whole))
+  =/  wholes=(list @rd)  (turn steps (cork sun:rd signed))
+  =/  shortest  (drg:rd size)
+  =/  places=(list @rd)
+    ::  A whole value (exponent at least zero) has no places to cut.
+    ?.  ?=(%d -.shortest)  ~
+    ?:  (syn:si e.shortest)  ~
+    =/  digits  (abs:si e.shortest)
+    %+  turn  (gulf 0 (min (dec digits) decimal-places))
+    |=  k=@ud
+    =/  kept  (div a.shortest (pow 10 (sub digits k)))
+    (signed (grd:rd [%d s.shortest (new:si | k) kept]))
+  (lighter x [.~0 size (weld wholes places)])
+::
+++  shrink-real-single
+  ::  As ++shrink-real, through doubles, which hold every single exactly.
+  ::  Each candidate is rounded to the nearest single, and kept only if
+  ::  lighter.
+  |=  x=@rs
+  ^-  (list @rs)
+  =/  wide=(list @rd)  (shrink-real (bit:rd (sea:rs x)))
+  (lighter x (turn wide |=(d=@rd (~(bit rs %n) (sea:rd d)))))
+::
+++  decimal-places
+  ::  The most decimal places ++shrink-real cuts a value to.
+  6
+::
+++  lighter
+  ::  Candidates strictly below `top`, each value once, in order.
+  |=  [top=@ candidates=(list @)]
+  ^-  (list @)
+  =|  seen=(set @)
+  =|  out=(list @)
+  |-
+  ?~  candidates  (flop out)
+  =/  c  i.candidates
+  ?:  |((gte c top) (~(has in seen) c))  $(candidates t.candidates)
+  $(candidates t.candidates, seen (~(put in seen) c), out [c out])
 ::
 ++  shrink-list
   ::  Delete chunks of n/1, n/2, ..., 1 elements, then shrink one element

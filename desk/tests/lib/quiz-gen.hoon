@@ -81,14 +81,49 @@
     (expect !>((levy spans |=(d=@dr (lte d (mul ~s1 100))))))
   ==
 ::
+++  finite
+  ::  The exponent of a finite double is not all ones.
+  |=(r=@rd !=(0x7ff (cut 0 [52 11] r)))
+::
+++  finite-single  |=(r=@rs !=(0xff (cut 0 [23 8] r)))
+::
+++  magnitude  |=(r=@rd (dis r (dec (bex 63))))
+::
 ++  test-reals-finite
-  ::  No infinity or NaN: the exponent is never all ones.
+  ::  No infinity or NaN, from the bit generators or at a huge size.
   ^-  tang
-  =/  doubles  ;;((list @rd) (draws 500 1 0v1 real:gen))
-  =/  singles  ;;((list @rs) (draws 500 1 0v1 real-single:gen))
+  =/  doubles  ;;((list @rd) (draws 500 1 0v1 real-bits:gen))
+  =/  singles  ;;((list @rs) (draws 500 1 0v1 real-single-bits:gen))
+  =/  huge  ;;((list @rd) (draws 200 (bex 2.000) 0v1 real:gen))
+  =/  huge-singles  ;;((list @rs) (draws 200 (bex 300) 0v1 real-single:gen))
   ;:  weld
-    (expect !>((levy doubles |=(r=@rd !=(0x7ff (cut 0 [52 11] r))))))
-    (expect !>((levy singles |=(r=@rs !=(0xff (cut 0 [23 8] r))))))
+    (expect !>((levy doubles finite)))
+    (expect !>((levy singles finite-single)))
+    (expect !>((levy huge finite)))
+    (expect !>((levy huge-singles finite-single)))
+  ==
+::
+++  test-reals-sized
+  ::  Magnitudes stay within size; both signs, whole numbers and fractions
+  ::  occur.
+  ^-  tang
+  =/  ones  ;;((list @rd) (draws 300 1 0v1 real:gen))
+  =/  hundreds  ;;((list @rd) (draws 300 100 0v1 real:gen))
+  =/  singles  ;;((list @rs) (draws 300 1 0v1 real-single:gen))
+  =/  below
+    |=  top=@rd
+    |=(r=@rd (lte:rd (magnitude r) top))
+  =/  whole  |=(r=@rd =(r (san:rd (need (~(toi rd %z) r)))))
+  =/  minus  |=(r=@rd =(1 (cut 0 [63 1] r)))
+  ;:  weld
+    (expect !>((levy ones (below .~1))))
+    (expect !>((levy hundreds (below .~100))))
+    (expect !>((lien hundreds |=(r=@rd (gth:rd (magnitude r) .~10)))))
+    (expect !>((lien hundreds minus)))
+    (expect !>((lien hundreds (cork minus |=(a=? !a)))))
+    (expect !>((lien hundreds whole)))
+    (expect !>((lien hundreds |=(r=@rd !(whole r)))))
+    (expect !>((levy singles |=(r=@rs (lte:rs (dis r 0x7fff.ffff) .1)))))
   ==
 ::
 ++  test-text
@@ -258,6 +293,70 @@
     (expect-eq !>(`(list @)`~) !>((shrink-atom:gen 0)))
     (expect-eq !>(`(list @)`~[3 7 9]) !>(((shrink-toward:gen 3) 10)))
     (expect-eq !>(`(list @)`~) !>(((shrink-toward:gen 3) 3)))
+  ==
+::
+++  test-shrink-real
+  ::  Zero, the absolute value, smaller whole numbers, the truncation.
+  ::  Infinity and NaN offer zero; zero offers nothing.
+  ^-  tang
+  ;:  weld
+    %+  expect-eq  !>(`(list @rd)`~[.~0 .~1 .~2])
+    !>((shrink-real:gen .~2.5))
+    %+  expect-eq  !>(`(list @rd)`~[.~0 .~2.5 .~-1 .~-2])
+    !>((shrink-real:gen .~-2.5))
+    (expect-eq !>(`(list @rd)`~[.~0]) !>((shrink-real:gen .~-0)))
+    (expect-eq !>(`(list @rd)`~[.~0]) !>((shrink-real:gen .~inf)))
+    (expect-eq !>(`(list @rd)`~[.~0]) !>((shrink-real:gen .~nan)))
+    (expect-eq !>(`(list @rd)`~) !>((shrink-real:gen .~0)))
+    %+  expect-eq  !>(`(list @rd)`~[.~0 .~0.1 .~0.12])
+    !>((shrink-real:gen .~0.125))
+    %+  expect-eq  !>(`(list @rs)`~[.0 .2.5 .-1 .-2])
+    !>((shrink-real-single:gen .-2.5))
+  ==
+::
+++  test-shrink-real-lighter
+  ::  Every candidate is finite and lighter, for drawn values and for the
+  ::  edges: -0, a subnormal, the largest finite double, and both signs.
+  ^-  tang
+  =/  edges=(list @rd)
+    :~  .~-0  ;;(@rd 1)  ;;(@rd 0x8000.0000.0000.0001)
+        ;;(@rd 0x7fef.ffff.ffff.ffff)  ;;(@rd 0xffef.ffff.ffff.ffff)
+        .~1e-300  .~-1e300  .~0.1  .~-123.456
+    ==
+  =/  drawn  ;;((list @rd) (draws 200 1.000 0v1 real:gen))
+  =/  bits  ;;((list @rd) (draws 200 1 0v1 real-bits:gen))
+  =/  singles  ;;((list @rs) (draws 200 1 0v1 real-single-bits:gen))
+  =/  good
+    |=  x=@rd
+    (levy (shrink-real:gen x) |=(c=@rd &((finite c) (lth c x))))
+  =/  good-single
+    |=  x=@rs
+    %+  levy  (shrink-real-single:gen x)
+    |=(c=@rs &((finite-single c) (lth c x)))
+  ;:  weld
+    (expect !>((levy edges good)))
+    (expect !>((levy drawn good)))
+    (expect !>((levy bits good)))
+    (expect !>((levy singles good-single)))
+  ==
+::
+++  test-shrink-real-no-nan
+  ::  Every value reachable by shrinking a negative double is finite.
+  ::  Raw-atom shrinking reaches NaN: -0 minus one is all ones.
+  ^-  tang
+  =/  seen=(set @rd)
+    =|  seen=(set @rd)
+    =/  todo=(list @rd)  ~[.~-3.75 .~-0]
+    |-  ^-  (set @rd)
+    ?~  todo  seen
+    ?:  (~(has in seen) i.todo)  $(todo t.todo)
+    ?>  (lte ~(wyt in seen) 500)
+    =/  more=(list @rd)  (weld (shrink-real:gen i.todo) t.todo)
+    $(seen (~(put in seen) i.todo), todo more)
+  ;:  weld
+    (expect !>((levy ~(tap in seen) finite)))
+    (expect !>((~(has in seen) .~0)))
+    (expect !>(!(finite (dec .~-0))))
   ==
 ::
 ++  test-shrink-list-order

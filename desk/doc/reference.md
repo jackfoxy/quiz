@@ -232,7 +232,9 @@ Do not interpret its `runs` field as the app's `accepted` or `attempted` count.
 [`quiz-gen`](../lib/quiz-gen.hoon) (`/+ gen=quiz-gen`) provides generators,
 typed shrinkers and an adaptor to `++alts`. Executable models:
 [16-sorted-insert](../examples/props/16-sorted-insert.hoon) to
-[20-dependent](../examples/failing/20-dependent.hoon).
+[20-dependent](../examples/failing/20-dependent.hoon), and
+[31-float-associativity](../examples/failing/31-float-associativity.hoon)
+for floats.
 
 Every generator is a norn, `$-([@ud _og] a)`, and is **total in size**: size 0
 behaves as size 1. An empty choice crashes with a named `~|` message, which a
@@ -248,7 +250,8 @@ sample unless the conf sets `size-max`.
 | `ship` | `@p`: galaxy, star or planet, equally likely |
 | `date` | `@da` within size seconds of `~2000.1.1`; no ambient time |
 | `span` | `@dr`, whole seconds up to size |
-| `real`, `real-single` | Finite `@rd`, `@rs` from random bits; never infinity or NaN |
+| `real`, `real-single` | Sized `@rd`, `@rs`: a whole number or a fraction `a/b`, equally likely, either sign, with `\|a\|` and `b` at most size (capped at 2^53 and 2^24), rounded to nearest; never infinity or NaN |
+| `real-bits`, `real-single-bits` | Any finite `@rd`, `@rs` from random bits; size is ignored, so most values are near 1e±300 (1e±38); never infinity or NaN |
 | `cord`, `knot`, `term` | Printable `@t`; valid `@ta`; valid nonempty `@tas` |
 | `(chars alphabet)` | A tape from the alphabet |
 | `(elements items)`, `(one-of gens)`, `(frequency ~[[weight gen] …])` | Choice from a nonempty list; all generators must have one type |
@@ -278,6 +281,8 @@ QuickCheck.
 | --- | --- |
 | `shrink-atom` | `0`, then `n-n/2`, `n-n/4`, …, `n-1` |
 | `(shrink-toward floor)` | The same, never below `floor` |
+| `shrink-real` | `.~0`, the absolute value of a negative, up to 54 smaller whole magnitudes (as `shrink-atom`, sign kept), then the shortest decimal form cut toward zero to 0, 1, …, 6 places, so `1.25` offers `1` and `1.2`. Only finite, strictly lighter candidates, each once; infinity and NaN give `~[.~0]`, zero gives `~` |
+| `shrink-real-single` | `shrink-real` through doubles, each candidate rounded to the nearest single and kept only if lighter |
 | `(shrink-list item)` | Delete chunks of n, n/2, …, 1 elements, then shrink one element with `item` |
 | `(shrink-pair a b)` | Shrink the left, then the right |
 | `(shrink-unit item)` | `~`, then smaller inner values |
@@ -400,7 +405,10 @@ The default `sink` tries halving and decrementing nonzero atoms, subtrees for
 noun cells, and combinations of cell component candidates. It preserves
 faces/hints while recursing. Singleton atoms do not shrink. Unhandled types,
 including fork/hold wrappers at this stage, produce no candidates. List
-shrinking is therefore not a general list-minimization algorithm.
+shrinking is therefore not a general list-minimization algorithm. A float is
+an atom to `sink`, so it halves and decrements the bit pattern: a negative
+double can reach NaN (`-0` minus one is all ones) or a huge positive value.
+Use `shrink-real` or `shrink-real-single` in `++alts` for floats.
 
 The app accepts a candidate only when its mug is new (whatever the duplicates
 policy), its noun weight strictly

@@ -45,6 +45,7 @@ settings, not universal outcomes of similar-looking properties.
 | [28-confident-coverage](../examples/props/28-confident-coverage.hoon) | Passed, 800 accepted; heads 377 | `++cover [%confident …]`: undecided at 100, 200 and 400 checks, covered at 800 by the Wilson lower bound |
 | [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
 | [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
+| [31-float-associativity](../examples/failing/31-float-associativity.hoon) | Failed, false; `[a=.~-1.2 b=.~-1 c=.~1]` | Sized `real` and `shrink-real`: float addition is not associative; the shrunk triple has short decimals |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -118,7 +119,7 @@ note and comparison follow the shrunk sample, not the original 3.
 
 ## Generator library examples
 
-Examples 16 to 20 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
+Examples 16 to 20 and 29 to 31 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
 
 `16-sorted-insert` generates a sorted list and a value, inserts the value,
 and checks the result with `same` under `all`. It labels where the value
@@ -156,6 +157,15 @@ and reaches `[~[1 0 2] 1]`: delete the root of a three-key tree.
 seed; the false claim is that every value is below 90. `shrink-seeded` lowers
 the bound to 1, rebuilding the list each time, then shrinks the list itself and
 pins it: the run ends at `pin=[~ ~[90]]`, with the seed cleared.
+
+`31-float-associativity` claims `(a + b) + c` equals `a + (b + c)` for three
+doubles from the sized `real`. Small whole numbers and fractions add exactly,
+so five samples pass; the sixth, `[a=.~-1.2 b=.~-2 c=.~6]`, rounds
+differently in the two orders. `shrink-real` moves each value toward zero, a
+whole number and fewer decimal places, and the run ends at
+`[a=.~-1.2 b=.~-1 c=.~1]`. The default shrinker
+would treat each double as a raw atom; see
+[limitations](limitations.md).
 
 `21-small-domain-allow` checks De Morgan's law for a `[? ?]` sample. Under
 the default `%mug` policy the run could accept at most four checks before
@@ -226,6 +236,7 @@ queue, report, coverage, generator-library, size and function rows in
 | 28-confident-coverage | 800 | 800 | 0 | 0 | 0 | 0 | — |
 | 29-bst-coordinated | 18 | 17 | 0 | 0 | 146 | 14 | 9 keys, delete 12 → `[~[1 0 2] 1]` |
 | 30-dependent-inner | 3 | 2 | 0 | 0 | 24 | 5 | `[8 seed 3 ~]` → `[1 0v0 0 [~ ~[90]]]` |
+| 31-float-associativity | 6 | 5 | 0 | 0 | 33 | 4 | `[a=.~-1.2 b=.~-2 c=.~6]` → `[a=.~-1.2 b=.~-1 c=.~1]` |
 
 ## Existing suites
 

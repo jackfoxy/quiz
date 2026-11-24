@@ -21,6 +21,7 @@
 /*  confident  %hoon  /examples/props/28-confident-coverage/hoon
 /*  coordinated  %hoon  /examples/failing/29-bst-coordinated/hoon
 /*  inner  %hoon  /examples/failing/30-dependent-inner/hoon
+/*  floats  %hoon  /examples/failing/31-float-associativity/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -312,5 +313,18 @@
     =/  begin=[@ud @ud (unit (list @ud))]  [8 3 ~]
     (expect-eq !>(begin) !>([-.start +>.start]))
     (expect-eq !>(want) !>(end))
+  ==
+::
+++  test-float-associativity
+  ::  Rounded sums differ; the triple shrinks to short decimals.
+  ^-  tang
+  =/  path=path  /examples/failing/'31-float-associativity'/hoon
+  =/  done  (run path floats ~[!>(engine) !>(gen)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  want=[@rd @rd @rd]  [.~-1.2 .~-1 .~1]
+  ;:  weld
+    (expect-eq !>(`counters:engine`[6 5 0 0 33 4]) !>(counts.done))
+    (expect-eq !>(want) !>(;;([@rd @rd @rd] q.shrunk.result)))
   ==
 --
