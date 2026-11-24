@@ -28,6 +28,7 @@ const examples = [
   ['failing', '24-filter-map-swap', 'failed', 'false'],
   ['props', '25-counter-agent', 'passed'],
   ['failing', '26-counter-agent-bug', 'failed', 'false'],
+  ['props', '28-confident-coverage', 'passed'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -70,7 +71,7 @@ for (const [root, name, outcome, why] of examples) {
       expect(got['sample-metrics']).toBe('unavailable');
     } else expect(got.seed).toBe('0v123');
     if (why) expect(got.outcome.evidence.why.kind).toBe(why);
-    if (outcome === 'passed')
+    if (outcome === 'passed' && name !== '28-confident-coverage')
       expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
         '21-small-domain-allow', '22-size-capped', '23-map-fusion',
         '25-counter-agent'].includes(name) ? 100 : 20);
@@ -84,6 +85,11 @@ for (const [root, name, outcome, why] of examples) {
       expect(got.outcome.evidence.shrunk.text)
         .toBe('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
       expect(got.counts).toMatchObject({'shrink-tried':68, 'shrink-steps':20});
+    }
+    if (name === '28-confident-coverage') {
+      // %confident runs past requested until the Wilson bound decides.
+      expect(got.counts).toMatchObject({accepted:800, attempted:800});
+      expect(got.distribution.labels).toEqual({heads:377});
     }
     if (name === '12-labels-coverage') {
       expect(got.distribution.labels).toEqual({empty:1, short:15, long:84});

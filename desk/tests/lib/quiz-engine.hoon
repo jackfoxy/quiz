@@ -524,6 +524,43 @@
     (expect-eq !>(``outcome:engine`[%uncovered short]) !>(result.check))
   ==
 ::
+++  test-coverage-confident
+  ::  Half the samples are even. 20 percent is covered and 90 percent is
+  ::  refuted at the first checkpoint; 50 percent stays undecided and runs
+  ::  on, to requested-max or to a budget, where the plain threshold rules.
+  ^-  tang
+  =/  cfg  (config 100 400 5 5)
+  =.  duplicates.cfg  %allow
+  =/  with
+    |=  percent=@ud
+    ^-  parts:engine
+    [parity `sized `no-alts `[%confident ~[['even' percent]]] %pass]
+  =/  low  (finished cfg (with 20))
+  =/  high  (finished cfg (with 90))
+  =/  capped  (finished cfg(requested-max.bounds 300) (with 50))
+  =/  spent  (finished cfg(attempts-max 150) (with 50))
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.low)))
+    (expect-eq !>(`@ud`100) !>(accepted.counts.low))
+    %+  expect-eq  !>(``outcome:engine`[%uncovered ~[['even' 90 43]]])
+    !>(result.high)
+    (expect-eq !>(`@ud`100) !>(accepted.counts.high))
+    (expect-eq !>(`@ud`300) !>(accepted.counts.capped))
+    (expect !>(?=([~ ?(%passed %uncovered) *] result.capped)))
+    (expect-eq !>(`@ud`150) !>(accepted.counts.spent))
+    (expect !>(?=([~ ?(%passed %uncovered) *] result.spent)))
+  ==
+::
+++  test-wilson-bounds
+  ::  50 of 100 at z = 6.11: 0.2393 to 0.7607.
+  ^-  tang
+  =/  low  (wilson:engine 50 100 (sub:rd .~0 confidence-z:engine))
+  =/  high  (wilson:engine 50 100 confidence-z:engine)
+  ;:  weld
+    (expect !>(&((gth:rd low .~0.238) (lth:rd low .~0.240))))
+    (expect !>(&((gth:rd high .~0.760) (lth:rd high .~0.762))))
+  ==
+::
 ++  test-expect-failure
   ^-  tang
   =/  cfg  (config 5 20 5 5)
@@ -562,7 +599,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-8) !>(version:engine))
+    (expect-eq !>(%quiz-engine-9) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))

@@ -18,6 +18,7 @@
 /*  swap  %hoon  /examples/failing/24-filter-map-swap/hoon
 /*  counter-src  %hoon  /examples/props/25-counter-agent/hoon
 /*  counter-bug-src  %hoon  /examples/failing/26-counter-agent-bug/hoon
+/*  confident  %hoon  /examples/props/28-confident-coverage/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -266,5 +267,17 @@
     %+  expect-eq
       !>(`failure:engine`[%false ~ `['11' '0']])
     !>(why.result)
+  ==
+::
+++  test-confident-coverage
+  ::  Undecided at 100, 200 and 400 checks; covered at 800.
+  ^-  tang
+  =/  path=path  /examples/props/'28-confident-coverage'/hoon
+  =/  done  (run path confident ~[!>(engine) !>(prop)])
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[800 800 0 0 0 0]) !>(counts.done))
+    %+  expect-eq  !>((malt `(list [@t @ud])`~[['heads' 377]]))
+    !>(labels.seen-tags.done)
   ==
 --

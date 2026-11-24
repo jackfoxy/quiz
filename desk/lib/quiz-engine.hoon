@@ -64,7 +64,9 @@
 ::
 +$  cover
   ::  Required share, in whole percent, of accepted samples per label.
-  [mode=?(%warn %check) rows=(list [label=@t percent=@ud])]
+  ::  %warn reports shortfalls and %check fails on them, both at the
+  ::  requested count. %confident tests on until Wilson bounds decide.
+  [mode=?(%warn %check %confident) rows=(list [label=@t percent=@ud])]
 ::
 +$  expectation  ?(%pass %fail)
 ::
@@ -163,7 +165,7 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-8
+  %quiz-engine-9
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
@@ -244,14 +246,23 @@
 ++  finish
   ::  Completion wins when the last accepted sample also hits a budget.
   ::  Ties between budgets resolve attempts, drops, duplicates, in that order.
+  ::  Under %confident coverage a run past the requested count stops at a
+  ::  deciding checkpoint, at requested-max, or when a budget ends it.
   |=  s=state
   ^-  state
   ?:  !=(~ result.s)  s
   ?:  !=(~ shrink.s)  s
   ?:  (gth requested.config.s requested-max.bounds.config.s)
     s(result `[%limited %requested ~])
-  ?:  =(accepted.counts.s requested.config.s)
-    (conclude s)
+  =/  accepted  accepted.counts.s
+  =/  met  (gte accepted requested.config.s)
+  =/  stats  (confident s)
+  ?:  &(met !stats)  (conclude s &)
+  =/  last  =(accepted requested-max.bounds.config.s)
+  =/  decided
+    ?.  &(met |(last (checkpoint s)))  s
+    (conclude s last)
+  ?^  result.decided  decided
   =/  budget=(unit ?(%attempts %drops %duplicates))
     ?:  (gte attempted.counts.s attempts-max.config.s)  `%attempts
     ?:  (gte dropped.counts.s drops-max.config.s)  `%drops
@@ -261,6 +272,8 @@
       `%duplicates
     ~
   ?~  budget  s
+  ::  Requested checks were met: the coverage decides, not the budget.
+  ?:  met  (conclude s &)
   ::  Duplicates do not prevent all evaluated samples from being drops.
   =/  all-dropped  &(=(accepted.counts.s 0) (gth dropped.counts.s 0))
   s(result `[%exhausted u.budget all-dropped])
@@ -468,15 +481,81 @@
   `[label percent got]
 ::
 ++  conclude
-  ::  The requested count was reached. Expected failure, then coverage.
-  |=  s=state
+  ::  A checkpoint was reached. Expected failure, then coverage. Under
+  ::  %confident a row whose upper bound is below its share fails, and the
+  ::  run passes once every lower bound reaches `tolerance` of its share;
+  ::  otherwise it goes on. At the `final` checkpoint, or with no samples,
+  ::  the plain threshold decides, as under %check.
+  |=  [s=state final=?]
   ^-  state
   ?:  ?=(%fail expect.compiled.s)  s(result `[%passed-unexpectedly ~])
-  =/  short  (shortfalls s)
   =/  cover  cover.compiled.s
-  ?:  &(?=(^ cover) ?=(%check mode.u.cover) ?=(^ short))
+  =/  n  accepted.counts.s
+  ?:  &(?=(^ cover) ?=(%confident mode.u.cover) !final (gth n 0))
+    =/  rows  rows.u.cover
+    =/  hits  |=(label=@t (~(gut by labels.seen-tags.s) label 0))
+    =/  share  |=(percent=@ud (div:rd (sun:rd percent) .~100))
+    =/  under=(list shortfall)
+      %+  murn  rows
+      |=  [label=@t percent=@ud]
+      ^-  (unit shortfall)
+      =/  k  (hits label)
+      ?.  (lth:rd (wilson k n confidence-z) (share percent))  ~
+      `[label percent (div (mul 100 k) n)]
+    ?^  under  s(result `[%uncovered under])
+    =/  enough
+      %+  levy  rows
+      |=  [label=@t percent=@ud]
+      =/  low  (wilson (hits label) n (sub:rd .~0 confidence-z))
+      (gte:rd low (mul:rd tolerance (share percent)))
+    ?:  enough  s(result `[%passed ~])
+    s
+  =/  short  (shortfalls s)
+  ?:  &(?=(^ cover) !?=(%warn mode.u.cover) ?=(^ short))
     s(result `[%uncovered short])
   s(result `[%passed short])
+::
+++  confident
+  ::  Does the property ask for statistical coverage?
+  |=  s=state
+  ^-  ?
+  =/  cover  cover.compiled.s
+  &(?=(^ cover) ?=(%confident mode.u.cover))
+::
+++  checkpoint
+  ::  Coverage is judged at requested times a power of two, as QuickCheck
+  ::  does from 100, so repeated looks keep the error bounded.
+  |=  s=state
+  ^-  ?
+  =/  wanted  requested.config.s
+  =/  n  accepted.counts.s
+  ?:  =(0 wanted)  &
+  ?.  =(0 (mod n wanted))  |
+  =/  ratio  (div n wanted)
+  &((gth ratio 0) =(0 (dis ratio (dec ratio))))
+::
+++  confidence-z
+  ::  Normal quantile for QuickCheck's default certainty: wrong 1 in 10^9.
+  .~6.109410191663286
+::
+++  tolerance
+  ::  A covered row needs this fraction of its share, as in QuickCheck.
+  .~0.9
+::
+++  wilson
+  ::  The Wilson score bound on the share behind `k` hits of `n`; a
+  ::  negative `z` gives the lower bound, a positive one the upper.
+  |=  [k=@ud n=@ud z=@rd]
+  ^-  @rd
+  =/  nn  (sun:rd n)
+  =/  p  (div:rd (sun:rd k) nn)
+  =/  zz  (mul:rd z z)
+  =/  wide
+    %+  add:rd  (div:rd (mul:rd p (sub:rd .~1 p)) nn)
+    (div:rd zz (mul:rd .~4 (mul:rd nn nn)))
+  =/  top
+    (add:rd (add:rd p (div:rd zz (mul:rd .~2 nn))) (mul:rd z (sqt:rd wide)))
+  (div:rd top (add:rd .~1 (div:rd zz nn)))
 ::
 ++  failed
   ::  Shrinking ended. An expected failure is reported as such.

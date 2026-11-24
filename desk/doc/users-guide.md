@@ -245,7 +245,9 @@ The run shows each label's count and share of accepted samples, plus the first
 example per label. Under `%check`, a run whose samples were too rarely empty
 ends `uncovered` even though every check passed. Open **props →
 12-labels-coverage** and **failing → 14-coverage-shortfall** for both
-outcomes. Coverage is a threshold at the final count, not a statistical test.
+outcomes. `%warn` and `%check` are a threshold at the requested count. With
+`%confident`, as in **props → 28-confident-coverage**, the run keeps testing
+until a Wilson bound decides each row.
 These ideas follow [FsCheck observation guidance](https://fscheck.github.io/FsCheck/Properties.html#Observing-Test-Case-Distribution)
 and QuickCheck's `classify` and `cover`.
 
@@ -465,8 +467,8 @@ Labels, classify, collect, tabulate, threshold coverage, expected failure and
 conjunction/disjunction are available through
 [`quiz-prop`](reference.md#reports-labels-and-coverage). Other FsCheck
 facilities are **unsupported**: `Arbitrary` registration, automatic .NET
-derivation/reflection, generated functions beyond finite tables, statistical
-coverage checks, expected-exception combinators, nested quantification inside
+derivation/reflection, generated functions beyond finite tables, coverage
+certainty other than QuickCheck's default, expected-exception combinators, nested quantification inside
 a fate, xUnit/NUnit adapters and `IRunner` callbacks. Do not paste FsCheck
 API examples into Hoon. The [reference](reference.md) is the Quiz API authority.
 

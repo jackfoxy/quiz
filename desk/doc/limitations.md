@@ -90,10 +90,12 @@ authoritative behavior and recovery guidance.
   large subject, such as zuse's `ship`, or with a recursive type, such as
   `(list @ud)`, makes every sample vase exceed the sample-byte limit. Use the
   aura (`@p`) or a `*` sample molded in the fate.
-- **Coverage is a threshold, not a statistical test.** `++cover` compares
-  each label's share at the final count. It does not keep running until the
-  share is known with confidence, as QuickCheck's `checkCoverage` does. Raise
-  `requested` for a tighter estimate. See
+- **Statistical coverage is bounded.** `%warn` and `%check` compare each
+  label's share at the requested count. `%confident` keeps testing until
+  Wilson bounds decide, as QuickCheck's `checkCoverage` does, but stops at
+  `requested-max` (10,000) or a budget, where the plain threshold decides.
+  Only QuickCheck's default certainty (1 in 10^9) and tolerance (0.9) are
+  offered. See
   [reports, labels and coverage](reference.md#reports-labels-and-coverage).
 - **Labels are bounded and not shrunk per class.** At most 100 distinct labels
   and 100 table rows of at most 256 bytes; the run otherwise ends

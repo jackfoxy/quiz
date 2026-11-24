@@ -126,7 +126,10 @@ verdict. Use it to make failures readable and to see what was tested:
   The run shows the distribution and the first example per label. Keep labels
   to ranges or cases. More than 100 distinct labels ends `limited %labels`.
 - `++cover [%warn …]` reports shortfalls on a pass; `[%check …]` ends the run
-  `uncovered`. It is a threshold at the final count, not a statistical test.
+  `uncovered`. Both are a threshold at the requested count. `[%confident …]`
+  tests past `requested` until Wilson bounds (certainty 10^9, tolerance 0.9)
+  decide, up to `requested-max`; use it when a share near its requirement
+  must be judged reliably.
 - `++expect %fail` marks a claim that should fail (`failed-as-expected`).
 - `implies` with a trap guards partial code. `all` and `any` combine props, but
   every list element is already evaluated.
@@ -256,7 +259,7 @@ each other may stop high, as in
 | Outcome | What to do |
 | --- | --- |
 | `passed` | `accepted` reached `requested`. This is evidence, not proof. Check that the inputs were interesting (the distribution, if the fate labels them): `requested 0` passes with no checks. `warnings` lists `%warn` coverage shortfalls. |
-| `uncovered` | Every check passed, but a `%check` coverage row was short. Fix the generator so the case occurs. |
+| `uncovered` | Every check passed, but a `%check` row was short or a `%confident` row's upper bound fell below its share. Fix the generator so the case occurs. |
 | `failed` | Read `why` (`%false` with notes and expected/actual if the fate gave them, `%crash` with trace, `%scry`, `%bad-product`), then the original and shrunk samples. The detail describes the shrunk sample. |
 | `failed-as-expected` / `passed-unexpectedly` | The document has `++expect %fail`. The first is the intended result. |
 | `exhausted` | A budget ran out first (`attempts`, `drops` or `duplicates`). `all-dropped` means no input was ever accepted. **Not a pass.** |

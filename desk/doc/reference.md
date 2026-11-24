@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-8`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-9`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -24,7 +24,7 @@ An application document is a Hoon file producing a core:
 | `++norn` | Optional gate `$-([@ud _og] sample-type)` |
 | `++alts` | Optional gate `$-(vase (list vase))` |
 | `++conf` | Optional `[seed=(unit @uv) config=conf:quiz-engine]` |
-| `++cover` | Optional `cover:quiz-engine`: `[mode=?(%warn %check) rows=(list [label=@t percent=@ud])]` |
+| `++cover` | Optional `cover:quiz-engine`: `[mode=?(%warn %check %confident) rows=(list [label=@t percent=@ud])]` |
 | `++expect` | Optional `?(%pass %fail)`; default `%pass` |
 
 The builder checks the arms before the run starts. Invalid source, imports,
@@ -541,9 +541,17 @@ run as `%limited %labels`.
 `++cover` lists required shares of accepted samples per label, in whole
 percent, compared exactly at the end (`100 × hits ≥ percent × accepted`).
 `%warn` reports shortfalls with `passed`; `%check` turns them into the outcome
-`uncovered`. This is a plain threshold at the final count, not QuickCheck's
-sequential statistical `checkCoverage`. With zero requested checks, every
-positive requirement is short.
+`uncovered`. Both are a plain threshold at the requested count. With zero
+requested checks, every positive requirement is short.
+
+`%confident` follows QuickCheck's `checkCoverage`. The run does not stop at
+`requested`: at `requested`, then each doubling (200, 400, ... from 100) it
+computes each row's Wilson score interval at certainty 1 in 10^9
+(z ≈ 6.109). A row whose upper bound is below its share ends the run
+`uncovered`; once every row's lower bound reaches 0.9 of its share the run
+`passed`. Otherwise testing goes on. At `requested-max`, or when a budget ends
+the run after `requested` was met, the plain threshold decides instead, as
+under `%check`; such a run is never `exhausted`.
 
 `++expect %fail` marks a property that should fail. A counterexample, after
 shrinking, ends `failed-as-expected`; reaching the requested count ends
@@ -573,7 +581,7 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 | Outcome | Meaning / payload |
 | --- | --- |
 | `passed` | Target accepted checks reached; no counterexample. Coverage `warnings` (empty unless `%warn` found a shortfall) and the first example per label |
-| `uncovered` | Target reached, but a `%check` coverage row was short; `shortfalls` and examples |
+| `uncovered` | Target reached, but a `%check` coverage row was short, or a `%confident` row's upper bound fell below its share; `shortfalls` and examples |
 | `passed-unexpectedly` | `++expect %fail`, but every requested check passed |
 | `failed` | `why`, original sample, shrunk sample |
 | `failed-as-expected` | `++expect %fail` and a counterexample was found; same payload as `failed` |
@@ -772,7 +780,7 @@ as `dropped` under `%discard`, and as the failure under `%fail`.
 | `%fate-missing`, `%fate-type`, `%norn-type`, `%alts-type` | Use a property core with the signatures above; choose suite mode for a test core. |
 | `%source`, `%import`, `%build`, unavailable desk/revision | Check path and pinned context. For a saved compiler failure, an editable draft may expose a more precise compiler diagnostic. |
 | `%conf-range` | Start with defaults, keep the full config, respect ceilings and positive bounds. A request `config` patch is checked after it is merged. |
-| `%cover-type`, `%cover-range` | `++cover` must be `[?(%warn %check) (list [@t @ud])]`: at most 100 distinct, nonempty labels of at most 256 bytes, each percent at most 100. |
+| `%cover-type`, `%cover-range` | `++cover` must be `[?(%warn %check %confident) (list [@t @ud])]`: at most 100 distinct, nonempty labels of at most 256 bytes, each percent at most 100. |
 | `%expect-type` | `++expect` must be `%pass` or `%fail`. |
 | `%uncovered` | Every check passed, but a required label was too rare. Inspect the distribution; change the generator, not the requirement, unless the requirement was wrong. |
 | `%limited %labels` | A label was longer than 256 bytes, or a run produced more than 100 distinct labels or table rows. `collect` on a wide domain does this; label ranges instead. |
