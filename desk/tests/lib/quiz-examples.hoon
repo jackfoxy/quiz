@@ -27,6 +27,7 @@
 /*  expiry-bug-src  %hoon  /examples/failing/33-expiry-agent-bug/hoon
 /*  typed  %hoon  /examples/failing/34-typed-defaults/hoon
 /*  table  %hoon  /examples/props/35-cover-table/hoon
+/*  custom  %hoon  /examples/failing/09-custom-alts/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -37,6 +38,12 @@
   ::  only locates diagnostics; a digit-led segment needs a cord.
   |=  [=path source=@t imports=(list vase)]
   ^-  state:engine
+  (run-steps path source imports ~)
+::
+++  run-steps
+  ::  As ++run, with the shrink trace's length set when `steps` is given.
+  |=  [=path source=@t imports=(list vase) steps=(unit @ud)]
+  ^-  state:engine
   =/  parsed  (prepare:build [~zod %quiz 1] path source)
   ~|  ?:(?=(%.n -.parsed) p.parsed ~)
   ?>  ?=(%.y -.parsed)
@@ -45,7 +52,9 @@
   ~|  ?:(?=(%invalid -.built) [code.built arm.built trace.built] ~)
   ?>  ?=(%ready -.built)
   =/  seed  (need seed.settings.built)
-  =/  s  (init:engine seed config.settings.built parts.built)
+  =/  cfg  config.settings.built
+  =?  trace-steps.bounds.cfg  ?=(^ steps)  u.steps
+  =/  s  (init:engine seed cfg parts.built)
   =/  left  20.000
   |-
   ?:  !=(~ result.s)  s
@@ -383,5 +392,34 @@
     (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
     (expect-eq !>(`counters:engine`[164 100 0 64 0 0]) !>(counts.done))
     (expect-eq !>(`@ud`99) !>((roll ~(val by least) add)))
+  ==
+::
+++  test-trace-invariant
+  ::  The shrink trace never changes a run: examples 09, 11, 17 and 29
+  ::  end identically with tracing off, apart from the trace itself.
+  ^-  tang
+  =/  both
+    |=  [=path source=@t imports=(list vase)]
+    ^-  ?
+    =/  on  (run-steps path source imports `100)
+    =/  off  (run-steps path source imports `0)
+    =/  a  (need result.on)
+    =/  b  (need result.off)
+    ?>  &(?=(%failed -.a) ?=(%failed -.b))
+    ?&  =(counts.on counts.off)
+        =(q.shrunk.a q.shrunk.b)
+        =(texts.a texts.b)
+        =(~ trace.b)
+        ?=(^ trace.a)
+    ==
+  =/  with-gen  ~[!>(engine) !>(gen)]
+  ;:  weld
+    %-  expect
+    !>((both /examples/failing/'09-custom-alts'/hoon custom ~[!>(engine)]))
+    =/  queue=path  /examples/failing/'11-queue-model-bug'/hoon
+    (expect !>((both queue queue-bug ~[!>(engine)])))
+    (expect !>((both /examples/failing/'17-bst-delete-bug'/hoon bst with-gen)))
+    %-  expect
+    !>((both /examples/failing/'29-bst-coordinated'/hoon coordinated with-gen))
   ==
 --

@@ -657,7 +657,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-12) !>(version:engine))
+    (expect-eq !>(%quiz-engine-13) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))
@@ -761,7 +761,7 @@
   =/  cand  !>(`@ud`0)
   =.  shrink.failed
     :-  ~
-    :^  [[%false ~ ~] !>(`@ud`5) !>(`@ud`5) '5' '5']
+    :^  [[%false ~ ~] !>(`@ud`5) !>(`@ud`5) ['5' '5'] ~]
       *(set @)
     `~[cand]
     6
@@ -771,5 +771,67 @@
     (expect !>(=(~ pending.got)))
     (expect-eq !>(`@ud`5) !>(q.shrunk.evidence:(need shrink.got)))
     (expect-eq !>(`@ud`0) !>(shrink-steps.counts.got))
+    =/  want=(list trace-row:engine)  ~[[%candidate `1 %other-failure `'0']]
+    (expect-eq !>(want) !>(trace.evidence:(need shrink.got)))
+  ==
+::
+++  traced
+  ::  Fails from 10, starting at 40; alts offers a heavier value, half,
+  ::  and half again: 40 and 20 shrink, 5 passes, a repeat is visited.
+  |=  steps=@ud
+  ^-  state:engine
+  =/  fate  !>(|=(a=@ud (lth a 10)))
+  =/  alts
+    !>  |=  v=vase
+        ^-  (list vase)
+        =/  n  ;;(@ud q.v)
+        ~[v(q +(n)) v(q (div n 2)) v(q (div n 2))]
+  =/  cfg  (config 100 200 5 5)
+  =.  trace-steps.bounds.cfg  steps
+  =.  size-start.cfg  40
+  (finished cfg [fate `sized `alts ~ %pass])
+::
+++  test-trace-reasons
+  ::  Each kind of step is recorded; the newest row, the repeated half
+  ::  of 10, is first.
+  ^-  tang
+  =/  done  (traced 100)
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  rows  trace.result
+  =/  whys=(set @tas)
+    %-  silt
+    %+  turn  rows
+    |=(r=trace-row:engine ?:(?=(%alts -.r) %alts why.r))
+  ;:  weld
+    =/  want  (silt `(list @tas)`~[%alts %heavier %accepted %passed %visited])
+    (expect-eq !>(want) !>(whys))
+    (expect !>(?=([[%candidate ~ %visited ~] *] rows)))
+  ==
+::
+++  test-trace-cap-and-invariant
+  ::  The trace keeps the newest rows up to the cap, and never changes the
+  ::  run: counters and the shrunk sample match with tracing off.
+  ^-  tang
+  =/  on  (traced 100)
+  =/  few  (traced 3)
+  =/  off  (traced 0)
+  =/  shrunk
+    |=  s=state:engine
+    ^-  *
+    =/  r  (need result.s)
+    ?>  ?=(%failed -.r)
+    q.shrunk.r
+  =/  trace
+    |=  s=state:engine
+    ^-  (list trace-row:engine)
+    =/  r  (need result.s)
+    ?>  ?=(%failed -.r)
+    trace.r
+  ;:  weld
+    (expect-eq !>(counts.on) !>(counts.off))
+    (expect-eq !>((shrunk on)) !>((shrunk off)))
+    (expect-eq !>(`(list trace-row:engine)`~) !>((trace off)))
+    (expect-eq !>((scag 3 (trace on))) !>((trace few)))
   ==
 --

@@ -462,6 +462,16 @@
         block(detail, 'run-original', 'Original counterexample', proof.original.text);
         block(detail, 'run-shrunk', 'Shrunk counterexample', proof.shrunk.text);
         failure(detail, proof.why);
+        if (proof.trace?.length) {
+          // The last shrink steps, oldest first: why shrinking stopped where it did.
+          const trace = node('details', 'run-shrink-trace');
+          const rows = node('ol', '');
+          for (const row of proof.trace) rows.append(node('li', '', row.kind === 'alts'
+            ? `alts on best (weight ${row.best}): ${row.count} candidates`
+            : `${row.why}${row.weight == null ? '' : ` (weight ${row.weight})`}${row.text == null ? '' : `: ${row.text}`}`));
+          trace.append(node('summary', '', `Shrink trace (last ${proof.trace.length} steps)`), rows);
+          detail.append(trace);
+        }
       } else if (outcome?.why) failure(detail, outcome.why);
       if (outcome?.arms) {
         const list = node('ul', 'run-suite-arms');

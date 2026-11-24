@@ -125,9 +125,14 @@
 ::
 ++  test-outcomes-encode
   ^-  tang
-  =/  proof=evidence:app  [[%false ~ ~] [42 '42'] [1 '1']]
+  =/  steps=(list trace-row:engine)
+    :~  [%candidate `1 %accepted `'1']
+        [%candidate ~ %visited ~]
+        [%alts (bex 70) 2]
+    ==
+  =/  proof=evidence:app  [[%false ~ ~] [42 '42'] [1 '1'] steps]
   =/  detailed=evidence:app
-    [[%false ~['too big' 'second'] `['1' '2']] [42 '42'] [1 '1']]
+    [[%false ~['too big' 'second'] `['1' '2']] [42 '42'] [1 '1'] ~]
   =/  short=(list shortfall:engine)  ~[['empty' 20 5 ~] ['3' 10 0 `'length']]
   =/  examples=examples:app  ~[['small' [1 '1']] ['big' [99 '99']]]
   =/  outcomes=(list outcome:app)

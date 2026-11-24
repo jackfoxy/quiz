@@ -149,6 +149,13 @@ limit, so a shrink can take many limits. Lower the call limit in Settings. A
 `timeout` failure is the policy's result, not a crash. Under `%interrupt`
 (the default) the same hang ends the run `%interrupted`.
 
+**Shrinking stopped too early.** Read the evidence's shrink trace (the
+workbench's **Shrink trace**, or `trace` in the record). If the last alts
+call's candidates are all `heavier`, the shrinker offers nothing lighter; if
+they are `other-failure`, they fail in a different category. Fix the
+document's `alts`, not the engine. A trace is empty when
+`bounds.trace-steps` is 0.
+
 **`%exhausted` or `%limited` when you expected a pass.** This is usually
 correct engine behaviour. Check the property with
 [quiz-properties](../quiz-properties/SKILL.md) before you change the engine.

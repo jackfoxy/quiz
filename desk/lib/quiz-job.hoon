@@ -289,6 +289,7 @@
   :*  why.proof
       [q.original.proof original.texts.proof]
       [q.shrunk.proof shrunk.texts.proof]
+      trace.proof
   ==
 ::
 ++  persist-examples

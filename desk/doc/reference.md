@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-12`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-13`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -554,6 +554,31 @@ sample. When candidates end, the result is `%failed`; hitting a bound produces
 `%limited`, and an alts error produces `%error`, retaining bounded evidence
 when available. The best sample is not guaranteed globally minimal.
 
+**Shrink trace.** Evidence carries a `trace` of the last `trace-steps` shrink
+steps (default 100; 0 turns it off), newest first in Hoon and oldest first in
+JSON. It answers "why did shrinking stop here?":
+
+| Row | Recorded when |
+| --- | --- |
+| `[%alts best count]` | Alts was asked for candidates of the best sample, of weight `best`; it gave `count` |
+| `[%candidate weight why text]` | One candidate was considered; `why` is below |
+
+| `why` | Meaning | Weight | Text |
+| --- | --- | --- | --- |
+| `%accepted` | Replaced the best sample | yes | yes |
+| `%timeout` | Hung and was accepted under `on-timeout %fail` | yes | yes |
+| `%passed` | The fate passed | yes | yes |
+| `%dropped` | The fate dropped it, or it hung under `%discard` | yes | yes |
+| `%other-failure` | It failed in another category, including a hang when the failure is not a timeout | yes | yes |
+| `%heavier` | Not lighter than the best sample | yes | no |
+| `%visited` | Its mug was seen before | no | no |
+
+Text is at most 160 bytes, cut with `...`. A rejected candidate is rendered
+only for the trace; if rendering fails, the row has no text. Tracing never
+changes a run's result or counters (pinned on examples 09, 11, 17 and 29),
+but each rendered rejected candidate is one more sandboxed call under the
+property call limit.
+
 The [seeded threshold example](../examples/failing/08-seeded-threshold.hoon)
 reaches 501 under the recorded seed/configuration. This is a verified example,
 not a promise that every threshold property or shrinker always returns 501.
@@ -600,9 +625,10 @@ lowered but not raised above their engine defaults.
 | `bounds.seen-bytes` | 4,194,304 | Jammed bytes of the samples `%exact` keeps |
 | `bounds.retained-runs` | 100 | Completed records retained after this property finishes |
 | `bounds.samples-per-slice` | 1,000 | Ceiling on engine steps per scheduling slice, including shrink work; slices start at 8 and adapt (see the agent API) |
+| `bounds.trace-steps` | 100 | Shrink steps kept in the evidence's trace, newest; 0 turns tracing off |
 
-Requested, attempt, drop, duplicate, shrink-candidate and shrink-depth limits
-may be zero. Byte caps, retained-runs and samples-per-slice must be positive.
+Requested, attempt, drop, duplicate, shrink-candidate, shrink-depth and
+trace-steps limits may be zero. Byte caps, retained-runs and samples-per-slice must be positive.
 Requested-max may be zero when requested is also zero.
 Requested must fit requested-max. Reaching the requested accepted
 count wins over budgets reached on the same step. Otherwise, budget ties use
@@ -757,7 +783,7 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 | `passed` | Target accepted checks reached; no counterexample. Coverage `warnings` (empty unless `%warn` found a shortfall) and the first example per label |
 | `uncovered` | Target reached, but a `%check` coverage row was short, or a `%confident` row's upper bound fell below its share; `shortfalls` and examples |
 | `passed-unexpectedly` | `++expect %fail`, but every requested check passed |
-| `failed` | `why`, original sample, shrunk sample |
+| `failed` | `why`, original sample, shrunk sample, shrink trace |
 | `failed-as-expected` | `++expect %fail` and a counterexample was found; same payload as `failed` |
 | `error` | Stage `norn`, `generate` or `alts`; failure reason; optional evidence |
 | `limited` | Named bound and optional evidence |

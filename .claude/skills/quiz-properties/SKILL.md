@@ -245,6 +245,13 @@ smaller, and it fails with the **same category**. `%.y` and `%drop` candidates
 are never accepted. The result is the smallest failure this shrinker found,
 not necessarily the global minimum.
 
+To see why shrinking stopped, read the evidence's `trace` (workbench:
+**Shrink trace**; `bounds.trace-steps`, default 100, 0 off). It records each
+alts call and each candidate's fate: `accepted`, `timeout`, `passed`,
+`dropped`, `other-failure`, `heavier` (not lighter) or `visited`. The last
+alts call's candidates show what the shrinker still offered. Tracing never
+changes the result.
+
 Write a custom `alts` when the default would leave the domain. Example: a
 domain of positive even numbers, where halving gives odd values. Rules:
 

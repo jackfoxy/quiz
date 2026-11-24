@@ -443,7 +443,7 @@
 ++  test-outcome-strips-vases
   ^-  tang
   =/  evidence=counterexample:engine
-    [[%false ~ ~] !>(`@ud`541) !>(`@ud`501) '541' '501']
+    [[%false ~ ~] !>(`@ud`541) !>(`@ud`501) ['541' '501'] ~]
   =/  got  (persist-outcome:job [%failed evidence] ~)
   ?>  ?=(%failed -.got)
   ;:  weld
@@ -591,7 +591,7 @@
   ?>  ?=(%property -.work.current)
   =/  run=state:engine  +.work.current
   =/  best=counterexample:engine
-    [[%false ~ ~] !>(`@ud`9) !>(`@ud`5) '9' '5']
+    [[%false ~ ~] !>(`@ud`9) !>(`@ud`5) ['9' '5'] ~]
   =.  shrink.run  `[best ~ ~ 6]
   =/  rec  (get-record s 1)
   =.  s

@@ -62,7 +62,11 @@ Suite execution has no controlled seed or property sample counters; those
 controls are disabled.
 
 Results show only confirmed server status, effective configuration and seed,
-counters, diagnostics, and original/shrunk counterexamples. Select a history
+counters, diagnostics, and original/shrunk counterexamples. Under the
+counterexample, a collapsed **Shrink trace (last N steps)** lists the last
+shrink steps, oldest first: each alts call with its candidate count, and each
+candidate's fate (`accepted`, `passed`, `heavier`, `visited`, …) with its
+weight and rendered text where the engine computed them. Select a history
 entry to inspect it. **Cancel selected run** requests cancellation at the next
 server boundary. **Rerun request** submits the original request again (including
 its pinned revision and any explicit seed); **Replay exact property** reuses

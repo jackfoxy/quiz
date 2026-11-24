@@ -284,6 +284,32 @@
   :~  ['why' (failure-out why.value)]
       ['original' (sample-out original.value)]
       ['shrunk' (sample-out shrunk.value)]
+      ['trace' (steps-out trace.value)]
+  ==
+::
+++  steps-out
+  ::  Shrink steps, oldest first. Weights are decimal strings: they can
+  ::  exceed a JavaScript number's exact range.
+  |=  rows=(list trace-row:engine)
+  ^-  json
+  =/  weight  |=(w=@ud s+(crip (a-co:co w)))
+  :-  %a
+  %+  turn  (flop rows)
+  |=  row=trace-row:engine
+  %-  pairs:enjs:format
+  ?-    -.row
+      %alts
+    :~  ['kind' s+'alts']
+        ['best' (weight best.row)]
+        ['count' (numb:enjs:format count.row)]
+    ==
+  ::
+      %candidate
+    :~  ['kind' s+'candidate']
+        ['weight' ?~(weight.row ~ (weight u.weight.row))]
+        ['why' s+why.row]
+        ['text' ?~(text.row ~ s+u.text.row)]
+    ==
   ==
 ::
 ++  summary-out
@@ -463,6 +489,7 @@
       (natural (field fields 'seen-bytes'))
       (natural (field fields 'retained-runs'))
       (natural (field fields 'samples-per-slice'))
+      (natural (field fields 'trace-steps'))
   ==
 ::
 ++  timeout-in
@@ -536,6 +563,7 @@
       ['seen-bytes' (numb:enjs:format seen-bytes.value)]
       ['retained-runs' (numb:enjs:format retained-runs.value)]
       ['samples-per-slice' (numb:enjs:format samples-per-slice.value)]
+      ['trace-steps' (numb:enjs:format trace-steps.value)]
   ==
 ::
 ++  timeouts-out

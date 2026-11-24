@@ -50,7 +50,13 @@
 ::
 +$  sample  [value=* text=@t]
 ::
-+$  evidence  [why=failure:engine original=sample shrunk=sample]
++$  evidence
+  ::  `trace` is the engine's shrink trace, newest step first.
+  $:  why=failure:engine
+      original=sample
+      shrunk=sample
+      trace=(list trace-row:engine)
+  ==
 ::
 +$  examples  (list [label=@t =sample])
 ::

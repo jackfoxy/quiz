@@ -92,6 +92,10 @@ for (const [root, name, outcome, why] of examples) {
       expect(got.outcome.evidence.shrunk.text)
         .toBe('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
       expect(got.counts).toMatchObject({'shrink-tried':68, 'shrink-steps':20});
+      // The whole shrink fits the 100-row trace: 68 candidates and 21 alts calls.
+      expect(got.outcome.evidence.trace.length).toBe(89);
+      expect(got.outcome.evidence.trace.filter(row => row.why === 'accepted').length).toBe(20);
+      await expect(page.locator('#run-shrink-trace')).toContainText('Shrink trace (last 89 steps)');
     }
     if (name === '28-confident-coverage') {
       // %confident runs past requested until the Wilson bound decides.

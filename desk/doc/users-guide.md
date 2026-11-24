@@ -75,6 +75,14 @@ and shrunk counterexample **value=0**. Open the result's diagnostics and both
 counterexamples. A crash is separate from a Boolean `%.n` failure; neither
 is a discard.
 
+When a shrunk counterexample looks bigger than it should, open **Shrink
+trace** under it. The last row says why shrinking stopped: every candidate
+of the final alts call passed, dropped, failed another way, was not lighter
+(`heavier`) or was already seen (`visited`). A `heavier` row usually means the
+shrinker offers a reordering or a rebalanced tree the strict-weight rule
+skips; `other-failure` means the candidate failed, but not in the same
+category. See [the shrink trace](reference.md#alts-and-shrinking).
+
 If the intended law applies only to positive inputs, guard before the unsafe
 operation. `%drop` means this input is outside the property domain:
 

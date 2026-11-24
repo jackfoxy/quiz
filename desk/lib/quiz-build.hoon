@@ -232,6 +232,7 @@
       (lte seen-bytes.bounds.cfg seen-bytes.bounds.max)
       (lte retained-runs.bounds.cfg retained-runs.bounds.max)
       (lte samples-per-slice.bounds.cfg samples-per-slice.bounds.max)
+      (lte trace-steps.bounds.cfg trace-steps.bounds.max)
       (gth source-bytes.bounds.cfg 0)
       (gth sample-bytes.bounds.cfg 0)
       (gth rendered-bytes.bounds.cfg 0)

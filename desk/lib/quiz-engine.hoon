@@ -20,6 +20,7 @@
       seen-bytes=@ud
       retained-runs=@ud
       samples-per-slice=@ud
+      trace-steps=@ud
   ==
 ::
 +$  timeout-policy
@@ -128,10 +129,25 @@
 +$  example  [=vase text=@t]
 ::
 +$  counterexample
+  ::  `trace` holds the last trace-steps shrink steps, newest first.
   $:  why=failure
       original=vase
       shrunk=vase
       texts=[original=@t shrunk=@t]
+      trace=(list trace-row)
+  ==
+::
++$  reason
+  ::  What became of one shrink candidate: it replaced the best sample
+  ::  (%accepted, or %timeout when it hung under %fail), passed, dropped,
+  ::  failed another way, was not lighter, or was seen before.
+  ?(%accepted %timeout %passed %dropped %other-failure %heavier %visited)
+::
++$  trace-row
+  ::  An alts call on the best sample, or one candidate's fate. Weights and
+  ::  text are absent where the step did not compute them.
+  $%  [%alts best=@ud count=@ud]
+      [%candidate weight=(unit @ud) why=reason text=(unit @t)]
   ==
 ::
 +$  limit-name
@@ -184,7 +200,7 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-12
+  %quiz-engine-13
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
@@ -192,7 +208,7 @@
   ^-  conf
   :*  100  10.000  1.000  1.000  1  0  %mug
       :*  262.144  10.000  1.000  100  65.536  16.384  16.384  262.144
-          4.194.304  100  1.000
+          4.194.304  100  1.000  100
       ==
       %interrupt
   ==
@@ -366,7 +382,7 @@
   ^-  state
   =/  got  (need pending.s)
   =.  s  s(pending ~)
-  ?^  shrink.s  (judge-candidate s vase.got `shown.got)
+  ?^  shrink.s  (judge-candidate s vase.got `shown.got weight.shown.got)
   (evaluate s vase.got `shown.got)
 ::
 ++  evaluate
@@ -388,7 +404,7 @@
       s(result `[%limited %diagnostics-bytes ~])
     =/  got  (show s sam seen)
     ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
-    =/  evidence=counterexample  [found sam sam text.p.got text.p.got]
+    =/  evidence=counterexample  [found sam sam [text.p.got text.p.got] ~]
     s(shrink `[evidence (~(put in *(set @)) (mug q.sam)) ~ weight.p.got])
   ==
 ::
@@ -404,37 +420,87 @@
   ^-  state
   =/  got  (need pending.s)
   =.  s  s(pending ~)
+  =/  [sam=vase text=@t weight=@]  got
+  =/  cap  trace-steps.bounds.config.s
+  =/  row
+    |=  why=reason
+    ^-  trace-row
+    [%candidate `weight why `(clip text)]
   ?:  ?=(%discard on-timeout.config.s)
     ?~  shrink.s  s(dropped.counts +(dropped.counts.s))
-    s
-  =/  [sam=vase text=@t weight=@]  got
+    s(shrink `(log cap u.shrink.s (row %dropped)))
   ?~  shrink.s
-    =/  evidence=counterexample  [[%timeout ~] sam sam text text]
+    =/  evidence=counterexample  [[%timeout ~] sam sam [text text] ~]
     s(shrink `[evidence *(set @) ~ weight])
-  ?.  ?=([%timeout ~] why.evidence.u.shrink.s)  s
+  ?.  ?=([%timeout ~] why.evidence.u.shrink.s)
+    s(shrink `(log cap u.shrink.s (row %other-failure)))
   =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
-  =/  work  u.shrink.s
+  =/  work  (log cap u.shrink.s (row %timeout))
   =.  evidence.work  evidence.work(shrunk sam, shrunk.texts text)
   ::  The candidate list is for the old best sample: ask alts again.
   s(shrink `work(weight weight, pending ~))
 ::
 ++  judge-candidate
-  ::  Judge one shrink candidate whose weight was already checked. The
-  ::  failure follows the shrunk sample, as its detail describes it.
-  |=  [s=state sam=vase seen=(unit shown)]
+  ::  Judge one shrink candidate of weight `w`, already checked lighter.
+  ::  The failure follows the shrunk sample, as its detail describes it.
+  ::  Each candidate's fate goes into the trace; a rejected candidate's
+  ::  text is rendered only for the trace, and a rendering failure there
+  ::  leaves the text out rather than changing the run.
+  |=  [s=state sam=vase seen=(unit shown) w=@ud]
   ^-  state
   =/  work  (need shrink.s)
+  =/  cap  trace-steps.bounds.config.s
   =/  found  -:(judge (sandbox time.s q.fate.compiled.s q.sam))
-  ?@  found  s(shrink `work)
+  =/  rejected
+    |=  why=reason
+    ^-  state
+    =/  text  (trace-text s sam seen)
+    s(shrink `(log cap work [%candidate `w why text]))
+  ?@  found  (rejected ?:(?=(%pass found) %passed %dropped))
   ?.  (fits diagnostics-bytes.bounds.config.s found)
     s(shrink ~, result `[%limited %diagnostics-bytes `evidence.work])
-  ?.  =(-.found -.why.evidence.work)  s(shrink `work)
+  ?.  =(-.found -.why.evidence.work)  (rejected %other-failure)
   =/  got  (show s sam seen)
   ?:  ?=(%.n -.got)  (unshown s %alts p.got `evidence.work)
   =.  shrink-steps.counts.s  +(shrink-steps.counts.s)
   =.  evidence.work
     evidence.work(shrunk sam, why found, shrunk.texts text.p.got)
+  =.  work  (log cap work [%candidate `w %accepted `(clip text.p.got)])
   s(shrink `work(weight weight.p.got, pending ~))
+::
+++  log
+  ::  Add a row to the trace, keeping the newest `cap` rows.
+  |=  [cap=@ud work=shrinking row=trace-row]
+  ^-  shrinking
+  ?:  =(0 cap)  work
+  ::  Typed first: +scag keeps its argument's type, and a literal cell
+  ::  cannot hold the empty list.
+  =/  rows=(list trace-row)  [row trace.evidence.work]
+  work(trace.evidence (scag cap rows))
+::
+++  trace-text
+  ::  A rejected candidate's text for the trace, or ~ when tracing is off
+  ::  or rendering fails.
+  |=  [s=state sam=vase seen=(unit shown)]
+  ^-  (unit @t)
+  ?:  =(0 trace-steps.bounds.config.s)  ~
+  ?^  seen  `(clip text.u.seen)
+  =/  made
+    (sandbox time.s |=(v=vase `@t`(crip ~(ram re (sell v)))) sam)
+  ?.  ?=(%0 -.made)  ~
+  =/  text  ((soft @t) p.made)
+  ?~(text ~ `(clip u.text))
+::
+++  clip
+  ::  At most trace-bytes of a rendering, marked when cut.
+  |=  text=@t
+  ^-  @t
+  ?:  (lte (met 3 text) trace-bytes)  text
+  (cat 3 (end [3 (sub trace-bytes 3)] text) '...')
+::
+++  trace-bytes
+  ::  Longest text a trace row keeps.
+  160
 ::
 ++  grow
   ::  The next sample's size: about 1.1 times larger, plus one, held at
@@ -751,6 +817,8 @@
     =/  values=(list *)  (turn candidates tail)
     ?.  (fits alts-bytes.bounds.config.s values)
       s(shrink ~, result `[%limited %alts-bytes `evidence])
+    =/  cap  trace-steps.bounds.config.s
+    =.  work  (log cap work [%alts weight.work (lent candidates)])
     s(shrink `work(pending `candidates))
   =/  candidates  u.pending
   ?~  candidates
@@ -763,7 +831,9 @@
   ::  The visited set is a mug-only loop guard whatever the policy; weight
   ::  decrease alone guarantees termination.
   =/  hash  (mug q.sam)
-  ?:  (~(has in visited.work) hash)  s(shrink `work)
+  =/  cap  trace-steps.bounds.config.s
+  ?:  (~(has in visited.work) hash)
+    s(shrink `(log cap work [%candidate ~ %visited ~]))
   =.  visited.work  (~(put in visited.work) hash)
   ::  Weighed virtualized: a small jam can be a huge tree.
   =/  weighed  (sandbox time weight q.sam)
@@ -771,9 +841,11 @@
     =/  why  (classify weighed)
     ?>  ?=(^ why)
     (stop-error s %alts why `evidence)
-  ?.  (lth ;;(@ p.weighed) weight.work)  s(shrink `work)
+  =/  w  ;;(@ p.weighed)
+  ?.  (lth w weight.work)
+    s(shrink `(log cap work [%candidate `w %heavier ~]))
   ?:  =(%interrupt on-timeout.config.s)
-    (judge-candidate s(shrink `work) sam ~)
+    (judge-candidate s(shrink `work) sam ~ w)
   ::  Split: the candidate is shown, then waits in `pending` for its tick.
   =/  got  (show s sam ~)
   ?:  ?=(%.n -.got)  (unshown s %alts p.got `evidence)

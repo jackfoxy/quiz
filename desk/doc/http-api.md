@@ -80,7 +80,8 @@ immutable `revision`), `defaults` (the complete engine configuration), and
 `duplicates-max`, `size-start`, `size-max`, `duplicates`, and `bounds`.
 Bounds are `source-bytes`, `requested-max`, `shrink-candidates`,
 `shrink-depth`, `sample-bytes`, `rendered-bytes`, `diagnostics-bytes`,
-`alts-bytes`, `seen-bytes`, `retained-runs`, `samples-per-slice`.
+`alts-bytes`, `seen-bytes`, `retained-runs`, `samples-per-slice`,
+`trace-steps`.
 `duplicates` is the string `"mug"`, `"exact"` or `"allow"`, and `on-timeout`
 is `"interrupt"`, `"fail"` or `"discard"`; every other
 configuration value is a JSON integer. `requested` may be raised up to
@@ -216,7 +217,8 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
   `label` is the value. An example is
   `{"label","sample"}`, with a sample shaped like evidence samples.
 - `passed-unexpectedly`: no fields.
-- `failed` and `failed-as-expected`: `evidence` with `why`, `original`, `shrunk`.
+- `failed` and `failed-as-expected`: `evidence` with `why`, `original`,
+  `shrunk`, `trace`.
 - `error`: `stage`, `why`, nullable `evidence`.
 - `limited`: `which`, nullable `evidence`.
 - `exhausted`: `budget`, `all-dropped`.
@@ -236,6 +238,17 @@ Evidence samples have rendered `text` and `noun-jam` (a jammed noun as `@uv`).
 lines, or a jammed noun string. Rendering and retained
 samples obey engine bounds. `passed` means the requested checks passed, not a
 proof.
+
+Evidence `trace` is the shrink trace, oldest step first, at most
+`trace-steps` rows (empty when it is 0). A row is
+`{"kind":"alts","best","count"}` for an alts call on the best sample, or
+`{"kind":"candidate","weight","why","text"}` for one candidate. `why` is
+`accepted`, `timeout`, `passed`, `dropped`, `other-failure`, `heavier` or
+`visited`. `weight` and `best` are decimal strings, because a noun weight can
+exceed JavaScript's exact integer range; `weight` is `null` for `visited`.
+`text` is the rendered candidate, at most 160 bytes, or `null` for `heavier`,
+`visited` and a candidate that failed to render. See the
+[reference](reference.md#alts-and-shrinking).
 
 ### Suite arm discovery
 
