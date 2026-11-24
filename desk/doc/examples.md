@@ -46,6 +46,8 @@ settings, not universal outcomes of similar-looking properties.
 | [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
 | [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `dependent`, which bundles `seeded` and `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
 | [31-float-associativity](../examples/failing/31-float-associativity.hoon) | Failed, false; `[a=.~-1.2 b=.~-1 c=.~1]` | Sized `real` and `shrink-real`: float addition is not associative; the shrunk triple has short decimals |
+| [32-expiry-agent](../examples/props/32-expiry-agent.hoon) | Passed, 100 accepted; 15 duplicates | Simulated behn clock: puts with a time to live and waits against an expiring key store |
+| [33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon) | Failed, false; two puts of `%a` and a wait | A re-put that does not `%rest` its old timer; the old wake deletes the new value early |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -190,6 +192,19 @@ of 0 to 9 and resets, so model and agent agree; the second generates adds of
 up to 99, and the lost update shows as a mismatch. Its alts is `shrink-list`
 over each operation, with each amount shrunk toward zero.
 
+`32-expiry-agent` and `33-expiry-agent-bug` drive the expiring key store in
+[`fixtures/quiz-harness/expiry.hoon`](../fixtures/quiz-harness/expiry.hoon)
+through `run-clock`, the harness's simulated clock. A put stores a value and
+sets a behn timer for its time to live; the wake deletes the key. The model
+keeps each key until its latest put expires. Generated waits fire the timers
+that fall due, so no real time passes. With its fix, a second put of a key
+`%rest`s the first put's timer and 32 passes. Without it, in 33, the older
+wake deletes the newer value early: the run ends at
+`~[[%put %a 0 ~s1] [%put %a 0 ~s2] [%wait ~s1]]`, expected `{%a}`, actual
+`{}`. Its alts is `shrink-list` over each operation, then, through
+`shrink-then`, every key renamed to `%a` at once: the failure needs two puts
+of one key, so moving one copy alone would lose it.
+
 `23-map-fusion` and `24-filter-map-swap` generate their function arguments
 with `quiz-fun` and take `*` samples molded to
 `[items=(list @ud) f=(fun @ud @ud) …]`. In 24 the law "filter after map
@@ -239,6 +254,8 @@ queue, report, coverage, generator-library, size and function rows in
 | 29-bst-coordinated | 18 | 17 | 0 | 0 | 146 | 14 | 9 keys, delete 12 → `[~[1 0 2] 1]` |
 | 30-dependent-inner | 3 | 2 | 0 | 0 | 24 | 5 | `[8 seed 3 ~]` → `[1 0v0 0 [~ ~[90]]]` |
 | 31-float-associativity | 6 | 5 | 0 | 0 | 33 | 4 | `[a=.~-1.2 b=.~-2 c=.~6]` → `[a=.~-1.2 b=.~-1 c=.~1]` |
+| 32-expiry-agent | 115 | 100 | 0 | 15 | 0 | 0 | — |
+| 33-expiry-agent-bug | 9 | 6 | 0 | 2 | 56 | 7 | `~[[%put %a 0 ~s1] [%put %a 0 ~s2] [%wait ~s1]]` (expected `{%a}`, actual `{}`) |
 
 ## Existing suites
 

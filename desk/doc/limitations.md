@@ -81,8 +81,10 @@ authoritative behavior and recovery guidance.
   high; `shrink-equal` coordinates equal values, but there is no general
   search over joint changes such as shifting every key by the same amount.
 - **Agent harness is pure.** `quiz-harness` drives a Gall agent's door with
-  generated events. It does not run real effects: threads, Khan, wires that
-  wait for other agents, and timers are not simulated. Real effects would
+  generated events. Behn timers are simulated by `run-clock`, and `%agent`
+  and `%arvo` signs can be generated, but nothing else answers the agent:
+  threads, Khan and other agents' replies exist only as the signs a
+  property generates. Real effects would
   break determinism, exact replay and the `%jinx` containment model. A scry
   made by the agent under test is refused, so the sample ends `%scry`; test
   such arms with the scry results supplied in the handler, or refactor them.

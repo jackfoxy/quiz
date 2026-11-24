@@ -183,6 +183,15 @@ shrink-atom:gen)` its shrinker, and `(fun-text:fun !>(f))` text for `note`.
 Type the sample `*` and mold it. Model:
 [24-filter-map-swap](../../../desk/examples/failing/24-filter-map-swap.hoon).
 
+For a Gall agent, drive its door with `quiz-harness` (`/+ h=quiz-harness`):
+`(run:h start handle events)` folds pokes, watches and signs through a
+fixture driver, and `(run-clock:h start now handle events)` adds a simulated
+clock: `[%wait d]` fires the behn timers due by then as `%arvo` wakes. No
+real effect runs. Save a large state (a map) as a noun, not a vase: molding
+the vase's type takes minutes. Models:
+[26-counter-agent-bug](../../../desk/examples/failing/26-counter-agent-bug.hoon),
+[33-expiry-agent-bug](../../../desk/examples/failing/33-expiry-agent-bug.hoon).
+
 The legacy combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`,
 `const`, `cell`, `freq`, `pick`, `list`. Signatures:
 [norns and composition](../../../desk/doc/reference.md#norns-and-composition).

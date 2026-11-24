@@ -1,6 +1,7 @@
 /+  build=quiz-build, engine=quiz-engine, quiz, prop=quiz-prop, gen=quiz-gen,
     fun=quiz-fun, h=quiz-harness, *test
 /=  drive  /fixtures/quiz-harness/drive
+/=  drive-expiry  /fixtures/quiz-harness/drive-expiry
 /*  queue-model  %hoon  /examples/props/10-queue-model/hoon
 /*  queue-bug  %hoon  /examples/failing/11-queue-model-bug/hoon
 /*  labels  %hoon  /examples/props/12-labels-coverage/hoon
@@ -22,6 +23,8 @@
 /*  coordinated  %hoon  /examples/failing/29-bst-coordinated/hoon
 /*  inner  %hoon  /examples/failing/30-dependent-inner/hoon
 /*  floats  %hoon  /examples/failing/31-float-associativity/hoon
+/*  expiry-src  %hoon  /examples/props/32-expiry-agent/hoon
+/*  expiry-bug-src  %hoon  /examples/failing/33-expiry-agent-bug/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -326,5 +329,33 @@
   ;:  weld
     (expect-eq !>(`counters:engine`[6 5 0 0 33 4]) !>(counts.done))
     (expect-eq !>(want) !>(;;([@rd @rd @rd] q.shrunk.result)))
+  ==
+::
+++  test-expiry-agent
+  ::  With its fix, the agent's timers agree with the model.
+  ^-  tang
+  =/  path=path  /examples/props/'32-expiry-agent'/hoon
+  =/  imports=(list vase)
+    ~[!>(engine) !>(gen) !>(prop) !>(h) !>(drive-expiry)]
+  =/  done  (run path expiry-src imports)
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[115 100 0 15 0 0]) !>(counts.done))
+  ==
+::
+++  test-expiry-agent-bug
+  ::  The early expiry shrinks to two puts of one key and a wait.
+  ^-  tang
+  =/  path=path  /examples/failing/'33-expiry-agent-bug'/hoon
+  =/  imports=(list vase)
+    ~[!>(engine) !>(gen) !>(prop) !>(h) !>(drive-expiry)]
+  =/  done  (run path expiry-bug-src imports)
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  want=(list *)
+    ~[[%put %a 0 ~s1] [%put %a 0 ~s2] [%wait ~s1]]
+  ;:  weld
+    (expect-eq !>(`counters:engine`[9 6 0 2 56 7]) !>(counts.done))
+    (expect-eq !>(`*`want) !>(q.shrunk.result))
   ==
 --

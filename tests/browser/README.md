@@ -36,7 +36,7 @@ history is retained on the disposable ship for inspection.
 Run/replay HTTP replies now carry their correlated decimal `id`; configuration
 inspection uses `document-conf`. See `desk/doc/http-api.md` for both contracts.
 
-`examples.spec.js` runs all thirty-one property documents and the three existing
+`examples.spec.js` runs all thirty-three property documents and the three existing
 suites through the real UI, checks their expected outcomes and readonly roots,
 and repeats the seeded threshold with exact replay. Each case writes a
 `run.json` artifact under its test-results directory. No teaching failure is

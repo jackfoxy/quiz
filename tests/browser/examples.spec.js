@@ -32,6 +32,8 @@ const examples = [
   ['failing', '29-bst-coordinated', 'failed', 'false'],
   ['failing', '30-dependent-inner', 'failed', 'false'],
   ['failing', '31-float-associativity', 'failed', 'false'],
+  ['props', '32-expiry-agent', 'passed'],
+  ['failing', '33-expiry-agent-bug', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -77,7 +79,7 @@ for (const [root, name, outcome, why] of examples) {
     if (outcome === 'passed' && name !== '28-confident-coverage')
       expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
         '21-small-domain-allow', '22-size-capped', '23-map-fusion',
-        '25-counter-agent'].includes(name) ? 100 : 20);
+        '25-counter-agent', '32-expiry-agent'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -135,6 +137,14 @@ for (const [root, name, outcome, why] of examples) {
       // Sized reals start exact; shrink-real ends at short decimals.
       expect(got.outcome.evidence.shrunk.text).toBe('[a=.~-1.2 b=.~-1 c=.~1]');
       expect(got.counts).toMatchObject({attempted:6, accepted:5, 'shrink-tried':33, 'shrink-steps':4});
+    }
+    if (name === '32-expiry-agent') {
+      expect(got.counts).toMatchObject({attempted:115, accepted:100, duplicate:15});
+    }
+    if (name === '33-expiry-agent-bug') {
+      // The first put's timer deletes the second put's value early.
+      expect(got.counts).toMatchObject({attempted:9, accepted:6, duplicate:2, 'shrink-tried':56, 'shrink-steps':7});
+      expect(got.outcome.evidence.why.detail.compared).toEqual({want:'{%a}', got:'{}'});
     }
     if (name === '21-small-domain-allow') {
       expect(got.config.duplicates).toBe('allow');

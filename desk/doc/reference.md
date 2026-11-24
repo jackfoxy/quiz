@@ -389,11 +389,15 @@ exact. The bowl comes from the sample, never from the clock.
 
 | Arm | Meaning |
 | --- | --- |
-| `event` | `[%poke mark vase]`, `[%watch path]`, `[%leave path]` or `[%peek path]` |
+| `event` | `[%poke mark vase]`, `[%watch path]`, `[%leave path]`, `[%peek path]`, `[%agent wire sign]` (a `sign:agent:gall` for `on-agent`), `[%arvo wire sign-arvo]` (for `on-arvo`) or `[%wait span]` (advances `run-clock`'s clock) |
+| `timer` | `[due=@da =wire]`, a pending behn timer |
 | `(bowl-at our src now eny dap)` | A bowl with the fields a door reads; `now` and `eny` come from the sample |
 | `(run start handle events)` | Fold events through `handle`, a gate from the event and the saved state to cards and the next saved state. Returns `[%& cards state]`, or `[%| tang]` when a step crashes |
+| `(run-clock start now handle events)` | As `run`, with a simulated clock starting at `now`; `handle` also receives the time, `$-([event @da *] [(list card) *])`. Returns `[%& cards state now timers]` (a `clocked`), or `[%| tang]` |
 | `(cards-of cards tag)` | Cards with that head tag, such as `%give` or `%pass` |
 | `(facts-on cards path)` | `%give %fact` cards published on exactly `path` |
+| `(pokes-to cards dock)` | `%pass … %agent` `%poke` cards sent to `[ship agent]` |
+| `(watches-to cards dock)` | `%pass … %agent` `%watch` cards sent to `[ship agent]` |
 
 `handle` rebuilds the door for each event: `on-load` the saved vase, run the
 event arm, then `on-save`. That is how Gall reloads state, so each sample
@@ -405,9 +409,31 @@ import it with `/=  drive  /fixtures/...`; see
 [25-counter-agent](../examples/props/25-counter-agent.hoon) and
 [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon).
 
+**Simulated clock.** `run-clock` keeps the behn timers a step sets with
+`[%pass wire %arvo %b %wait due]` cards; a `%rest` card cancels the first
+pending timer with that wire and time. `[%wait d]` advances the clock by `d`,
+first delivering every timer due by then as `[%arvo wire %behn %wake ~]`, with
+`now` at its due time: earliest first, equal times in the order set. A timer
+set while a wait is delivering wakes fires within that wait when it falls due.
+The result's `timers` are those still pending, in the order set. No real time
+passes and no timer reaches Behn. The
+[expiry](../fixtures/quiz-harness/expiry.hoon) fixture, a gate over `fixed`
+returning the door, and its
+[drive-expiry](../fixtures/quiz-harness/drive-expiry.hoon) driver are the
+executable models
+[32-expiry-agent](../examples/props/32-expiry-agent.hoon) and
+[33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon).
+
 A `fate` reads its saved state with `;;(vase state)`, and `!<` works on that
 vase afterwards. Read the sample as a noun with `;;`, not `!<`, where the
 sample is typed `*`: `!<` checks the vase's type.
+
+**Save the state as a noun when its type is large.** `;;(vase st)` molds the
+vase's type too. That is cheap for the counter's `@ud`, but a map's type
+carries its whole compile-time subject, and molding it took minutes. The
+expiry driver therefore saves `q` of `on-save`, rebuilds the vase for
+`on-load` as `[p:!>(*store) st]`, and its fates read the store with
+`;;(store:drive state)`.
 
 **Wet-gate notes.** `set-of`, `map-of` and `sorted` take element molds because
 `silt`, `malt` and `sort` cannot be type-checked over a wet element type.

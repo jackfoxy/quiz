@@ -19,7 +19,7 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 | `desk/lib/quiz-prop.hoon` | Report combinators for fates: notes, expected/actual, labels, coverage | quiz |
 | `desk/lib/quiz-gen.hoon` | Total generators, size combinators, typed shrinkers, `alts-of` adaptor | quiz |
 | `desk/lib/quiz-fun.hoon` | Generated functions as shrinkable tables | quiz |
-| `desk/lib/quiz-harness.hoon`, `desk/fixtures/quiz-harness/` | Pure agent harness; counter-agent door and its driver | quiz |
+| `desk/lib/quiz-harness.hoon`, `desk/fixtures/quiz-harness/` | Pure agent harness and simulated clock; counter and expiry agent doors and their drivers | quiz |
 | `desk/lib/quiz-suite.hoon`, `desk/lib/quiz-replay.hoon` | `test-*` suite runner; replay capture | quiz |
 | `desk/lib/quiz-job.hoon` | Pure FIFO queue, slices, cancellation, retention, reload | quiz |
 | `desk/lib/quiz-agent.hoon`, `desk/app/quiz.hoon` | `%quiz` Gall adapter and export | quiz |
