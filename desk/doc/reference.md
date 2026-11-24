@@ -292,6 +292,7 @@ QuickCheck.
 | `(shrink-equal item)` | Coordinated: for each distinct element, every copy replaced by each of its candidates |
 | `(shrink-then a b)` | `a`'s candidates, then `b`'s, for one value |
 | `(shrink-seeded outer make inner)` | A `seeded` sample: smaller outer values, then a halved size, both unpinned; then the dependent value shrunk by `inner` and pinned |
+| `(dependent outer-mold inner-mold outer outer-shrink make inner-shrink)` | A `seeded` document's parts in one core: `sample` (the fate's sample mold), `norn`, `shrink`, `alts` and `both` (a sample to `[outer dependent]`) |
 | `shrink-nothing` | No candidates |
 
 `(alts-of mold shrinker)` turns a typed shrinker into a document's `++alts`.
@@ -322,7 +323,30 @@ shrinks the current dependent value with `inner` and pins each candidate.
 Pinning clears the seed, which a pinned value does not need: the unpinned
 sample does not hold its dependent value, so only dropping the seed lets a
 pinned candidate weigh less. Later outer shrinks rebuild from seed 0.
-[30-dependent-inner](../examples/failing/30-dependent-inner.hoon) shows it.
+[20-dependent](../examples/failing/20-dependent.hoon) spells these parts out.
+
+`dependent` bundles them. Give it molds for the outer and dependent values,
+the outer generator and shrinker, `make`, and the dependent shrinker; write
+the document's arms from its core:
+
+```hoon
+++  dep
+  %:  dependent:gen  @ud  (list @ud)
+    (range:gen 1 20)  (shrink-toward:gen 1)  values
+    (shrink-list:gen shrink-atom:gen)
+  ==
+++  norn  norn:dep
+++  alts  alts:dep
+++  fate
+  |=  raw=sample:dep
+  =/  [bound=@ud items=(list @ud)]  (both:dep raw)
+  (levy items (curr lth 90))
+```
+
+The molds type the sample, as for `set-of`, so it renders without the
+shrinkers' faces: `raw=[value=1 seed=0v0 size=0 pin=[~ ~[90]]]`.
+[30-dependent-inner](../examples/failing/30-dependent-inner.hoon) is this
+document.
 
 ### Generated functions (`quiz-fun`)
 

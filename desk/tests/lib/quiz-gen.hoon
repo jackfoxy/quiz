@@ -262,6 +262,31 @@
     (expect-eq !>(7) !>((regen:gen make outer seed size `7)))
   ==
 ::
+++  test-dependent
+  ::  The helper's norn, shrinker, alts and accessor match the raw API.
+  ^-  tang
+  =/  values  |=(n=@ud (list-of:gen 1 n (range:gen 0 99)))
+  =/  outer  (range:gen 1 20)
+  =/  inner  (shrink-list:gen shrink-atom:gen)
+  =/  dep
+    %:  dependent:gen  @ud  (list @ud)
+      outer  (shrink-toward:gen 1)  values  inner
+    ==
+  =/  raw-shrink  (shrink-seeded:gen (shrink-toward:gen 1) values inner)
+  =/  made  (draws 20 10 0v1 norn:dep)
+  =/  sam  ;;([@ud @uv @ud (unit (list @ud))] (snag 3 made))
+  =/  [bound=@ud seed=@uv size=@ud pin=(unit (list @ud))]  sam
+  =/  pinned  [bound 0v0 size [~ `(list @ud)`~[5]]]
+  ;:  weld
+    (expect-eq !>(made) !>((draws 20 10 0v1 (seeded:gen outer))))
+    (expect-eq !>(`(list *)`(raw-shrink sam)) !>(`(list *)`(shrink:dep sam)))
+    %+  expect-eq  !>(`(list *)`(raw-shrink sam))
+    !>(`(list *)`(turn (alts:dep !>(sam)) tail))
+    %+  expect-eq  !>([bound (regen:gen values bound seed size pin)])
+    !>((both:dep sam))
+    (expect-eq !>([bound ~[5]]) !>((both:dep pinned)))
+  ==
+::
 ++  test-size-combinators
   ::  upto draws from [0, size], so its largest draw shows the size used.
   ^-  tang

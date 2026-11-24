@@ -128,7 +128,7 @@ for (const [root, name, outcome, why] of examples) {
     }
     if (name === '30-dependent-inner') {
       // The bound stops at 1; the pinned dependent list shrinks to ~[90].
-      expect(got.outcome.evidence.shrunk.text).toBe('[bound=1 seed=0v0 size=0 pin=[~ ~[90]]]');
+      expect(got.outcome.evidence.shrunk.text).toBe('raw=[value=1 seed=0v0 size=0 pin=[~ ~[90]]]');
       expect(got.counts).toMatchObject({'shrink-tried':24, 'shrink-steps':5});
     }
     if (name === '31-float-associativity') {

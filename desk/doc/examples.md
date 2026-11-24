@@ -44,7 +44,7 @@ settings, not universal outcomes of similar-looking properties.
 | [27-timeout-fail](../examples/props/27-timeout-fail.hoon) | Failed, timeout; shrinks to `n=11` | `on-timeout %fail`: a fate that never returns is a `%timeout` failure, shrunk to the smallest hanging input. Needs a short call limit; each hanging candidate costs it |
 | [28-confident-coverage](../examples/props/28-confident-coverage.hoon) | Passed, 800 accepted; heads 377 | `++cover [%confident …]`: undecided at 100, 200 and 400 checks, covered at 800 by the Wilson lower bound |
 | [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
-| [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
+| [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `dependent`, which bundles `seeded` and `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
 | [31-float-associativity](../examples/failing/31-float-associativity.hoon) | Failed, false; `[a=.~-1.2 b=.~-1 c=.~1]` | Sized `real` and `shrink-real`: float addition is not associative; the shrunk triple has short decimals |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
@@ -154,9 +154,11 @@ the deleted key first, `shrink-equal` replaces every copy of a value at once
 and reaches `[~[1 0 2] 1]`: delete the root of a three-key tree.
 
 `30-dependent-inner` regenerates a list of at most `bound` values from the
-seed; the false claim is that every value is below 90. `shrink-seeded` lowers
-the bound to 1, rebuilding the list each time, then shrinks the list itself and
-pins it: the run ends at `pin=[~ ~[90]]`, with the seed cleared.
+seed; the false claim is that every value is below 90. It builds its norn,
+alts and sample mold with `dependent`; 20 writes the same parts out by hand.
+`shrink-seeded` lowers the bound to 1, rebuilding the list each time, then
+shrinks the list itself and pins it: the run ends at
+`raw=[value=1 seed=0v0 size=0 pin=[~ ~[90]]]`, with the seed cleared.
 
 `31-float-associativity` claims `(a + b) + c` equals `a + (b + c)` for three
 doubles from the sized `real`. Small whole numbers and fractions add exactly,

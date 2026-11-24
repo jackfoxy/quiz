@@ -607,6 +607,51 @@
     (turn (inner current) |=(v=_+<.inner `_sam`[value 0v0 size `v]))
   (weld (weld moved halved) pinned)
 ::
+++  dependent
+  ::  A ++seeded document in one place: molds for the outer and dependent
+  ::  values, the outer generator and shrinker, the gate from an outer
+  ::  value to the dependent generator, and the dependent shrinker. The
+  ::  molds name the sample's types, as for ++set-of, so it renders
+  ::  without the shrinkers' faces. Arms: `sample`, the fate's sample
+  ::  mold; `norn`; `shrink`, the typed shrinker; `alts`, ready for ++alts;
+  ::  and `both`, a sample to its outer and dependent values.
+  ::
+  ::  Usage:
+  ::    ++  dep
+  ::      %:  dependent:gen  @ud  (list @ud)
+  ::        outer  outer-shrink  make  inner-shrink
+  ::      ==
+  ::    ++  norn  norn:dep
+  ::    ++  alts  alts:dep
+  ::    ++  fate
+  ::      |=  raw=sample:dep
+  ::      =/  [bound=@ud items=(list @ud)]  (both:dep raw)
+  ::      …
+  |*  $:  outer-kind=mold
+          inner-kind=mold
+          outer=$-([@ud _og] *)
+          outer-shrink=$-(* (list))
+          make=$-(* $-([@ud _og] *))
+          inner-shrink=$-(* (list))
+      ==
+  |%
+  +$  sample
+    [value=outer-kind seed=@uv size=@ud pin=(unit inner-kind)]
+  ::
+  ++  norn
+    ^-  $-([@ud _og] sample)
+    (seeded outer)
+  ::
+  ++  shrink  (shrink-seeded outer-shrink make inner-shrink)
+  ::
+  ++  alts  (alts-of sample shrink)
+  ::
+  ++  both
+    |=  sam=sample
+    ^-  [outer-kind inner-kind]
+    [value.sam (regen make value.sam seed.sam size.sam pin.sam)]
+  --
+::
 ::  +|  Adaptor
 ::
 ++  alts-of

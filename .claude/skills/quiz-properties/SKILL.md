@@ -168,8 +168,11 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
   subject into the sample vase and hits `%sample-bytes`.
 - Dependent inputs: `seeded`, then `(regen make value seed size pin)` in the
   fate, with `(shrink-seeded outer make inner)`, which also shrinks and pins
-  the dependent value ([20-dependent](../../../desk/examples/failing/20-dependent.hoon),
-  [30-dependent-inner](../../../desk/examples/failing/30-dependent-inner.hoon)).
+  the dependent value ([20-dependent](../../../desk/examples/failing/20-dependent.hoon)).
+  `(dependent outer-mold inner-mold outer outer-shrink make inner-shrink)`
+  bundles them: use `norn:dep`, `alts:dep`, `sample:dep` as the fate's
+  sample, and `(both:dep raw)` for `[outer dependent]`
+  ([30-dependent-inner](../../../desk/examples/failing/30-dependent-inner.hoon)).
 
 API: [app generator library](../../../desk/doc/reference.md#app-generator-library-quiz-gen).
 

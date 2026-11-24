@@ -429,7 +429,7 @@ The following are Quiz applications of general property-testing techniques;
 | Readable failures | `13-expected-actual` uses `same` and `note`, so the run shows the expected and actual values, not just `false`. |
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
-| Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. `30-dependent-inner` also shrinks the dependent value itself, pinned in the sample. |
+| Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. `30-dependent-inner` also shrinks the dependent value itself, pinned in the sample, and builds its arms with the `dependent` helper. |
 | Floats | `31-float-associativity` shows that float addition is not associative. The sized `real` starts with exact small values; `shrink-real` keeps every candidate finite and ends at short decimals. The default shrinker treats a float as a raw atom ([limitations](limitations.md)). |
 | Related values | `29-bst-coordinated` shrinks equal keys together with `shrink-equal`, so a key that must stay in the tree shrinks with its copy. |
 | Small domains | `21-small-domain-allow` checks De Morgan's law over two loobeans. Only four samples exist; `duplicates %allow` evaluates repeats, so 100 checks pass and the labels show every case. |
