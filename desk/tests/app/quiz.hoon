@@ -641,16 +641,20 @@
   =/  s  (running 2 0)
   =.  a  a(state s(timer `[10 now:bol], next-token.saved 11))
   =/  error=(unit tang)  `~[leaf+"aborted"]
-  =/  got  (on-arvo.a /quiz/tick/10 [%behn %wake error])
-  =/  next  state:+.got
-  =/  rec  (get-record next 1)
+  ::  The error wake only notes the abort and asks for the judging wake.
+  =/  noted  (on-arvo.a /quiz/tick/10 [%behn %wake error])
   =/  wake=card:agent:gall
     [%pass /quiz/tick/11 %arvo %b %wait (add now:bol (div ~s1 100))]
+  =/  got  (on-arvo:+.noted /quiz/tick/11 [%behn %wake ~])
+  =/  next  state:+.got
+  =/  rec  (get-record next 1)
   ;:  weld
+    (expect !>(=(~ result:(get-record state:+.noted 1))))
+    (expect !>(=(wake (rear -.noted))))
     (expect !>(?=([~ %interrupted %running ~ ~] result.rec)))
     (expect !>(=(%queued status:(get-record next 2))))
-    (expect-eq !>(11) !>(token:(need timer.next)))
-    (expect !>(=(wake (rear -.got))))
+    (expect-eq !>(12) !>(token:(need timer.next)))
+    (expect !>(=(~ aborted.next)))
   ==
 ::
 ++  test-tick-finishes-before-starting
@@ -817,20 +821,30 @@
   ==
 ::
 ++  test-error-wake-measures-spent
-  ::  The agent times an abort from the tick's wake to the error wake.
+  ::  An error wake carries the aborted event's own `now`, so the agent
+  ::  notes when the tick was due and judges on the next wake, timed from
+  ::  there: a full call limit is a timeout, less is an interrupt.
   ^-  tang
   =/  a  ~(. agent bol)
   =/  error=(unit tang)  `~[leaf+"aborted"]
   =/  s  (stored %discard)
-  =/  limit  call-time:engine
-  =/  hung  a(state s(timer `[10 (sub now:bol limit)], next-token.saved 11))
-  =/  quick  a(state s(timer `[10 now:bol], next-token.saved 11))
-  =/  slow  (on-arvo.hung /quiz/tick/10 [%behn %wake error])
-  =/  fast  (on-arvo.quick /quiz/tick/10 [%behn %wake error])
-  =/  quick-rec  (get-record state:+.fast 1)
+  =/  begun  a(state s(timer `[10 now:bol], next-token.saved 11))
+  =/  held  state:+:(on-arvo.begun /quiz/tick/10 [%behn %wake error])
+  =/  wake  /quiz/tick/(scot %ud token:(need timer.held))
+  =/  after
+    |=  gap=@dr
+    ^-  record:app
+    =/  later  bol
+    =.  now.later  (add now:bol gap)
+    =/  b  ~(. agent later)
+    (get-record state:+:(on-arvo:b(state held) wake [%behn %wake ~]) 1)
+  =/  slow  (after call-time:engine)
+  =/  quick  (after ~s1)
   ;:  weld
-    (expect !>(=(%running status:(get-record state:+.slow 1))))
-    (expect !>(?=([~ %interrupted %running ~ ~] result.quick-rec)))
+    (expect-eq !>(`now:bol) !>(aborted.held))
+    (expect !>(=(~ result:(get-record held 1))))
+    (expect !>(=(%running status.slow)))
+    (expect !>(?=([~ %interrupted %running ~ ~] result.quick)))
   ==
 ::
 ++  test-interrupt-without-pending-unchanged

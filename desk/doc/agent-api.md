@@ -155,8 +155,8 @@ Under a property's `on-timeout` policy (`%fail` or `%discard`), a fate that
 exceeds the call limit is handled as a sample outcome, not an interruption;
 see [the timeout policy](reference.md#timeout-policy-on-timeout). An abort is
 taken as a timeout only when the time from the tick's scheduled wake to the
-error wake is at least the call limit; a shorter one was Ctrl-C or loom
-exhaustion. Everything below applies to all other aborts and to the default
+wake after the error wake is at least the call limit; a shorter one was Ctrl-C
+or loom exhaustion. Everything below applies to all other aborts and to the default
 `%interrupt` policy.
 
 Every fate, norn, alts and sample-rendering call runs under a Vere `%jinx`
@@ -168,8 +168,12 @@ cannot catch it. The same happens when the operator presses Ctrl-C in the Vere
 terminal, or when the computation exhausts the ship's memory (loom).
 
 The aborted event rolls back. Vere then delivers the tick's Behn wake again,
-this time with an error: `[%behn %wake [~ tang]]`. On that error wake `%quiz`
-finishes the job that tick was working on as:
+this time with an error: `[%behn %wake [~ tang]]`. Vere replays it as a
+`%crud` with the aborted event's own `now`, and its tang is only the Gall
+stack, so the error wake can tell neither the cause nor how long the event
+ran. `%quiz` therefore only records when the aborted tick was due and asks for
+another wake. On that wake, whose `now` is fresh, it finishes the job that
+tick was working on as:
 
 ```hoon
 [%interrupted during=?(%building %running %shrinking) proof=(unit evidence) arm=(unit term)]

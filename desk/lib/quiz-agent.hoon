@@ -144,6 +144,7 @@
           ==
         =/  active  active.next
         =/  needs-wake
+          ?:  !=(~ aborted.next)  &
           ?~  active  !=(~ queue.saved.next)
           =/  rec  (~(got by records.saved.next) id.u.active)
           |(=(%cancelling status.rec) =(~ build-token.next))
@@ -271,9 +272,18 @@
     ?.  ?=([%behn %wake *] sign-arvo)  `this
     =/  next=state:job  state(timer ~)
     ::  An error wake means the runtime aborted this tick's previous event.
+    ::  Vere replays that event as a %crud with its own `now`, so how long
+    ::  it ran is unknown here. Note when the tick was due and judge on the
+    ::  next wake, whose `now` is fresh; an unjudged abort keeps its time.
     ?^  +>.sign-arvo
-      =/  late=?  (gth now.bowl when.u.timer)
-      =/  spent=@dr  ?:(late (sub now.bowl when.u.timer) ~s0)
+      =/  began  (fall aborted.next when.u.timer)
+      (publish:ops saved.state next(aborted `began) ~)
+    ::  The wake after an abort judges it. The span from the aborted tick's
+    ::  due time is at least that event's run time.
+    =/  held  aborted.next
+    ?^  held
+      =/  spent  (sub now.bowl (min now.bowl u.held))
+      =.  next  next(aborted ~)
       (publish:ops saved.state (interrupt:job next now.bowl spent) ~)
     ::  One kind of work per tick, so an aborted tick has one culprit:
     ::  a slice of the active job, or the start of the next queued job.

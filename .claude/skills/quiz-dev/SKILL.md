@@ -122,7 +122,10 @@ agent does this.
 CPU limit (Settings: property call 10 s, draft build 30 s, suite arm 1 min
 by default). Wait, or press
 Ctrl-C in the Vere terminal: the terminal prints `recover: dig: alrm`,
-`intr` or `meme`, and the run ends `%interrupted`. A Clay build of a saved
+`intr` or `meme`, and the run ends `%interrupted`. On Vere 4.6 every `alrm`
+is followed by a `meme`, and rarely the serf dies (`loom: strange guard`);
+restart the pier. An error wake carries the aborted event's own `now`, so
+`%quiz` times an abort on the wake after it. A Clay build of a saved
 file or suite has no CPU limit; use Ctrl-C. Only run experiments on a
 disposable ship.
 

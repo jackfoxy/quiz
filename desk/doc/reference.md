@@ -749,10 +749,13 @@ stored on the last permitted attempt is still evaluated before any budget
 ends the run, so the outcome and counters match `%interrupt` when nothing
 hangs.
 
-The runtime does not report why it aborted a tick. `%quiz` applies the policy
-only when the aborted tick ran, by wall clock, at least the call limit; CPU
-time never exceeds wall time, so a shorter abort was Ctrl-C or loom
-exhaustion, and the run ends `%interrupted`. A Ctrl-C pressed after the call
+The runtime does not report why it aborted a tick, and its error wake carries
+the aborted event's own `now`. `%quiz` judges the abort on the following wake:
+it applies the policy only when the span from the aborted tick's due time to
+that wake is at least the call limit. CPU time never exceeds wall time, so a
+shorter abort was Ctrl-C or loom exhaustion, and the run ends `%interrupted`.
+Other events queued before the aborted tick lengthen the span, so a Ctrl-C
+close to the limit may be taken as a timeout. A Ctrl-C pressed after the call
 limit has elapsed cannot be told apart from a timeout and is handled by the
 policy. Each timed-out
 sample or candidate costs a full call limit (10 s by default), so set a short

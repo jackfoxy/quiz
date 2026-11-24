@@ -26,12 +26,14 @@
       timer=(unit [token=@ud when=@da])
       build-token=(unit @ud)
       =pace
+      ::  When an aborted tick began, until the next wake judges the abort.
+      aborted=(unit @da)
   ==
 ::
 ++  initial
   ::  No runs or jobs; ids and tokens start at 1; default timeouts.
   ^-  state
-  [[1 1 ~ ~ ~ default-timeouts] ~ ~ ~ *pace]
+  [[1 1 ~ ~ ~ default-timeouts] ~ ~ ~ *pace ~]
 ::
 ++  queue-max  100
 ::
@@ -277,7 +279,8 @@
     |=  rec=record:app
     ?:  =(%done status.rec)  rec
     rec(status %done, result `[%cancelled %reload], updated now, finished `now)
-  (retain [saved(queue ~) ~ ~ ~ *pace] retained-runs.bounds:defaults:engine)
+  =/  fresh=state  [saved(queue ~) ~ ~ ~ *pace ~]
+  (retain fresh retained-runs.bounds:defaults:engine)
 ::
 ++  persist-evidence
   ::  Drop type information; the engine rendered each kept sample once.
