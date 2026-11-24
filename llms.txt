@@ -33,6 +33,7 @@
 - [Property combinators](desk/lib/quiz-prop.hoon): reports, labels, coverage
 - [Generator library](desk/lib/quiz-gen.hoon): generators, size combinators, shrinkers, alts adaptor
 - [Function library](desk/lib/quiz-fun.hoon): generated, shrinkable, printable functions
+- [Type-directed defaults](desk/lib/quiz-auto.hoon): default fill and sink from the sample's type
 - [Agent harness](desk/lib/quiz-harness.hoon): pure model-based testing of a Gall agent's door
 - [Job lifecycle](desk/lib/quiz-job.hoon) and [Gall adapter](desk/lib/quiz-agent.hoon)
 - [Web agent](desk/lib/quiz-web-agent.hoon) and [workbench config](desk/lib/quiz-web.hoon)

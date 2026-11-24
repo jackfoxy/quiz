@@ -20,6 +20,7 @@ a bowl.
 | --- | --- | --- |
 | Generation, classification, counters, shrinking, limits | `lib/quiz-engine.hoon` (bump `++version`) | `tests/lib/quiz-engine.hoon`, `tests/lib/quiz-shrink.hoon` |
 | Report combinators (`quiz-prop`): notes, expected/actual, labels | `lib/quiz-prop.hoon` (report type lives in the engine) | `tests/lib/quiz-prop.hoon`, `tests/lib/quiz-engine.hoon` |
+| Default generation and shrinking from the sample type (`quiz-auto`) | `lib/quiz-auto.hoon`; engine semantics, so bump `++version`; keep legacy parity for plain types | `tests/lib/quiz-auto.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generators and shrinkers (`quiz-gen`) | `lib/quiz-gen.hoon`; no engine change, no version bump | `tests/lib/quiz-gen.hoon`, `tests/lib/quiz-examples.hoon` |
 | Agent harness (`quiz-harness`) | `lib/quiz-harness.hoon`, `fixtures/quiz-harness/`; no engine change | `tests/lib/quiz-harness.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generated functions (`quiz-fun`) | `lib/quiz-fun.hoon`; no engine change, no version bump | `tests/lib/quiz-fun.hoon`, `tests/lib/quiz-examples.hoon` |
@@ -123,8 +124,12 @@ CPU limit (Settings: property call 10 s, draft build 30 s, suite arm 1 min
 by default). Wait, or press
 Ctrl-C in the Vere terminal: the terminal prints `recover: dig: alrm`,
 `intr` or `meme`, and the run ends `%interrupted`. On Vere 4.6 every `alrm`
-is followed by a `meme`, and rarely the serf dies (`loom: strange guard`);
-restart the pier. An error wake carries the aborted event's own `now`, so
+is followed by a `meme`, and the serf can die (`loom: strange guard` or
+`pier: serf unexpectedly shut down`); restart the pier. With a 2 GB loom it
+died on every `%discard` hanging-sample run once the engine grew to include
+`quiz-auto`; boot test ships with `--loom 32`. A pier whose queue still holds
+the hanging job can die again on boot; restart until it stays up, then reset
+the call limit in Settings. An error wake carries the aborted event's own `now`, so
 `%quiz` times an abort on the wake after it. A Clay build of a saved
 file or suite has no CPU limit; use Ctrl-C. Only run experiments on a
 disposable ship.

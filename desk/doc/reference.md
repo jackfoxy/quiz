@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-10`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-11`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -143,13 +143,19 @@ these examples.
 
 ### Default generation, size and duplicates
 
-The app reuses the frozen library's `fill`, `split-rng`, norns and default
-`sink`, while owning execution and counters. `fill` handles `%noun`, atoms,
-cells, faces, forks, hints and holds. Singleton atoms retain their value;
-non-singleton atoms ignore aura. Fork alternatives are chosen from the type's
-set. Holds are resolved through type operations. Other type forms warn and
-return the supplied vase unchanged. This is heuristic generation, not a
-promise that arbitrary gates, cores or semantic domains can be randomized.
+Without `++norn` the app fills the sample with
+[`quiz-auto`](#type-directed-defaults-quiz-auto)'s `fill`; without `++alts`
+it shrinks with `quiz-auto`'s `sink`. Both follow the frozen library's rules
+and add type-directed cases. `fill` handles `%noun`, atoms, cells, faces,
+forks, hints and holds, and draws from the RNG exactly as the frozen `fill`
+does. Singleton atoms retain their value. A non-singleton atom gets a valid
+value for an aura with a meaning, and otherwise legacy's uniform draw below
+size. Fork alternatives are chosen from the type's set. Holds are expanded
+through type operations, and lists, units, sets and maps are recognized and
+built as containers. Other type forms, such as cores, return the supplied
+vase unchanged. This is heuristic generation, not a promise that arbitrary
+gates, cores or semantic domains can be randomized. The legacy runner keeps
+the frozen `fill` and `sink`.
 
 Both runners grow size after each generated sample:
 
@@ -191,7 +197,8 @@ policy; decreasing weight alone guarantees termination.
 [`tests/lib/quiz-norns.hoon`](../tests/lib/quiz-norns.hoon) and
 [`tests/lib/quiz-sink.hoon`](../tests/lib/quiz-sink.hoon) pin these facts
 with fixed seeds. They describe the frozen library; they are not guarantees
-beyond it.
+beyond it. The app's default differs for meaningful auras, containers and
+unions: see [type-directed defaults](#type-directed-defaults-quiz-auto).
 
 | Facet | Measured behaviour |
 | --- | --- |
@@ -204,7 +211,7 @@ beyond it.
 | `fill` on a union | Each branch is equally likely; `(unit a)` yields both `~` and values |
 | Small domains | A `?` sample yields at most two accepted checks before duplicates exhaust the run, unless the app conf sets `duplicates %allow` |
 | Default `sink` | An atom `n` gives `n/2` and `n-1`; a cell shrinks its children; a noun cell gives its two subtrees; every candidate weighs less than its parent |
-| `sink` on lists and unions | Nothing: a list's type is a fork. Write `alts` for lists, as in [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) |
+| `sink` on lists and unions | Nothing: a list's type is a fork. The app's `quiz-auto` default shrinks both; with the legacy library, write `alts` for lists, as in [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) |
 
 ### App and legacy semantics compared
 
@@ -219,6 +226,8 @@ beyond it.
 | Fate false/crash/scry | All become failure with no structured distinction | `%false`, `%crash`, `%scry` remain distinct |
 | Unexpected fate product | Assertion failure in the legacy check loop | `%bad-product` classification; document builder normally rejects its type earlier |
 | Generator/shrinker error | May escape the check loop | `%error` with stage and reason, or a diagnostic byte limit |
+| Default generation | Frozen `fill`: auras ignored, containers filled as plain unions | `quiz-auto`'s `fill`: the same draws for plain types; valid values for meaningful auras; lists, units, sets and maps as containers |
+| Default shrinking | Frozen `sink`: atoms and cells only; nothing for lists, unions or holds; floats as raw atoms | `quiz-auto`'s `sink`: the same for plain atoms and cells; text, ships, signed numbers and floats by meaning; containers, unions and holds by type |
 | Shrinking | Unbounded; false/crash categories interchangeable | Bounded, decreasing weight, same failure category |
 | Failure evidence | Final shrunk vase only | Original and best shrunk sample, source/config/seed |
 | Persistence | Caller-owned | Recorded history and exact property replay |
@@ -348,6 +357,70 @@ shrinkers' faces: `raw=[value=1 seed=0v0 size=0 pin=[~ ~[90]]]`.
 [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) is this
 document.
 
+### Type-directed defaults (`quiz-auto`)
+
+[`quiz-auto`](../lib/quiz-auto.hoon) (`/+ auto=quiz-auto`) is the app's
+default generator and shrinker: the engine uses `fill` when a document has no
+`++norn` and `sink` when it has no `++alts`. Both read the fate's sample type.
+Executable model:
+[34-typed-defaults](../examples/failing/34-typed-defaults.hoon).
+
+**Plain types are unchanged.** For `@ud` and other atoms without a meaningful
+aura, loobeans, cells, faces, hints, plain unions and `*`, `fill` draws from
+the RNG exactly as the frozen `fill` does (a `*` sample is filled by the
+frozen `fill` itself), and `sink` offers the frozen `sink`'s candidates.
+[`tests/lib/quiz-auto.hoon`](../tests/lib/quiz-auto.hoon) pins this parity.
+Example counters recorded before the change are unchanged.
+
+**Auras with a meaning** get valid values from `quiz-gen` and shrink by that
+meaning:
+
+| Aura | `fill` | `sink` |
+| --- | --- | --- |
+| `@t`, `@ta`, `@tas` | `cord`, `knot`, `term` | Delete characters, then turn a character above `a` into `a`; `@ta` and `@tas` stay valid, `@tas` nonempty |
+| `@tD` | A printable character | Toward `a` |
+| `@p` | `ship` | `shrink-atom`, toward `~zod` |
+| `@da`, `@dr` | `date`, `span` | As legacy: `n/2`, `n-1` |
+| `@s`, `@sd` | `signed` | Smaller magnitudes with the same sign |
+| `@rd`, `@rs` | Sized `real`, `real-single` | `shrink-real`, `shrink-real-single`; never NaN |
+
+**Containers** are recognized from the type, not by molding: a hold is
+expanded, and its expansion is compared with each shape.
+
+| Shape | Recognized as | `fill` | `sink` |
+| --- | --- | --- | --- |
+| List | A fork of `~` and `[i=a t=…]` whose `t` is the same hold | `list-of`, 0 to `container-max` (20) elements | `shrink-list`, each element by its type |
+| Unit | A fork of `~` and `[~ u=a]` | `unit-of` | `~`, then smaller inner values |
+| Set | A fork of `~` and `[n=a l=… r=…]` with equal `l` and `r` | Up to 20 elements | Through the element list, rebuilt with `silt` |
+| Map | A set whose `n` is `[p=k q=v]` | Up to 20 entries; duplicate keys collapse | Through the entry list, keys then values, rebuilt with `malt` |
+
+A set of pairs has a map's type, so it is generated as a map, which is still
+a valid set.
+
+**Unions** shrink within the branch the value is in. The branch is found by
+checking atoms, constants and cell heads a few levels deep; deeper parts are
+assumed to fit. A hold is expanded and shrunk as its expansion. A `*` sample
+shrinks to its subtrees and smaller atoms; the frozen `sink` gave it nothing,
+because frozen `fill` types its noun so that `sink` does not match it.
+
+Every candidate keeps the sample's type, and the engine's usual rules apply:
+only a lighter candidate with the same failure category is accepted.
+
+| Arm | Meaning |
+| --- | --- |
+| `(fill size rng sample)` | A sample of the vase's type |
+| `sink` | `vase` → `(list vase)`; usable directly as `++alts` |
+| `(smaller type noun)` | The candidate nouns behind `sink` |
+| `(shape-of hold expansion)`, `expand` | Container recognition |
+| `container-max` | Most elements a default container holds (20) |
+
+A document can add its own candidates to the defaults:
+
+```hoon
+/+  auto=quiz-auto
+++  alts  |=(v=vase (weld (sink:auto v) (custom v)))
+```
+
 ### Generated functions (`quiz-fun`)
 
 [`quiz-fun`](../lib/quiz-fun.hoon) (`/+ fun=quiz-fun`) generates functions
@@ -451,14 +524,20 @@ how many candidates the engine considers cannot stop one call that never
 returns; that call hits the property call limit and the run ends
 `%interrupted`.
 
-The default `sink` tries halving and decrementing nonzero atoms, subtrees for
-noun cells, and combinations of cell component candidates. It preserves
-faces/hints while recursing. Singleton atoms do not shrink. Unhandled types,
-including fork/hold wrappers at this stage, produce no candidates. List
-shrinking is therefore not a general list-minimization algorithm. A float is
-an atom to `sink`, so it halves and decrements the bit pattern: a negative
-double can reach NaN (`-0` minus one is all ones) or a huge positive value.
-Use `shrink-real` or `shrink-real-single` in `++alts` for floats.
+The app's default is `quiz-auto`'s `sink`
+([type-directed defaults](#type-directed-defaults-quiz-auto)). For plain
+atoms and cells it matches the frozen `sink`: halving and decrementing
+nonzero atoms, subtrees for noun cells, and combinations of cell component
+candidates, preserving faces and hints. Singleton atoms do not shrink. It
+also shrinks text, ships, signed numbers and floats by their meaning, lists,
+units, sets and maps as containers, a union within the branch its value is
+in, and holds by expanding them.
+
+The frozen library's `sink`, used by the legacy runner, produces no
+candidates for forks and holds, so it does not shrink lists or unions. It
+treats a float as an atom, halving and decrementing the bit pattern: a
+negative double can reach NaN (`-0` minus one is all ones) or a huge positive
+value.
 
 The app accepts a candidate only when its mug is new (whatever the duplicates
 policy), its noun weight strictly
@@ -882,6 +961,7 @@ already checked parts/configuration and own scheduling and persistence.
 | [quiz-harness](../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
 | [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |
 | [quiz-gen](../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
+| [quiz-auto](../lib/quiz-auto.hoon) | Type-directed default `fill` and `sink` used by the engine without `++norn`/`++alts`; `smaller`, `shape-of`, `expand`; legacy RNG use for plain types |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
 | [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `refuse` checks a record without parsing; `resolve` checks context before rebuilding |

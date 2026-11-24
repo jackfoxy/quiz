@@ -4,6 +4,11 @@ Install with `npm ci` and `npx playwright install chromium`. Boot a disposable
 fake ship, install the packaged `%quiz` and `%quiz-web`, and commit `desk/`
 to its `%quiz` desk. Never run mutation checks on a production ship.
 
+Boot it with a 4 GB loom (`<vere> zod --loom 32`). The hanging-sample specs
+abort events with `%jinx`. On Vere 4.6 each abort is followed by a `meme`,
+and with the default 2 GB loom the serf died on every `%discard` run once
+the engine also carried `quiz-auto`; with `--loom 32` it passes.
+
 ```
 QUIZ_URL=http://127.0.0.1:18881 npm run test:doubles
 QUIZ_URL=http://127.0.0.1:18881 QUIZ_CODE=<fake-ship-code> npm run test:browser
@@ -36,7 +41,7 @@ history is retained on the disposable ship for inspection.
 Run/replay HTTP replies now carry their correlated decimal `id`; configuration
 inspection uses `document-conf`. See `desk/doc/http-api.md` for both contracts.
 
-`examples.spec.js` runs all thirty-three property documents and the three existing
+`examples.spec.js` runs all thirty-four property documents and the three existing
 suites through the real UI, checks their expected outcomes and readonly roots,
 and repeats the seeded threshold with exact replay. Each case writes a
 `run.json` artifact under its test-results directory. No teaching failure is

@@ -25,6 +25,7 @@
 /*  floats  %hoon  /examples/failing/31-float-associativity/hoon
 /*  expiry-src  %hoon  /examples/props/32-expiry-agent/hoon
 /*  expiry-bug-src  %hoon  /examples/failing/33-expiry-agent-bug/hoon
+/*  typed  %hoon  /examples/failing/34-typed-defaults/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -357,5 +358,17 @@
   ;:  weld
     (expect-eq !>(`counters:engine`[9 6 0 2 56 7]) !>(counts.done))
     (expect-eq !>(`*`want) !>(q.shrunk.result))
+  ==
+::
+++  test-typed-defaults
+  ::  No norn or alts: the list is recognized and shrinks to three %a tags.
+  ^-  tang
+  =/  path=path  /examples/failing/'34-typed-defaults'/hoon
+  =/  done  (run path typed ~[!>(engine)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  ;:  weld
+    (expect-eq !>(`counters:engine`[3 2 0 0 44 8]) !>(counts.done))
+    (expect-eq !>(`*`['' ~[%a %a %a]]) !>(q.shrunk.result))
   ==
 --

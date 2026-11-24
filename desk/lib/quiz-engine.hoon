@@ -1,4 +1,4 @@
-/+  legacy=quiz
+/+  legacy=quiz, auto=quiz-auto
 |%
   ::  Resumable app engine. The legacy runner remains frozen.
   ::  One step generates at most one sample and evaluates at most one fate.
@@ -165,7 +165,7 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-10
+  %quiz-engine-11
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
@@ -233,13 +233,13 @@
 ::
 ++  generate
   ::  Both default fill and the custom norn execute inside the same sandbox.
+  ::  The default is quiz-auto's type-directed fill.
   |=  [time=@dr size=@ud rng=_og sample=vase custom=(unit vase)]
   ^-  toon
   =/  maker
     |=  [size=@ud rng=_og sample=vase custom=(unit vase)]
     ^-  vase
-    ?~  custom
-      (~(fill quiz:legacy [size rng]) sample)
+    ?~  custom  (fill:auto size rng sample)
     [p.sample (slum q.u.custom [size rng])]
   (sandbox time maker [size rng sample custom])
 ::
@@ -636,7 +636,8 @@
   +((add $(value -.value) $(value +.value)))
 ::
 ++  alternatives
-  ::  Default/custom alts and product validation share the refusing sandbox.
+  ::  Default (quiz-auto) and custom alts and product validation share the
+  ::  refusing sandbox.
   ::  Only the list of cells is checked: molding each candidate's type with
   ::  `vase` walks recursive types such as `(list @ud)` through their whole
   ::  subject. A bad type crashes later, inside ++show's sandbox.
@@ -645,7 +646,7 @@
   =/  maker
     |=  [sam=vase custom=(unit vase)]
     ^-  (list [* *])
-    ?~  custom  (sink:legacy sam)
+    ?~  custom  (sink:auto sam)
     ;;((list [* *]) (slum q.u.custom sam))
   (sandbox time maker [sam custom])
 ::

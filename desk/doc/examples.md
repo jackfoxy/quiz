@@ -12,7 +12,7 @@ the duplicate example requests two and intentionally reaches its small budget,
 and the queue models, coverage, generator-library, size and function
 examples request 100.
 The results below were checked through the browser/Gall application on
-`%zuse 408`, engine `%quiz-engine-5`. They describe these exact sources and
+`%zuse 408`, engine `%quiz-engine-11`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
 
 | Document | Expected outcome | What it demonstrates |
@@ -48,6 +48,7 @@ settings, not universal outcomes of similar-looking properties.
 | [31-float-associativity](../examples/failing/31-float-associativity.hoon) | Failed, false; `[a=.~-1.2 b=.~-1 c=.~1]` | Sized `real` and `shrink-real`: float addition is not associative; the shrunk triple has short decimals |
 | [32-expiry-agent](../examples/props/32-expiry-agent.hoon) | Passed, 100 accepted; 15 duplicates | Simulated behn clock: puts with a time to live and waits against an expiring key store |
 | [33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon) | Failed, false; two puts of `%a` and a wait | A re-put that does not `%rest` its old timer; the old wake deletes the new value early |
+| [34-typed-defaults](../examples/failing/34-typed-defaults.hoon) | Failed, false; `[name='' tags=~[%a %a %a]]` | No norn or alts: `quiz-auto` fills printable text and a list of terms from the sample's type and shrinks the list |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -168,7 +169,8 @@ so five samples pass; the sixth, `[a=.~-1.2 b=.~-2 c=.~6]`, rounds
 differently in the two orders. `shrink-real` moves each value toward zero, a
 whole number and fewer decimal places, and the run ends at
 `[a=.~-1.2 b=.~-1 c=.~1]`. The default shrinker
-would treat each double as a raw atom; see
+`quiz-auto`, the app's default without `++alts`, also uses `shrink-real`;
+the legacy library's shrinker would treat each double as a raw atom; see
 [limitations](limitations.md).
 
 `21-small-domain-allow` checks De Morgan's law for a `[? ?]` sample. Under
@@ -204,6 +206,14 @@ wake deletes the newer value early: the run ends at
 `{}`. Its alts is `shrink-list` over each operation, then, through
 `shrink-then`, every key renamed to `%a` at once: the failure needs two puts
 of one key, so moving one copy alone would lose it.
+
+`34-typed-defaults` has no `++norn` and no `++alts`. Its sample is
+`[name=@t tags=(list @tas)]`, and the false claim is that a record never has
+more than two tags. [`quiz-auto`](reference.md#type-directed-defaults-quiz-auto)
+reads the type: the name is printable text and the tags a list of valid
+terms, up to 20. Two samples pass and the third fails. The default shrinker
+recognizes the list, deletes tags, empties the name and lowers each term
+toward `%a`, ending at `[name='' tags=~[%a %a %a]]`.
 
 `23-map-fusion` and `24-filter-map-swap` generate their function arguments
 with `quiz-fun` and take `*` samples molded to
@@ -256,6 +266,7 @@ queue, report, coverage, generator-library, size and function rows in
 | 31-float-associativity | 6 | 5 | 0 | 0 | 33 | 4 | `[a=.~-1.2 b=.~-2 c=.~6]` → `[a=.~-1.2 b=.~-1 c=.~1]` |
 | 32-expiry-agent | 115 | 100 | 0 | 15 | 0 | 0 | — |
 | 33-expiry-agent-bug | 9 | 6 | 0 | 2 | 56 | 7 | `~[[%put %a 0 ~s1] [%put %a 0 ~s2] [%wait ~s1]]` (expected `{%a}`, actual `{}`) |
+| 34-typed-defaults | 3 | 2 | 0 | 0 | 44 | 8 | `[name='-]' tags=~[%vby %m0g6 %q7qa]]` → `[name='' tags=~[%a %a %a]]` |
 
 ## Existing suites
 

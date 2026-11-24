@@ -57,16 +57,21 @@ authoritative behavior and recovery guidance.
 - **The legacy generators are narrow and partial.** The legacy `list` norn
   yields at most `xeb(size)-1` elements, usually close to that, so short
   lists are rare late in a run. `atom`, `list` and `noun` crash at size 0,
-  and `freq` or `pick` crash on an empty or all-zero list. The default
-  `sink` offers nothing for lists or unions. Prefer the
+  and `freq` or `pick` crash on an empty or all-zero list. The legacy
+  library's `sink` offers nothing for lists or unions, and it treats a float
+  as a raw atom, so a negative double can shrink to NaN. The app's defaults
+  come from `quiz-auto` instead, which shrinks containers, unions and floats
+  by type. Prefer the
   [app generator library](reference.md#app-generator-library-quiz-gen),
   whose generators are total and whose `shrink-list` handles lists.
-- **The default shrinker treats floats as raw atoms.** Without `++alts`,
-  `sink` halves and decrements a float's bit pattern. A negative double can
-  shrink to NaN (`-0` minus one is all ones) or to a huge positive value, and
-  the engine accepts it when it fails the same way. Use `shrink-real` or
-  `shrink-real-single` from `quiz-gen`, as in
-  [31-float-associativity](../examples/failing/31-float-associativity.hoon).
+- **Type-directed defaults are heuristic.** Without `++norn` and `++alts`,
+  `quiz-auto` reads the sample's type: meaningful auras get valid values, and
+  lists, units, sets and maps are recognized by shape. It cannot know a
+  semantic domain (sorted lists, positive numbers, consistent records), it
+  holds at most 20 elements per container, and it finds a union's branch by
+  checking only atoms and the first few cell heads. Write a norn and alts
+  for anything more specific. See
+  [type-directed defaults](reference.md#type-directed-defaults-quiz-auto).
 - **Duplicates are skipped by mug unless you choose otherwise.** Under the
   default `%mug` policy a small domain such as `?` exhausts before a larger
   request, and a mug collision skips a distinct noun. Set `duplicates %allow`

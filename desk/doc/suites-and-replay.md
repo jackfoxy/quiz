@@ -74,7 +74,7 @@ Its `record` contains:
 | `source`, `source-hash` | Exact text and its `shax` digest |
 | `seed` | Resolved `@uv` seed, including an explicit zero |
 | `config` | Effective engine config after all overrides |
-| `engine-version` | `version:quiz-engine`, currently `%quiz-engine-10` |
+| `engine-version` | `version:quiz-engine`, currently `%quiz-engine-11` |
 
 `capture:replay [doc seed config]` validates and creates a record. Call it with
 the source and effective settings used by the original run. It stores no vases,

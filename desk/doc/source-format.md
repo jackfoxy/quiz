@@ -35,6 +35,13 @@ door comes from `/=  drive  /fixtures/quiz-harness/drive`, with
 `cover` and `expect` come from the
 document and are unaffected by Run-panel configuration overrides.
 
+A missing `norn` fills the sample from its type, and a missing `alts`
+shrinks it by type, with
+[`quiz-auto`](reference.md#type-directed-defaults-quiz-auto): meaningful
+auras get valid values, and lists, units, sets and maps are built and shrunk
+as containers. A document can extend the default shrinker with
+`/+  auto=quiz-auto` and `++alts  |=(v=vase (weld (sink:auto v) (custom v)))`.
+
 A missing `conf` uses `[~ defaults:quiz-engine]`. A null seed asks the caller to
 choose and record a seed; an explicit seed is replayable. No generator or
 shrinker uses ambient entropy. Configuration uses the full engine record; import

@@ -161,8 +161,8 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
   ([22-size-capped](../../../desk/examples/props/22-size-capped.hoon)).
 - `real` and `real-single` are sized (small whole numbers and fractions
   first); `real-bits` draws any finite double. Shrink floats with
-  `shrink-real`/`shrink-real-single`: the default `sink` halves a float's
-  bit pattern and can reach NaN
+  `shrink-real`/`shrink-real-single`; the app's default `sink` does too, but
+  the legacy library's halves a float's bit pattern and can reach NaN
   ([31-float-associativity](../../../desk/examples/failing/31-float-associativity.hoon)).
 - Spell sample types out (`ship=@p`, not `=ship`): a zuse mold carries its
   subject into the sample vase and hits `%sample-bytes`.
@@ -223,7 +223,17 @@ Things that go wrong:
 
 ## Alts and shrinking
 
-The default shrinker halves and decrements atoms and recurses into cells. The
+Without `++norn` or `++alts` the app uses `quiz-auto`'s type-directed
+defaults: valid values for meaningful auras (`@t`, `@ta`, `@tas`, `@p`, `@da`,
+`@dr`, `@sd`, `@rd`), and lists, units, sets and maps built and shrunk as
+containers, up to 20 elements; plain atoms and cells behave exactly as in the
+legacy library. Write a norn and alts when the domain is narrower than the
+type ([34-typed-defaults](../../../desk/examples/failing/34-typed-defaults.hoon),
+[reference](../../../desk/doc/reference.md#type-directed-defaults-quiz-auto)).
+
+The default shrinker halves and decrements plain atoms, recurses into cells,
+shrinks text, ships, signed numbers and floats by meaning, deletes elements
+of a recognized container, and shrinks a union inside its branch. The
 engine accepts a candidate only if its mug is new, its noun weight is strictly
 smaller, and it fails with the **same category**. `%.y` and `%drop` candidates
 are never accepted. The result is the smallest failure this shrinker found,
@@ -239,9 +249,9 @@ domain of positive even numbers, where halving gives odd values. Rules:
 
 Model: [09-custom-alts](../../../desk/examples/failing/09-custom-alts.hoon).
 
-The default shrinker offers nothing for a typed list, and for a `*` sample
-only the two subtrees of a cell; it never deletes one element. Use
-`quiz-gen`:
+The default shrinker deletes list elements only when the sample's type is a
+list; for a list hidden behind a `*` sample it offers just the two subtrees
+of a cell. It also cannot keep a precondition. Use `quiz-gen`:
 
 ```hoon
 ++  alts

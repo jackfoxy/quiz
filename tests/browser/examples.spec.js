@@ -34,6 +34,7 @@ const examples = [
   ['failing', '31-float-associativity', 'failed', 'false'],
   ['props', '32-expiry-agent', 'passed'],
   ['failing', '33-expiry-agent-bug', 'failed', 'false'],
+  ['failing', '34-typed-defaults', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -145,6 +146,11 @@ for (const [root, name, outcome, why] of examples) {
       // The first put's timer deletes the second put's value early.
       expect(got.counts).toMatchObject({attempted:9, accepted:6, duplicate:2, 'shrink-tried':56, 'shrink-steps':7});
       expect(got.outcome.evidence.why.detail.compared).toEqual({want:'{%a}', got:'{}'});
+    }
+    if (name === '34-typed-defaults') {
+      // No norn or alts: quiz-auto fills printable text and a list of terms.
+      expect(got.outcome.evidence.shrunk.text).toBe("[name='' tags=~[%a %a %a]]");
+      expect(got.counts).toMatchObject({attempted:3, accepted:2, 'shrink-tried':44, 'shrink-steps':8});
     }
     if (name === '21-small-domain-allow') {
       expect(got.config.duplicates).toBe('allow');

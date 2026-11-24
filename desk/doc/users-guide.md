@@ -216,6 +216,15 @@ length uniform in its bounds. `shrink-list` deletes chunks of elements before
 shrinking single values, which the legacy default shrinker cannot do. Note the
 comma in `,[(list @ud) @ud]`: `alts-of` needs a mold.
 
+Without `++norn` and `++alts`, the app's defaults read the sample's type
+([type-directed defaults](reference.md#type-directed-defaults-quiz-auto)):
+an `@t` is printable text, an `@tas` a valid term, an `@rd` a sized double,
+and a list, unit, set or map is built and shrunk as one.
+[34-typed-defaults](../examples/failing/34-typed-defaults.hoon) has neither
+arm; its sample `[name=@t tags=(list @tas)]` shrinks to
+`[name='' tags=~[%a %a %a]]`. Write a norn and alts when the domain is
+narrower than the type.
+
 Structural types alone do not express sortedness, positivity, valid dates or
 relationships between fields. Choose a generator for that semantic domain and
 keep the shrinker in the same domain. Bounded recursive generation should reduce
@@ -430,7 +439,8 @@ The following are Quiz applications of general property-testing techniques;
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
 | Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. `30-dependent-inner` also shrinks the dependent value itself, pinned in the sample, and builds its arms with the `dependent` helper. |
-| Floats | `31-float-associativity` shows that float addition is not associative. The sized `real` starts with exact small values; `shrink-real` keeps every candidate finite and ends at short decimals. The default shrinker treats a float as a raw atom ([limitations](limitations.md)). |
+| Floats | `31-float-associativity` shows that float addition is not associative. The sized `real` starts with exact small values; `shrink-real` keeps every candidate finite and ends at short decimals. The app's default shrinker uses `shrink-real` too; only the legacy library treats a float as a raw atom ([limitations](limitations.md)). |
+| Defaults from types | `34-typed-defaults` has no norn or alts: its text, list of terms and their shrinking come from the sample's type through `quiz-auto`. |
 | Related values | `29-bst-coordinated` shrinks equal keys together with `shrink-equal`, so a key that must stay in the tree shrinks with its copy. |
 | Small domains | `21-small-domain-allow` checks De Morgan's law over two loobeans. Only four samples exist; `duplicates %allow` evaluates repeats, so 100 checks pass and the labels show every case. |
 | Agent model | `25-counter-agent` runs generated pokes against a counter agent's door and compares its state with a model. `26-counter-agent-bug` finds a lost update, an add above ten the agent drops, and shrinks to a single `[%add 11]`. `32-expiry-agent` and `33-expiry-agent-bug` add a simulated clock with `run-clock`: generated waits fire the agent's behn timers, and 33 finds an old timer deleting a re-put key early. The harness is pure: real effects are out of scope ([limitations](limitations.md)). |
@@ -451,7 +461,8 @@ checking each returned value and state. Every sample starts from fresh state.
 [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) adds a
 precondition: its norn generates only valid sequences, and its `alts` deletes
 commands and shrinks values but keeps only valid candidates. The default
-shrinker cannot delete a command from a list. See the
+shrinker would delete commands too, but it cannot keep only valid sequences.
+See the
 [queue examples](examples.md#model-based-queue-examples). This is an ordinary
 fate; Quiz has no dedicated state-machine, external-system driver, parallel or
 asynchronous property API.
@@ -468,8 +479,8 @@ tables, `f = {_ -> 0}` and `p = {8 -> %.y, _ -> %.n}`, with item `~[8]`.
 Labels, classify, collect, tabulate, threshold coverage, expected failure and
 conjunction/disjunction are available through
 [`quiz-prop`](reference.md#reports-labels-and-coverage). Other FsCheck
-facilities are **unsupported**: `Arbitrary` registration, automatic .NET
-derivation/reflection, generated functions beyond finite tables, coverage
+facilities are **unsupported**: `Arbitrary` registration (the closest is
+`quiz-auto`'s type-directed defaults), automatic .NET derivation/reflection, generated functions beyond finite tables, coverage
 certainty other than QuickCheck's default, expected-exception combinators, nested quantification inside
 a fate, xUnit/NUnit adapters and `IRunner` callbacks. Do not paste FsCheck
 API examples into Hoon. The [reference](reference.md) is the Quiz API authority.

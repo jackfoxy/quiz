@@ -18,6 +18,7 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 | `desk/lib/quiz-build.hoon` | Property document prelude, pinned Clay context, type checks | quiz |
 | `desk/lib/quiz-prop.hoon` | Report combinators for fates: notes, expected/actual, labels, coverage | quiz |
 | `desk/lib/quiz-gen.hoon` | Total generators, size combinators, typed shrinkers, `alts-of` adaptor | quiz |
+| `desk/lib/quiz-auto.hoon` | Type-directed default fill and sink | quiz |
 | `desk/lib/quiz-fun.hoon` | Generated functions as shrinkable tables | quiz |
 | `desk/lib/quiz-harness.hoon`, `desk/fixtures/quiz-harness/` | Pure agent harness and simulated clock; counter and expiry agent doors and their drivers | quiz |
 | `desk/lib/quiz-suite.hoon`, `desk/lib/quiz-replay.hoon` | `test-*` suite runner; replay capture | quiz |
@@ -88,8 +89,9 @@ This section is the canonical contributor command reference. End-user
 installation is in [README.md](README.md#installation); browser test setup and
 commands are in [tests/browser/README.md](tests/browser/README.md).
 
-Boot a disposable fake ship on `%zuse 408` (for example `<vere> -F zod`), then
-install the desk as the README describes. To iterate after editing:
+Boot a disposable fake ship on `%zuse 408` (for example
+`<vere> -F zod --loom 32`; the larger loom keeps Vere 4.6's serf alive
+through `%jinx` aborts), then install the desk as the README describes. To iterate after editing:
 
 ```sh
 rsync -a --delete desk/ <pier>/quiz/
