@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-9`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-10`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -262,7 +262,7 @@ sample unless the conf sets `size-max`.
 | `(cook gen fun)` | Mapped output |
 | `(bind gen next)` | Dependent: `next` receives the first value and returns a generator |
 | `(such-that gen pred tries)` | Retries with growing size; crashes after `tries` |
-| `(seeded gen)`, `(regen make outer seed size)` | Dependent shrinking; see below |
+| `(seeded gen)`, `(regen make outer seed size pin)` | Dependent shrinking; see below |
 | `(sized make)` | `make` receives the current size and returns the generator to run |
 | `(resize n gen)` | `gen` at size `n`, whatever the run's size |
 | `(scale fun gen)` | `gen` at size `(fun size)`, as in `(scale (curr div 10) gen)` |
@@ -284,7 +284,9 @@ QuickCheck.
 | `(shrink-set item)`, `(shrink-map key value)` | Through the element list; a rebalanced tree may not weigh less, and the engine discards such a candidate |
 | `(shrink-via to from inner)` | Shrink through a representation |
 | `(shrink-keep pred inner)` | Only candidates satisfying an invariant or precondition |
-| `(shrink-seeded outer)` | A `seeded` sample: smaller outer values, then a halved size; the seed stays |
+| `(shrink-equal item)` | Coordinated: for each distinct element, every copy replaced by each of its candidates |
+| `(shrink-then a b)` | `a`'s candidates, then `b`'s, for one value |
+| `(shrink-seeded outer make inner)` | A `seeded` sample: smaller outer values, then a halved size, both unpinned; then the dependent value shrunk by `inner` and pinned |
 | `shrink-nothing` | No candidates |
 
 `(alts-of mold shrinker)` turns a typed shrinker into a document's `++alts`.
@@ -296,16 +298,26 @@ is a cell of two gates.
 Shrinkers combine independently. When values constrain each other, such as a
 tree's keys and the key being deleted in
 [17-bst-delete-bug](../examples/failing/17-bst-delete-bug.hoon), each can
-shrink only while the failure survives, so the result may keep larger values
-than a coordinated shrinker would.
+shrink only while the failure survives, so the result may keep larger values.
+`shrink-equal` coordinates them: viewed through `shrink-via` as one list, every
+copy of a value shrinks at once, and `shrink-then` adds those candidates after
+the independent ones. [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon)
+reaches `[~[1 0 2] 1]` where 17 stops at `[~[12 0 13] 12]`.
 
 **Dependent shrinking.** QuickCheck shrinks nested `forAll` inputs by
-regenerating the inner value as the outer one shrinks. `seeded` gives a
-sample `[value seed size]`; the fate calls `(regen make value seed size)` to
-rebuild the dependent value, where `make` takes the outer value and returns a
-generator. `shrink-seeded` shrinks only the outer value and size, so every
-candidate rebuilds a consistent inner value. The inner value itself is not
-shrunk directly.
+regenerating the inner value as the outer one shrinks, then shrinking the inner
+value with the outer one fixed. `seeded` gives a sample `[value seed size pin]`
+with `pin` empty; the fate calls `(regen make value seed size pin)`, where
+`make` takes the outer value and returns a generator. `regen` returns the
+pinned value when there is one, and otherwise rebuilds it from the seed. Type
+`pin` in the fate's sample as a unit of the dependent value's type.
+`(shrink-seeded outer make inner)` first shrinks the outer value and halves the
+size, each unpinned so the dependent value is rebuilt consistently. Then it
+shrinks the current dependent value with `inner` and pins each candidate.
+Pinning clears the seed, which a pinned value does not need: the unpinned
+sample does not hold its dependent value, so only dropping the seed lets a
+pinned candidate weigh less. Later outer shrinks rebuild from seed 0.
+[30-dependent-inner](../examples/failing/30-dependent-inner.hoon) shows it.
 
 ### Generated functions (`quiz-fun`)
 
@@ -445,7 +457,7 @@ lowered but not raised above their engine defaults.
 | `bounds.sample-bytes` | 65,536 | Jammed sample value bytes; the type, shared by every sample, is not counted |
 | `bounds.rendered-bytes` | 16,384 | Rendered cord bytes of a kept sample: failure evidence, accepted shrinks, each label's first example, and samples stored under a split timeout policy |
 | `bounds.diagnostics-bytes` | 16,384 | Jammed engine failure/diagnostic noun bytes |
-| `bounds.alts-bytes` | 262,144 | Jammed candidate-list bytes |
+| `bounds.alts-bytes` | 262,144 | Jammed bytes of one alts call's candidate values; types are not counted |
 | `bounds.seen-bytes` | 4,194,304 | Jammed bytes of the samples `%exact` keeps |
 | `bounds.retained-runs` | 100 | Completed records retained after this property finishes |
 | `bounds.samples-per-slice` | 1,000 | Ceiling on engine steps per scheduling slice, including shrink work; slices start at 8 and adapt (see the agent API) |

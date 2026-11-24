@@ -29,6 +29,8 @@ const examples = [
   ['props', '25-counter-agent', 'passed'],
   ['failing', '26-counter-agent-bug', 'failed', 'false'],
   ['props', '28-confident-coverage', 'passed'],
+  ['failing', '29-bst-coordinated', 'failed', 'false'],
+  ['failing', '30-dependent-inner', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -118,6 +120,16 @@ for (const [root, name, outcome, why] of examples) {
         .toBe('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
     }
     if (name === '20-dependent') expect(got.counts['shrink-steps']).toBe(2);
+    if (name === '29-bst-coordinated') {
+      // Equal keys shrink together, below 17-bst-delete-bug's three keys.
+      expect(got.outcome.evidence.shrunk.text).toBe('[items=[1 0 2 0] gone=1]');
+      expect(got.counts).toMatchObject({'shrink-tried':146, 'shrink-steps':14});
+    }
+    if (name === '30-dependent-inner') {
+      // The bound stops at 1; the pinned dependent list shrinks to ~[90].
+      expect(got.outcome.evidence.shrunk.text).toBe('[bound=1 seed=0v0 size=0 pin=[~ ~[90]]]');
+      expect(got.counts).toMatchObject({'shrink-tried':24, 'shrink-steps':5});
+    }
     if (name === '21-small-domain-allow') {
       expect(got.config.duplicates).toBe('allow');
       expect(got.counts.duplicate).toBe(0);

@@ -165,7 +165,7 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-9
+  %quiz-engine-10
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
@@ -637,13 +637,16 @@
 ::
 ++  alternatives
   ::  Default/custom alts and product validation share the refusing sandbox.
+  ::  Only the list of cells is checked: molding each candidate's type with
+  ::  `vase` walks recursive types such as `(list @ud)` through their whole
+  ::  subject. A bad type crashes later, inside ++show's sandbox.
   |=  [time=@dr sam=vase custom=(unit vase)]
   ^-  toon
   =/  maker
     |=  [sam=vase custom=(unit vase)]
-    ^-  (list vase)
+    ^-  (list [* *])
     ?~  custom  (sink:legacy sam)
-    ;;((list vase) (slum q.u.custom sam))
+    ;;((list [* *]) (slum q.u.custom sam))
   (sandbox time maker [sam custom])
 ::
 ++  shrink-step
@@ -672,9 +675,13 @@
       =/  why  (classify made)
       ?>  ?=(^ why)
       (stop-error s %alts why `evidence)
-    ?.  (fits alts-bytes.bounds.config.s p.made)
+    ::  Unbox the checked list as vases without molding their types.
+    =/  candidates  !<((list vase) [p:!>(*(list vase)) p.made])
+    ::  Only values count, as for sample-bytes: a type with a recursive
+    ::  mold carries its whole subject.
+    =/  values=(list *)  (turn candidates tail)
+    ?.  (fits alts-bytes.bounds.config.s values)
       s(shrink ~, result `[%limited %alts-bytes `evidence])
-    =/  candidates  ;;((list vase) p.made)
     s(shrink `work(pending `candidates))
   =/  candidates  u.pending
   ?~  candidates

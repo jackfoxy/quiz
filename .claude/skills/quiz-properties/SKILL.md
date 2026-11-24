@@ -161,8 +161,10 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
   ([22-size-capped](../../../desk/examples/props/22-size-capped.hoon)).
 - Spell sample types out (`ship=@p`, not `=ship`): a zuse mold carries its
   subject into the sample vase and hits `%sample-bytes`.
-- Dependent inputs: `seeded`, then `regen` in the fate, with
-  `shrink-seeded` ([20-dependent](../../../desk/examples/failing/20-dependent.hoon)).
+- Dependent inputs: `seeded`, then `(regen make value seed size pin)` in the
+  fate, with `(shrink-seeded outer make inner)`, which also shrinks and pins
+  the dependent value ([20-dependent](../../../desk/examples/failing/20-dependent.hoon),
+  [30-dependent-inner](../../../desk/examples/failing/30-dependent-inner.hoon)).
 
 API: [app generator library](../../../desk/doc/reference.md#app-generator-library-quiz-gen).
 
@@ -239,6 +241,8 @@ is a cell of two gates. Models:
 (hand-written). Components shrink independently, so values that constrain
 each other may stop high, as in
 [17-bst-delete-bug](../../../desk/examples/failing/17-bst-delete-bug.hoon).
+Add `shrink-equal` through `shrink-via` with `shrink-then` so equal values
+shrink together ([29-bst-coordinated](../../../desk/examples/failing/29-bst-coordinated.hoon)).
 
 ## Running
 

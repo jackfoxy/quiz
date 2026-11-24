@@ -70,10 +70,10 @@ authoritative behavior and recovery guidance.
   100th sample. Set `size-max`, or use `quiz-gen`'s `capped`, for generators
   whose output grows with size.
   See [measured generator characteristics](reference.md#measured-generator-characteristics).
-- **Shrinkers combine independently.** `quiz-gen` shrinks each component on
-  its own. Values that constrain each other, such as a search tree's keys and
-  the key being deleted, may stop at larger values than a coordinated
-  shrinker would reach.
+- **Shrinkers combine independently unless told otherwise.** `quiz-gen`
+  shrinks each component on its own. Values that constrain each other may stop
+  high; `shrink-equal` coordinates equal values, but there is no general
+  search over joint changes such as shifting every key by the same amount.
 - **Agent harness is pure.** `quiz-harness` drives a Gall agent's door with
   generated events. It does not run real effects: threads, Khan, wires that
   wait for other agents, and timers are not simulated. Real effects would

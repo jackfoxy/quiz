@@ -213,13 +213,18 @@
 ++  test-seeded
   ::  The dependent value is a function of the outer value and seed.
   ^-  tang
-  =/  sample  ;;([@ud @uv @ud] ((seeded:gen small) 10 ~(. og 0v1)))
+  ::  A pinned dependent value is used as is.
+  =/  sample
+    ;;([@ud @uv @ud (unit @ud)] ((seeded:gen small) 10 ~(. og 0v1)))
+  =/  [outer=@ud seed=@uv size=@ud pin=(unit @ud)]  sample
   =/  make  |=(n=@ud (range:gen 0 n))
-  =/  a  (regen:gen make -.sample +<.sample +>.sample)
-  =/  b  (regen:gen make -.sample +<.sample +>.sample)
+  =/  a  (regen:gen make outer seed size pin)
+  =/  b  (regen:gen make outer seed size pin)
   ;:  weld
+    (expect-eq !>(~) !>(pin))
     (expect-eq !>(a) !>(b))
-    (expect !>((lte a -.sample)))
+    (expect !>((lte a outer)))
+    (expect-eq !>(7) !>((regen:gen make outer seed size `7)))
   ==
 ::
 ++  test-size-combinators
@@ -308,14 +313,26 @@
     ((shrink-keep:gen |=(a=@ =(0 (mod a 2))) shrink-atom:gen) 10)
   =/  via
     ((shrink-via:gen |=(a=@ (div a 10)) (cury mul 10) shrink-atom:gen) 40)
-  =/  seeded  ((shrink-seeded:gen shrink-atom:gen) [2 0v9 8])
+  =/  make  |=(n=@ud (range:gen 0 n))
+  =/  shrink  (shrink-seeded:gen shrink-atom:gen make shrink-atom:gen)
+  =/  seeded  (shrink [2 0v9 8 `5])
+  =/  equal  ((shrink-equal:gen shrink-atom:gen) ~[4 1 4])
+  =/  then  ((shrink-then:gen shrink-atom:gen |=(a=@ ~[a])) 2)
   ;:  weld
     (expect-eq !>(`(list *)`~[[0 1] [1 1] [2 0]]) !>(`(list *)`pairs))
     (expect-eq !>(`(list *)`~[~ [~ 0] [~ 1]]) !>(`(list *)`units))
     (expect-eq !>(`(list *)`~[0 8]) !>(`(list *)`evens))
     (expect-eq !>(`(list *)`~[0 20 30]) !>(`(list *)`via))
-    %+  expect-eq  !>(`(list *)`~[[0 0v9 8] [1 0v9 8] [2 0v9 4]])
+    %+  expect-eq
+      !>  ^-  (list *)
+          :~  [0 0v9 8 ~]  [1 0v9 8 ~]  [2 0v9 4 ~]
+              [2 0v0 8 `0]  [2 0v0 8 `3]  [2 0v0 8 `4]
+          ==
     !>(`(list *)`seeded)
+    %+  expect-eq
+      !>(`(list *)`~[~[0 1 0] ~[2 1 2] ~[3 1 3] ~[4 0 4]])
+    !>(`(list *)`equal)
+    (expect-eq !>(`(list *)`~[0 1 2]) !>(`(list *)`then))
     (expect-eq !>(`(list *)`~) !>(`(list *)`(shrink-nothing:gen 5)))
   ==
 ::

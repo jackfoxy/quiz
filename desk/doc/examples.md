@@ -43,6 +43,8 @@ settings, not universal outcomes of similar-looking properties.
 | [25-counter-agent](../examples/props/25-counter-agent.hoon) | Passed, 100 accepted; 5 duplicates | Pure agent harness: model-based pokes against a counter agent's door |
 | [27-timeout-fail](../examples/props/27-timeout-fail.hoon) | Failed, timeout; shrinks to `n=11` | `on-timeout %fail`: a fate that never returns is a `%timeout` failure, shrunk to the smallest hanging input. Needs a short call limit; each hanging candidate costs it |
 | [28-confident-coverage](../examples/props/28-confident-coverage.hoon) | Passed, 800 accepted; heads 377 | `++cover [%confident …]`: undecided at 100, 200 and 400 checks, covered at 800 by the Wilson lower bound |
+| [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
+| [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -144,6 +146,17 @@ the fate. The false claim is that the chosen element is never the last. The
 list shrinks from `~[19]` to `~[0]` and the size to 0; each candidate's index
 is rebuilt for its own list, so no candidate indexes past the end.
 
+`29-bst-coordinated` is 17's search tree with a coordinated shrinker. The
+deleted key is also in the tree, so shrinking either copy alone loses the
+failure, and 17 stops at `[~[12 0 13] 12]`. Viewing the sample as one list,
+the deleted key first, `shrink-equal` replaces every copy of a value at once
+and reaches `[~[1 0 2] 1]`: delete the root of a three-key tree.
+
+`30-dependent-inner` regenerates a list of at most `bound` values from the
+seed; the false claim is that every value is below 90. `shrink-seeded` lowers
+the bound to 1, rebuilding the list each time, then shrinks the list itself and
+pins it: the run ends at `pin=[~ ~[90]]`, with the seed cleared.
+
 `21-small-domain-allow` checks De Morgan's law for a `[? ?]` sample. Under
 the default `%mug` policy the run could accept at most four checks before
 duplicates exhausted it. Its `conf` sets `duplicates %allow`, so every
@@ -202,7 +215,7 @@ queue, report, coverage, generator-library, size and function rows in
 | 17-bst-delete-bug | 18 | 17 | 0 | 0 | 60 | 6 | 9 keys, delete 12 → `[~[12 0 13] 12]` |
 | 18-parse-print | 100 | 100 | 0 | 0 | 0 | 0 | — |
 | 19-queue-gen-lib | 4 | 3 | 0 | 0 | 46 | 7 | 4 commands → `[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]` |
-| 20-dependent | 1 | 0 | 0 | 0 | 5 | 2 | `[~[19] seed 1]` → `[~[0] seed 0]` |
+| 20-dependent | 1 | 0 | 0 | 0 | 5 | 2 | `[~[19] seed 1 ~]` → `[~[0] seed 0 ~]` |
 | 21-small-domain-allow | 100 | 100 | 0 | 0 | 0 | 0 | — |
 | 22-size-capped | 100 | 100 | 0 | 0 | 0 | 0 | — |
 | 23-map-fusion | 100 | 100 | 0 | 0 | 0 | 0 | — |
@@ -211,6 +224,8 @@ queue, report, coverage, generator-library, size and function rows in
 | 26-counter-agent-bug | 2 | 1 | 0 | 0 | 21 | 4 | `[%add 11]` (expected 11, actual 0) |
 | 27-timeout-fail | — | — | — | — | — | — | `n=11` with a 2 s call limit; run in the browser, not pinned in `-test` (a hanging fate would abort the test event) |
 | 28-confident-coverage | 800 | 800 | 0 | 0 | 0 | 0 | — |
+| 29-bst-coordinated | 18 | 17 | 0 | 0 | 146 | 14 | 9 keys, delete 12 → `[~[1 0 2] 1]` |
+| 30-dependent-inner | 3 | 2 | 0 | 0 | 24 | 5 | `[8 seed 3 ~]` → `[1 0v0 0 [~ ~[90]]]` |
 
 ## Existing suites
 

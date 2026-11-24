@@ -19,6 +19,8 @@
 /*  counter-src  %hoon  /examples/props/25-counter-agent/hoon
 /*  counter-bug-src  %hoon  /examples/failing/26-counter-agent-bug/hoon
 /*  confident  %hoon  /examples/props/28-confident-coverage/hoon
+/*  coordinated  %hoon  /examples/failing/29-bst-coordinated/hoon
+/*  inner  %hoon  /examples/failing/30-dependent-inner/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -180,12 +182,14 @@
   =/  done  (run path dependent ~[!>(engine) !>(gen)])
   =/  result  (need result.done)
   ?>  ?=(%failed -.result)
-  =/  start  ;;([(list @ud) @uv @ud] q.original.result)
-  =/  end  ;;([(list @ud) @uv @ud] q.shrunk.result)
+  =/  start  ;;([(list @ud) @uv @ud (unit @ud)] q.original.result)
+  =/  end  ;;([(list @ud) @uv @ud (unit @ud)] q.shrunk.result)
   ;:  weld
     (expect-eq !>(`counters:engine`[1 0 0 0 5 2]) !>(counts.done))
-    (expect-eq !>([~[19] 1]) !>([-.start +>.start]))
-    (expect-eq !>([~[0] 0]) !>([-.end +>.end]))
+    =/  want=[(list @ud) @ud (unit @ud)]  [~[19] 1 ~]
+    (expect-eq !>(want) !>([-.start +>.start]))
+    =/  want=[(list @ud) @ud (unit @ud)]  [~[0] 0 ~]
+    (expect-eq !>(want) !>([-.end +>.end]))
     (expect-eq !>(+<.start) !>(+<.end))
   ==
 ::
@@ -279,5 +283,34 @@
     (expect-eq !>(`counters:engine`[800 800 0 0 0 0]) !>(counts.done))
     %+  expect-eq  !>((malt `(list [@t @ud])`~[['heads' 377]]))
     !>(labels.seen-tags.done)
+  ==
+::
+++  test-bst-coordinated
+  ::  Equal keys shrink together, below example 17's [~[12 0 13] 12].
+  ^-  tang
+  =/  path=path  /examples/failing/'29-bst-coordinated'/hoon
+  =/  done  (run path coordinated ~[!>(engine) !>(gen)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  ;:  weld
+    (expect-eq !>(`counters:engine`[18 17 0 0 146 14]) !>(counts.done))
+    (expect-eq !>(`*`[~[1 0 2] 1]) !>(q.shrunk.result))
+  ==
+::
+++  test-dependent-inner
+  ::  The bound stops shrinking; the pinned list shrinks to ~[90].
+  ^-  tang
+  =/  path=path  /examples/failing/'30-dependent-inner'/hoon
+  =/  done  (run path inner ~[!>(engine) !>(gen)])
+  =/  result  (need result.done)
+  ?>  ?=(%failed -.result)
+  =/  start  ;;([@ud @uv @ud (unit (list @ud))] q.original.result)
+  =/  end  ;;([@ud @uv @ud (unit (list @ud))] q.shrunk.result)
+  =/  want=[@ud @uv @ud (unit (list @ud))]  [1 0v0 0 `~[90]]
+  ;:  weld
+    (expect-eq !>(`counters:engine`[3 2 0 0 24 5]) !>(counts.done))
+    =/  begin=[@ud @ud (unit (list @ud))]  [8 3 ~]
+    (expect-eq !>(begin) !>([-.start +>.start]))
+    (expect-eq !>(want) !>(end))
   ==
 --
