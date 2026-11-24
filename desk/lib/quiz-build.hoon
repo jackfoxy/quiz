@@ -21,6 +21,9 @@
 ::
 +$  result  $%([%ready product] [%invalid diagnostic])
 ::
++$  arm-name
+  ?(%fate %norn %alts %conf %cover %cover-table %confidence %expect)
+::
 ++  issue
   ::  Compiler traces include exact spans; at anchors the source/arm/import.
   |=  [code=@tas path=path at=hair arm=(unit term) trace=tang]
@@ -254,6 +257,30 @@
       ==
   ==
 ::
+++  valid-tables
+  ::  At most label-max distinct rows; nonempty, bounded names; whole
+  ::  percents.
+  |=  rows=(list table-row:engine)
+  ^-  ?
+  =/  keys=(list [@t @t])  (turn rows |=(r=table-row:engine [table.r value.r]))
+  =/  name  |=(t=@t &((gth (met 3 t) 0) (lte (met 3 t) label-bytes:engine)))
+  ?&  (lte (lent rows) label-max:engine)
+      =((lent keys) ~(wyt in (silt keys)))
+      %+  levy  rows
+      |=  r=table-row:engine
+      &((name table.r) (name value.r) (lte percent.r 100))
+  ==
+::
+++  valid-confidence
+  ::  Certainty 1 to 15 (wrong 1 in 10^k); tolerance 1 to 100 percent.
+  |=  =confidence:engine
+  ^-  ?
+  ?&  (gte certainty.confidence 1)
+      (lte certainty.confidence (lent z-table:engine))
+      (gte tolerance.confidence 1)
+      (lte tolerance.confidence 100)
+  ==
+::
 ++  inspect-gate
   ::  Infer the product without executing the gate on its bunt sample.
   |=  [gate=vase input=(unit type) output=type]
@@ -265,8 +292,10 @@
 ::
 ++  check-core
   ::  Check the compiled core's arms in order: fate, norn, alts, conf,
-  ::  cover, expect. Absent optional arms keep defaults; the first bad arm
-  ::  is the diagnostic. The norn must produce the fate's sample type.
+  ::  cover, cover-table, confidence, expect. Absent optional arms keep
+  ::  defaults; the first bad arm is the diagnostic. The norn must produce
+  ::  the fate's sample type. ++cover-table without ++cover uses %check;
+  ::  ++confidence matters only to a %confident ++cover.
   |=  [doc=prepared core=vase]
   ^-  result
   =/  names  (sloe p.core)
@@ -274,8 +303,8 @@
     [%invalid (issue %fate-missing path.doc [1 1] `%fate ~)]
   =/  parts=parts:engine  [*vase ~ ~ ~ %pass]
   =/  settings=document-conf  [~ defaults:engine]
-  =/  wanted=(list ?(%fate %norn %alts %conf %cover %expect))
-    ~[%fate %norn %alts %conf %cover %expect]
+  =/  wanted=(list arm-name)
+    ~[%fate %norn %alts %conf %cover %cover-table %confidence %expect]
   |-
   ?~  wanted
     ?:  (gth (met 3 source.doc) source-bytes.bounds.config.settings)
@@ -302,7 +331,26 @@
     =/  cover  ;;(cover:engine q.value)
     ?.  (valid-cover cover)
       [%invalid (issue %cover-range path.doc at `arm ~)]
-    $(wanted rest, parts parts(cover `cover))
+    =/  base=coverage:engine
+      (fall cover.parts [cover ~ default-confidence:engine])
+    $(wanted rest, parts parts(cover `base(cover cover)))
+  ?:  ?=(%cover-table arm)
+    ?.  (~(nest ut p:!>(*(list table-row:engine))) | p.value)
+      [%invalid (issue %cover-table-type path.doc at `arm ~)]
+    =/  rows  ;;((list table-row:engine) q.value)
+    ?.  (valid-tables rows)
+      [%invalid (issue %cover-table-range path.doc at `arm ~)]
+    =/  base=coverage:engine
+      (fall cover.parts [[%check ~] ~ default-confidence:engine])
+    $(wanted rest, parts parts(cover `base(tables rows)))
+  ?:  ?=(%confidence arm)
+    ?.  (~(nest ut p:!>(*confidence:engine)) | p.value)
+      [%invalid (issue %confidence-type path.doc at `arm ~)]
+    =/  confidence  ;;(confidence:engine q.value)
+    ?.  (valid-confidence confidence)
+      [%invalid (issue %confidence-range path.doc at `arm ~)]
+    ?~  cover.parts  $(wanted rest)
+    $(wanted rest, parts parts(cover `u.cover.parts(confidence confidence)))
   ?:  ?=(%expect arm)
     ?.  (~(nest ut p:!>(*expectation:engine)) | p.value)
       [%invalid (issue %expect-type path.doc at `arm ~)]

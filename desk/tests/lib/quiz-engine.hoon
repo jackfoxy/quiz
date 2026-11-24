@@ -513,11 +513,11 @@
   =/  with
     |=  =cover:engine
     ^-  parts:engine
-    [parity `sized `no-alts `cover %pass]
+    [parity `sized `no-alts `[cover ~ default-confidence:engine] %pass]
   =/  met  (finished cfg (with %check ~[['even' 50]]))
   =/  warn  (finished cfg (with %warn ~[['even' 60]]))
   =/  check  (finished cfg (with %check ~[['even' 60]]))
-  =/  short=(list shortfall:engine)  ~[['even' 60 50]]
+  =/  short=(list shortfall:engine)  ~[['even' 60 50 ~]]
   ;:  weld
     (expect !>(?=([~ %passed ~] result.met)))
     (expect-eq !>(``outcome:engine`[%passed short]) !>(result.warn))
@@ -534,7 +534,8 @@
   =/  with
     |=  percent=@ud
     ^-  parts:engine
-    [parity `sized `no-alts `[%confident ~[['even' percent]]] %pass]
+    =/  =cover:engine  [%confident ~[['even' percent]]]
+    [parity `sized `no-alts `[cover ~ default-confidence:engine] %pass]
   =/  low  (finished cfg (with 20))
   =/  high  (finished cfg (with 90))
   =/  capped  (finished cfg(requested-max.bounds 300) (with 50))
@@ -542,13 +543,70 @@
   ;:  weld
     (expect !>(?=([~ %passed ~] result.low)))
     (expect-eq !>(`@ud`100) !>(accepted.counts.low))
-    %+  expect-eq  !>(``outcome:engine`[%uncovered ~[['even' 90 43]]])
+    %+  expect-eq  !>(``outcome:engine`[%uncovered ~[['even' 90 43 ~]]])
     !>(result.high)
     (expect-eq !>(`@ud`100) !>(accepted.counts.high))
     (expect-eq !>(`@ud`300) !>(accepted.counts.capped))
     (expect !>(?=([~ ?(%passed %uncovered) *] result.capped)))
     (expect-eq !>(`@ud`150) !>(accepted.counts.spent))
     (expect !>(?=([~ ?(%passed %uncovered) *] result.spent)))
+  ==
+::
+++  test-coverage-table
+  ::  A table row's share is of its table's entries: half the parity
+  ::  entries are even. A table that never occurs is short.
+  ^-  tang
+  =/  cfg  (config 10 20 5 5)
+  =/  with
+    |=  [mode=?(%warn %check %confident) rows=(list table-row:engine)]
+    ^-  parts:engine
+    [parity `sized `no-alts `[[mode ~] rows default-confidence:engine] %pass]
+  =/  met  (finished cfg (with %check ~[['parity' 'even' 50]]))
+  =/  short  (finished cfg (with %check ~[['parity' 'even' 60]]))
+  =/  absent  (finished cfg (with %warn ~[['none' 'x' 1]]))
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.met)))
+    %+  expect-eq
+      !>(``outcome:engine`[%uncovered ~[['even' 60 50 `'parity']]])
+    !>(result.short)
+    %+  expect-eq  !>(``outcome:engine`[%passed ~[['x' 1 0 `'none']]])
+    !>(result.absent)
+  ==
+::
+++  test-coverage-confidence
+  ::  At 1 in 100 a 30 percent share of an even half is covered at the
+  ::  first checkpoint; at the default 1 in 10^9 it is still undecided.
+  ^-  tang
+  =/  cfg  (config 100 400 5 5)
+  =.  duplicates.cfg  %allow
+  =/  with
+    |=  =confidence:engine
+    ^-  parts:engine
+    =/  =cover:engine  [%confident ~[['even' 30]]]
+    [parity `sized `no-alts `[cover ~ confidence] %pass]
+  =/  loose  (finished cfg (with [2 90]))
+  =/  strict  (finished cfg (with default-confidence:engine))
+  ;:  weld
+    (expect !>(?=([~ %passed ~] result.loose)))
+    (expect-eq !>(`@ud`100) !>(accepted.counts.loose))
+    (expect !>((gth accepted.counts.strict 100)))
+  ==
+::
+++  test-z-table
+  ::  Published two-sided normal quantiles; certainty outside 1-15 crashes.
+  ^-  tang
+  =/  near
+    |=  [k=@ud low=@rd high=@rd]
+    =/  z  (z-for:engine k)
+    &((gth:rd z low) (lth:rd z high))
+  ;:  weld
+    (expect !>((near 2 .~2.5758 .~2.5759)))
+    (expect !>((near 3 .~3.2905 .~3.2906)))
+    (expect !>((near 6 .~4.8916 .~4.8917)))
+    (expect !>((near 9 .~6.1094 .~6.1095)))
+    (expect !>((near 12 .~7.1305 .~7.1306)))
+    (expect-fail |.((z-for:engine 0)))
+    (expect-fail |.((z-for:engine 16)))
   ==
 ::
 ++  test-wilson-bounds
@@ -599,7 +657,7 @@
   ;:  weld
     (expect-eq !>(~s10) !>(limit))
     (expect-eq !>(limit) !>(time.fresh))
-    (expect-eq !>(%quiz-engine-11) !>(version:engine))
+    (expect-eq !>(%quiz-engine-12) !>(version:engine))
     %+  expect-eq  !>(`toon`[%0 42])
     !>((sandbox:engine limit |=(n=@ud +(n)) 41))
     (expect !>(?=(%2 -.crashed)))

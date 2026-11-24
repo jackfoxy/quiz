@@ -129,14 +129,20 @@ verdict. Use it to make failures readable and to see what was tested:
   `uncovered`. Both are a threshold at the requested count. `[%confident …]`
   tests past `requested` until Wilson bounds (certainty 10^9, tolerance 0.9)
   decide, up to `requested-max`; use it when a share near its requirement
-  must be judged reliably.
+  must be judged reliably. `++confidence [k tolerance]` changes them (wrong 1
+  in 10^k, k 1–15; tolerance in whole percent).
+- `++cover-table ~[[table value percent] …]` requires a value's share of a
+  `tabulate` table's entries, not of samples (QuickCheck's `coverTable`). It
+  uses `++cover`'s mode, or `%check` alone; a table with no entries is short.
+  Shortfall rows then carry the table's name.
 - `++expect %fail` marks a claim that should fail (`failed-as-expected`).
 - `implies` with a trap guards partial code. `all` and `any` combine props, but
   every list element is already evaluated.
 
 Models: [12-labels-coverage](../../../desk/examples/props/12-labels-coverage.hoon),
 [13-expected-actual](../../../desk/examples/failing/13-expected-actual.hoon),
-[14-coverage-shortfall](../../../desk/examples/failing/14-coverage-shortfall.hoon).
+[14-coverage-shortfall](../../../desk/examples/failing/14-coverage-shortfall.hoon),
+[35-cover-table](../../../desk/examples/props/35-cover-table.hoon).
 API: [reports, labels and coverage](../../../desk/doc/reference.md#reports-labels-and-coverage).
 
 ## Norns

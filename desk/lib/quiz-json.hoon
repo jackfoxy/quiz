@@ -228,7 +228,8 @@
   ==
 ::
 ++  shortfalls-out
-  ::  Coverage rows: label, required percent, observed percent (floored).
+  ::  Coverage rows: label (a table row's value), required percent,
+  ::  observed percent (floored), and the table's name or null.
   |=  rows=(list shortfall:engine)
   ^-  json
   :-  %a
@@ -238,6 +239,7 @@
   :~  ['label' s+label.row]
       ['want' (numb:enjs:format want.row)]
       ['got' (numb:enjs:format got.row)]
+      ['table' ?~(table.row ~ s+u.table.row)]
   ==
 ::
 ++  examples-out

@@ -1,7 +1,8 @@
 # Property documents
 
 A document builds to a core with a required `++fate` gate. Optional arms are
-`++norn`, `++alts`, `++conf`, `++cover` and `++expect`. Other arms may hold
+`++norn`, `++alts`, `++conf`, `++cover`, `++cover-table`, `++confidence` and
+`++expect`. Other arms may hold
 helpers. See the executable
 [fixture](../fixtures/quiz-build/property.hoon).
 
@@ -22,9 +23,12 @@ The compiler checks types without calling the property, generator, or shrinker:
 | `alts` | Gate accepting a `vase`, returning `(list vase)` |
 | `conf` | `[seed=(unit @uv) config=conf:quiz-engine]` |
 | `cover` | `cover:quiz-engine`, `[mode=?(%warn %check %confident) rows=(list [label=@t percent=@ud])]`; at most 100 distinct nonempty labels of at most 256 bytes; percents at most 100 |
+| `cover-table` | `(list [table=@t value=@t percent=@ud])`; at most 100 distinct `[table value]` rows, names nonempty and at most 256 bytes; percents at most 100 |
+| `confidence` | `[certainty=@ud tolerance=@ud]`; certainty 1 to 15, tolerance 1 to 100 |
 | `expect` | `?(%pass %fail)` |
 
-Reports, `++cover` and `++expect` are explained in
+Reports, `++cover`, `++cover-table`, `++confidence` and `++expect` are
+explained in
 [reports, labels and coverage](reference.md#reports-labels-and-coverage).
 Build reports with `/+  prop=quiz-prop`, generators and shrinkers with
 `/+  gen=quiz-gen`, and generated functions with `/+  fun=quiz-fun`; see the
@@ -32,7 +36,7 @@ Build reports with `/+  prop=quiz-prop`, generators and shrinkers with
 [generated functions](reference.md#generated-functions-quiz-fun). An agent's
 door comes from `/=  drive  /fixtures/quiz-harness/drive`, with
 [quiz-harness](reference.md#agent-harness-quiz-harness) imported by `/+`.
-`cover` and `expect` come from the
+`cover`, `cover-table`, `confidence` and `expect` come from the
 document and are unaffected by Run-panel configuration overrides.
 
 A missing `norn` fills the sample from its type, and a missing `alts`

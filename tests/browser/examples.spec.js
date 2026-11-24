@@ -35,6 +35,7 @@ const examples = [
   ['props', '32-expiry-agent', 'passed'],
   ['failing', '33-expiry-agent-bug', 'failed', 'false'],
   ['failing', '34-typed-defaults', 'failed', 'false'],
+  ['props', '35-cover-table', 'passed'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -80,7 +81,7 @@ for (const [root, name, outcome, why] of examples) {
     if (outcome === 'passed' && name !== '28-confident-coverage')
       expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
         '21-small-domain-allow', '22-size-capped', '23-map-fusion',
-        '25-counter-agent', '32-expiry-agent'].includes(name) ? 100 : 20);
+        '25-counter-agent', '32-expiry-agent', '35-cover-table'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -108,7 +109,7 @@ for (const [root, name, outcome, why] of examples) {
       await expect(page.locator('#run-got')).toHaveText('0');
     }
     if (name === '14-coverage-shortfall') {
-      expect(got.outcome.shortfalls).toEqual([{label:'empty', want:10, got:1}]);
+      expect(got.outcome.shortfalls).toEqual([{label:'empty', want:10, got:1, table:null}]);
       await expect(page.locator('#run-coverage-shortfalls')).toContainText('empty');
     }
     if (name === '15-expect-failure') expect(got.outcome.evidence.shrunk.text).toBe('value=10');
@@ -151,6 +152,11 @@ for (const [root, name, outcome, why] of examples) {
       // No norn or alts: quiz-auto fills printable text and a list of terms.
       expect(got.outcome.evidence.shrunk.text).toBe("[name='' tags=~[%a %a %a]]");
       expect(got.counts).toMatchObject({attempted:3, accepted:2, 'shrink-tried':44, 'shrink-steps':8});
+    }
+    if (name === '35-cover-table') {
+      // ++cover-table shares are of the table's entries; all are met.
+      expect(got.counts).toMatchObject({attempted:164, accepted:100, duplicate:64});
+      expect(got.outcome.warnings).toEqual([]);
     }
     if (name === '21-small-domain-allow') {
       expect(got.config.duplicates).toBe('allow');

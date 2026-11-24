@@ -428,7 +428,9 @@
   =/  good  (run (doc arms))
   ?>  ?=(%ready -.good)
   ;:  weld
-    %+  expect-eq  !>(`(unit cover:engine)``[%check ~[['a' 50] ['b' 0]]])
+    %+  expect-eq
+      !>  ^-  (unit coverage:engine)
+          `[[%check ~[['a' 50] ['b' 0]]] ~ default-confidence:engine]
     !>(cover.parts.good)
     (expect-eq !>(`expectation:engine`%fail) !>(expect.parts.good))
     (bad %cover-type (run (doc "++  cover  5")))
@@ -436,5 +438,42 @@
     (bad %cover-range (run (doc "++  cover  [%warn ~[['a' 1] ['a' 2]]]")))
     (bad %cover-range (run (doc "++  cover  [%warn ~[['' 1]]]")))
     (bad %expect-type (run (doc "++  expect  %maybe")))
+  ==
+::
+++  test-cover-table-and-confidence
+  ::  A table alone uses %check; confidence joins a ++cover; both are
+  ::  range-checked.
+  ^-  tang
+  =/  fate  "|%  ++  fate  |=(@ud &)  "
+  =/  doc  |=(arms=tape (crip (weld fate (weld arms "  --"))))
+  =/  table  "++  cover-table  ~[['size' 'small' 20]]"
+  =/  alone  (run (doc table))
+  =/  both
+    %-  run  %-  doc
+    %+  weld  "++  cover  [%confident ~[['a' 5]]]  "
+    (weld table "  ++  confidence  [6 80]")
+  =/  only-confidence  (run (doc "++  confidence  [6 80]"))
+  ?>  ?=(%ready -.alone)
+  ?>  ?=(%ready -.both)
+  ?>  ?=(%ready -.only-confidence)
+  =/  rows=(list table-row:engine)  ~[['size' 'small' 20]]
+  ;:  weld
+    %+  expect-eq
+      !>  ^-  (unit coverage:engine)
+          `[[%check ~] rows default-confidence:engine]
+    !>(cover.parts.alone)
+    %+  expect-eq
+      !>  ^-  (unit coverage:engine)
+          `[[%confident ~[['a' 5]]] rows [6 80]]
+    !>(cover.parts.both)
+    (expect-eq !>(~) !>(cover.parts.only-confidence))
+    (bad %cover-table-type (run (doc "++  cover-table  5")))
+    (bad %cover-table-range (run (doc "++  cover-table  ~[['t' 'v' 101]]")))
+    %+  bad  %cover-table-range
+    (run (doc "++  cover-table  ~[['t' 'v' 1] ['t' 'v' 2]]"))
+    (bad %cover-table-range (run (doc "++  cover-table  ~[['' 'v' 1]]")))
+    (bad %confidence-type (run (doc "++  confidence  %high")))
+    (bad %confidence-range (run (doc "++  confidence  [16 90]")))
+    (bad %confidence-range (run (doc "++  confidence  [9 0]")))
   ==
 --

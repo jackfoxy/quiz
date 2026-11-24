@@ -68,20 +68,39 @@
   ::  requested count. %confident tests on until Wilson bounds decide.
   [mode=?(%warn %check %confident) rows=(list [label=@t percent=@ud])]
 ::
++$  table-row
+  ::  Required share, in whole percent, of one table's entries for a value.
+  [table=@t value=@t percent=@ud]
+::
++$  confidence
+  ::  %confident decides when wrong at most 1 in 10^certainty, and passes
+  ::  a row at tolerance percent of its share.
+  [certainty=@ud tolerance=@ud]
+::
++$  coverage
+  ::  A document's ++cover, ++cover-table and ++confidence together.
+  [=cover tables=(list table-row) =confidence]
+::
 +$  expectation  ?(%pass %fail)
 ::
 +$  parts
   $:  fate=vase
       norn=(unit vase)
       alts=(unit vase)
-      cover=(unit cover)
+      cover=(unit coverage)
       expect=expectation
   ==
 ::
 +$  distribution
   [labels=(map @t @ud) tables=(map @t (map @t @ud))]
 ::
-+$  shortfall  [label=@t want=@ud got=@ud]
++$  shortfall
+  ::  A label's row, or a table's value row with that table's name.
+  [label=@t want=@ud got=@ud table=(unit @t)]
+::
++$  requirement
+  ::  A row with its hits and the count its share is taken of.
+  [=shortfall hits=@ud total=@ud]
 ::
 +$  counters
   $:  attempted=@ud
@@ -165,7 +184,7 @@
 ++  version
   ::  Bump when deterministic generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-11
+  %quiz-engine-12
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size
@@ -466,52 +485,81 @@
 ::
 ++  shortfalls
   ::  Rows below their required share. `got` is the floored percentage;
-  ::  the comparison itself is exact.
+  ::  the comparison itself is exact. A table row whose table has no
+  ::  entries is short unless it requires nothing.
   |=  s=state
   ^-  (list shortfall)
+  %+  murn  (requirements s)
+  |=  req=requirement
+  ^-  (unit shortfall)
+  =/  want  want.shortfall.req
+  ?:  &(?=(^ table.shortfall.req) =(0 total.req) (gth want 0))
+    `shortfall.req
+  ?:  (gte (mul 100 hits.req) (mul want total.req))  ~
+  `shortfall.req
+::
+++  requirements
+  ::  Every coverage row with its hits and total. A label counts accepted
+  ::  samples; a table row counts its value among that table's entries.
+  ::  `got` is filled with the floored percentage.
+  |=  s=state
+  ^-  (list requirement)
   =/  cover  cover.compiled.s
   ?~  cover  ~
-  =/  total  accepted.counts.s
-  %+  murn  rows.u.cover
-  |=  [label=@t percent=@ud]
-  ^-  (unit shortfall)
-  =/  hits  (~(gut by labels.seen-tags.s) label 0)
-  ?:  (gte (mul 100 hits) (mul percent total))  ~
-  =/  got  ?:(=(0 total) 0 (div (mul 100 hits) total))
-  `[label percent got]
+  =/  share
+    |=  [hits=@ud total=@ud]
+    ?:(=(0 total) 0 (div (mul 100 hits) total))
+  =/  accepted  accepted.counts.s
+  =/  labels=(list requirement)
+    %+  turn  rows.cover.u.cover
+    |=  [label=@t percent=@ud]
+    =/  hits  (~(gut by labels.seen-tags.s) label 0)
+    [[label percent (share hits accepted) ~] hits accepted]
+  =/  tables=(list requirement)
+    %+  turn  tables.u.cover
+    |=  row=table-row
+    =/  counts  (~(gut by tables.seen-tags.s) table.row ~)
+    =/  total  (roll ~(val by counts) add)
+    =/  hits  (~(gut by counts) value.row 0)
+    [[value.row percent.row (share hits total) `table.row] hits total]
+  (weld labels tables)
 ::
 ++  conclude
   ::  A checkpoint was reached. Expected failure, then coverage. Under
   ::  %confident a row whose upper bound is below its share fails, and the
-  ::  run passes once every lower bound reaches `tolerance` of its share;
-  ::  otherwise it goes on. At the `final` checkpoint, or with no samples,
-  ::  the plain threshold decides, as under %check.
+  ::  run passes once every lower bound reaches the tolerance of its share;
+  ::  otherwise it goes on. A table row with no entries yet is undecided.
+  ::  At the `final` checkpoint, or with no samples, the plain threshold
+  ::  decides, as under %check.
   |=  [s=state final=?]
   ^-  state
   ?:  ?=(%fail expect.compiled.s)  s(result `[%passed-unexpectedly ~])
   =/  cover  cover.compiled.s
   =/  n  accepted.counts.s
-  ?:  &(?=(^ cover) ?=(%confident mode.u.cover) !final (gth n 0))
-    =/  rows  rows.u.cover
-    =/  hits  |=(label=@t (~(gut by labels.seen-tags.s) label 0))
+  ?:  &(?=(^ cover) ?=(%confident mode.cover.u.cover) !final (gth n 0))
+    =/  reqs  (requirements s)
+    =/  z  (z-for certainty.confidence.u.cover)
+    =/  tolerance  (div:rd (sun:rd tolerance.confidence.u.cover) .~100)
     =/  share  |=(percent=@ud (div:rd (sun:rd percent) .~100))
     =/  under=(list shortfall)
-      %+  murn  rows
-      |=  [label=@t percent=@ud]
+      %+  murn  reqs
+      |=  req=requirement
       ^-  (unit shortfall)
-      =/  k  (hits label)
-      ?.  (lth:rd (wilson k n confidence-z) (share percent))  ~
-      `[label percent (div (mul 100 k) n)]
+      ?:  =(0 total.req)  ~
+      =/  top  (wilson hits.req total.req z)
+      ?.  (lth:rd top (share want.shortfall.req))  ~
+      `shortfall.req
     ?^  under  s(result `[%uncovered under])
     =/  enough
-      %+  levy  rows
-      |=  [label=@t percent=@ud]
-      =/  low  (wilson (hits label) n (sub:rd .~0 confidence-z))
-      (gte:rd low (mul:rd tolerance (share percent)))
+      %+  levy  reqs
+      |=  req=requirement
+      ?:  =(0 total.req)  |
+      =/  low  (wilson hits.req total.req (sub:rd .~0 z))
+      (gte:rd low (mul:rd tolerance (share want.shortfall.req)))
     ?:  enough  s(result `[%passed ~])
     s
   =/  short  (shortfalls s)
-  ?:  &(?=(^ cover) !?=(%warn mode.u.cover) ?=(^ short))
+  ?:  &(?=(^ cover) !?=(%warn mode.cover.u.cover) ?=(^ short))
     s(result `[%uncovered short])
   s(result `[%passed short])
 ::
@@ -520,7 +568,7 @@
   |=  s=state
   ^-  ?
   =/  cover  cover.compiled.s
-  &(?=(^ cover) ?=(%confident mode.u.cover))
+  &(?=(^ cover) ?=(%confident mode.cover.u.cover))
 ::
 ++  checkpoint
   ::  Coverage is judged at requested times a power of two, as QuickCheck
@@ -534,13 +582,33 @@
   =/  ratio  (div n wanted)
   &((gth ratio 0) =(0 (dis ratio (dec ratio))))
 ::
-++  confidence-z
-  ::  Normal quantile for QuickCheck's default certainty: wrong 1 in 10^9.
-  .~6.109410191663286
+++  default-confidence
+  ::  QuickCheck's checkCoverage: wrong 1 in 10^9; a row passes at 90
+  ::  percent of its share.
+  ^-  confidence
+  [9 90]
 ::
-++  tolerance
-  ::  A covered row needs this fraction of its share, as in QuickCheck.
-  .~0.9
+++  confidence-z
+  ::  The normal quantile for the default certainty.
+  (z-for certainty:default-confidence)
+::
+++  z-for
+  ::  The normal quantile z with P(|Z| > z) = 10^-k, for k from 1 to 15.
+  |=  k=@ud
+  ^-  @rd
+  ~|  [%certainty k]
+  ?>  &((gte k 1) (lte k (lent z-table)))
+  (snag (dec k) z-table)
+::
+++  z-table
+  ::  -inv_cdf(10^-k / 2) for k = 1 to 15.
+  ^-  (list @rd)
+  :~  .~1.6448536269514726  .~2.5758293035489  .~3.2905267314918945
+      .~3.890591886413094  .~4.417173413469022  .~4.89163847569859
+      .~5.326723886384497  .~5.730728868236289  .~6.1094102048693975
+      .~6.466951087240515  .~6.806502490740626  .~7.130506848171323
+      .~7.440902150642369  .~7.739256319504373  .~8.02685888253454
+  ==
 ::
 ++  wilson
   ::  The Wilson score bound on the share behind `k` hits of `n`; a

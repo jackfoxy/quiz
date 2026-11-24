@@ -256,9 +256,12 @@ ends `uncovered` even though every check passed. Open **props →
 12-labels-coverage** and **failing → 14-coverage-shortfall** for both
 outcomes. `%warn` and `%check` are a threshold at the requested count. With
 `%confident`, as in **props → 28-confident-coverage**, the run keeps testing
-until a Wilson bound decides each row.
+until a Wilson bound decides each row; `++confidence [certainty tolerance]`
+changes how sure it must be. To require shares of a `tabulate` table rather
+than of samples, list `[table value percent]` rows in `++cover-table`, as in
+**props → 35-cover-table**.
 These ideas follow [FsCheck observation guidance](https://fscheck.github.io/FsCheck/Properties.html#Observing-Test-Case-Distribution)
-and QuickCheck's `classify` and `cover`.
+and QuickCheck's `classify`, `cover`, `coverTable` and `checkCoverageWith`.
 
 ## 5. Observe shrinking and preserve constraints
 
@@ -434,7 +437,7 @@ The following are Quiz applications of general property-testing techniques;
 | Data structures | `17-bst-delete-bug` checks a binary search tree against a sorted-set model and shrinks a failing deletion to three keys. |
 | Round trip | `18-parse-print` prints and parses decimal numbers, ships and knots made by aura generators. |
 | Filtering | Compare `04-discards` with `07-positive`: construct the domain directly when most inputs would be dropped. |
-| Distribution | `12-labels-coverage` labels each list by length and requires short and long lists with `++cover`; `14-coverage-shortfall` shows a requirement the generator misses. Know the stock norns' shape first: a `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics](reference.md#measured-generator-characteristics). |
+| Distribution | `12-labels-coverage` labels each list by length and requires short and long lists with `++cover`; `14-coverage-shortfall` shows a requirement the generator misses; `35-cover-table` requires shares of a tabulated value with `++cover-table`. Know the stock norns' shape first: a `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics](reference.md#measured-generator-characteristics). |
 | Readable failures | `13-expected-actual` uses `same` and `note`, so the run shows the expected and actual values, not just `false`. |
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
@@ -476,12 +479,12 @@ equal one `turn` over `cork` for generated `f` and `g`.
 "filter after map equals map after filter": its notes print the shrunk
 tables, `f = {_ -> 0}` and `p = {8 -> %.y, _ -> %.n}`, with item `~[8]`.
 
-Labels, classify, collect, tabulate, threshold coverage, expected failure and
+Labels, classify, collect, tabulate, threshold, table and statistical coverage, expected failure and
 conjunction/disjunction are available through
 [`quiz-prop`](reference.md#reports-labels-and-coverage). Other FsCheck
 facilities are **unsupported**: `Arbitrary` registration (the closest is
 `quiz-auto`'s type-directed defaults), automatic .NET derivation/reflection, generated functions beyond finite tables, coverage
-certainty other than QuickCheck's default, expected-exception combinators, nested quantification inside
+certainty other than a power of ten, expected-exception combinators, nested quantification inside
 a fate, xUnit/NUnit adapters and `IRunner` callbacks. Do not paste FsCheck
 API examples into Hoon. The [reference](reference.md) is the Quiz API authority.
 

@@ -12,7 +12,7 @@ the duplicate example requests two and intentionally reaches its small budget,
 and the queue models, coverage, generator-library, size and function
 examples request 100.
 The results below were checked through the browser/Gall application on
-`%zuse 408`, engine `%quiz-engine-11`. They describe these exact sources and
+`%zuse 408`, engine `%quiz-engine-12`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
 
 | Document | Expected outcome | What it demonstrates |
@@ -49,6 +49,7 @@ settings, not universal outcomes of similar-looking properties.
 | [32-expiry-agent](../examples/props/32-expiry-agent.hoon) | Passed, 100 accepted; 15 duplicates | Simulated behn clock: puts with a time to live and waits against an expiring key store |
 | [33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon) | Failed, false; two puts of `%a` and a wait | A re-put that does not `%rest` its old timer; the old wake deletes the new value early |
 | [34-typed-defaults](../examples/failing/34-typed-defaults.hoon) | Failed, false; `[name='' tags=~[%a %a %a]]` | No norn or alts: `quiz-auto` fills printable text and a list of terms from the sample's type and shrinks the list |
+| [35-cover-table](../examples/props/35-cover-table.hoon) | Passed, 100 accepted; 64 duplicates | `++cover-table`: each list's least element is tabulated, and three values must each be 5% of the table's entries |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -111,6 +112,13 @@ samples only.
 Every check passes, but only 1% of samples were empty, so the run ends
 `uncovered` with the shortfall `empty: 1% of accepted samples, required 10%`.
 The fix belongs in the generator, not the requirement.
+
+`35-cover-table` sorts a list of up to four digits and tabulates its least
+element under `least`. `++cover-table` requires `0`, `1` and `5` each to be
+at least 5% of that table's entries, as QuickCheck's `coverTable` does: the
+share is of the 99 entries, since the one empty list tabulates nothing, not of
+the 100 accepted samples. With no `++cover` the rows use `%check`; all are
+met. A short row would read `least = 5: …% of the table's entries`.
 
 `13-expected-actual` reports `same` on the value and its halved-and-doubled
 form, with a note. The shrunk failure shows expected `1`, actual `0`; the
@@ -267,6 +275,7 @@ queue, report, coverage, generator-library, size and function rows in
 | 32-expiry-agent | 115 | 100 | 0 | 15 | 0 | 0 | — |
 | 33-expiry-agent-bug | 9 | 6 | 0 | 2 | 56 | 7 | `~[[%put %a 0 ~s1] [%put %a 0 ~s2] [%wait ~s1]]` (expected `{%a}`, actual `{}`) |
 | 34-typed-defaults | 3 | 2 | 0 | 0 | 44 | 8 | `[name='-]' tags=~[%vby %m0g6 %q7qa]]` → `[name='' tags=~[%a %a %a]]` |
+| 35-cover-table | 164 | 100 | 0 | 64 | 0 | 0 | — |
 
 ## Existing suites
 

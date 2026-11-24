@@ -26,6 +26,7 @@
 /*  expiry-src  %hoon  /examples/props/32-expiry-agent/hoon
 /*  expiry-bug-src  %hoon  /examples/failing/33-expiry-agent-bug/hoon
 /*  typed  %hoon  /examples/failing/34-typed-defaults/hoon
+/*  table  %hoon  /examples/props/35-cover-table/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -109,7 +110,7 @@
   ^-  tang
   =/  path=path  /examples/failing/'14-coverage-shortfall'/hoon
   =/  done  (run path uncovered ~[!>(engine) !>(quiz) !>(prop)])
-  =/  short=(list shortfall:engine)  ~[['empty' 10 1]]
+  =/  short=(list shortfall:engine)  ~[['empty' 10 1 ~]]
   ;:  weld
     %+  expect-eq  !>(`(unit outcome:engine)``[%uncovered short])
     !>(result.done)
@@ -370,5 +371,17 @@
   ;:  weld
     (expect-eq !>(`counters:engine`[3 2 0 0 44 8]) !>(counts.done))
     (expect-eq !>(`*`['' ~[%a %a %a]]) !>(q.shrunk.result))
+  ==
+::
+++  test-cover-table
+  ::  Each required value is at least 5 percent of the table's entries.
+  ^-  tang
+  =/  path=path  /examples/props/'35-cover-table'/hoon
+  =/  done  (run path table ~[!>(engine) !>(gen) !>(prop)])
+  =/  least  (~(gut by tables.seen-tags.done) 'least' ~)
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.done))
+    (expect-eq !>(`counters:engine`[164 100 0 64 0 0]) !>(counts.done))
+    (expect-eq !>(`@ud`99) !>((roll ~(val by least) add)))
   ==
 --

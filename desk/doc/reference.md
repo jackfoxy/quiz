@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-11`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-12`.
 The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
 legacy behavior. Application property documents use `lib/quiz-engine.hoon`
 through `%quiz`; they do not call the legacy check loop.
@@ -25,6 +25,8 @@ An application document is a Hoon file producing a core:
 | `++alts` | Optional gate `$-(vase (list vase))` |
 | `++conf` | Optional `[seed=(unit @uv) config=conf:quiz-engine]` |
 | `++cover` | Optional `cover:quiz-engine`: `[mode=?(%warn %check %confident) rows=(list [label=@t percent=@ud])]` |
+| `++cover-table` | Optional `(list table-row:quiz-engine)`: `[table=@t value=@t percent=@ud]` rows, each a required share of one table's entries |
+| `++confidence` | Optional `confidence:quiz-engine`: `[certainty=@ud tolerance=@ud]`; used only by a `%confident` `++cover`; default `[9 90]` |
 | `++expect` | Optional `?(%pass %fail)`; default `%pass` |
 
 The builder checks the arms before the run starts. Invalid source, imports,
@@ -702,6 +704,29 @@ computes each row's Wilson score interval at certainty 1 in 10^9
 the run after `requested` was met, the plain threshold decides instead, as
 under `%check`; such a run is never `exhausted`.
 
+`++cover-table` follows QuickCheck's `coverTable`. Each row
+`[table value percent]` requires `value` to be at least `percent` of the
+entries `tabulate` made in `table`, not of the accepted samples, so a sample
+that tabulates nothing adds nothing. It uses `++cover`'s mode, or `%check`
+when the document has no `++cover`. A table with no entries is short for any
+positive row under the plain threshold; under `%confident` such a row stays
+undecided until entries appear or the plain threshold decides.
+
+`++confidence [certainty tolerance]` sets `%confident`'s parameters, as
+QuickCheck's `checkCoverageWith` does. `certainty` *k*, from 1 to 15, means a
+decision is wrong at most 1 in 10^k; z is taken from a table of
+`-inv_cdf(10^-k / 2)` (k = 9 gives 6.1094). `tolerance`, from 1 to 100,
+is the percent of its share a row's lower bound must reach. The default
+`[9 90]` is the behaviour described above. Without a `%confident` `++cover`
+the arm is checked and then ignored.
+[35-cover-table](../examples/props/35-cover-table.hoon) is an executable
+model of `++cover-table`.
+
+A shortfall is `[label want got table]`. For a label row `table` is `~`; for a
+table row `label` is the value and `table` is the table's name. `got` is the
+floored observed percentage: of accepted samples for a label, of the table's
+entries for a table row.
+
 `++expect %fail` marks a property that should fail. A counterexample, after
 shrinking, ends `failed-as-expected`; reaching the requested count ends
 `passed-unexpectedly`. `error`, `limited` and `exhausted` outcomes are
@@ -930,8 +955,10 @@ as `dropped` under `%discard`, and as the failure under `%fail`.
 | `%source`, `%import`, `%build`, unavailable desk/revision | Check path and pinned context. For a saved compiler failure, an editable draft may expose a more precise compiler diagnostic. |
 | `%conf-range` | Start with defaults, keep the full config, respect ceilings and positive bounds. A request `config` patch is checked after it is merged. |
 | `%cover-type`, `%cover-range` | `++cover` must be `[?(%warn %check %confident) (list [@t @ud])]`: at most 100 distinct, nonempty labels of at most 256 bytes, each percent at most 100. |
+| `%cover-table-type`, `%cover-table-range` | `++cover-table` must be `(list [@t @t @ud])`: at most 100 distinct `[table value]` rows, each name nonempty and at most 256 bytes, each percent at most 100. |
+| `%confidence-type`, `%confidence-range` | `++confidence` must be `[@ud @ud]`: certainty 1 to 15, tolerance 1 to 100. |
 | `%expect-type` | `++expect` must be `%pass` or `%fail`. |
-| `%uncovered` | Every check passed, but a required label was too rare. Inspect the distribution; change the generator, not the requirement, unless the requirement was wrong. |
+| `%uncovered` | Every check passed, but a required label or table value was too rare. Inspect the distribution; change the generator, not the requirement, unless the requirement was wrong. |
 | `%limited %labels` | A label was longer than 256 bytes, or a run produced more than 100 distinct labels or table rows. `collect` on a wide domain does this; label ranges instead. |
 | `%limited %seen-bytes` | Under `duplicates %exact`, the samples kept for comparison passed `bounds.seen-bytes`. Use `%mug`, `%allow`, smaller samples (`size-max`), or fewer checks. |
 | `%exhausted %duplicates` on a small domain | The generator has fewer distinct samples than `requested`. Set `duplicates %allow` to evaluate repeats. |
@@ -956,7 +983,7 @@ already checked parts/configuration and own scheduling and persistence.
 
 | Module | Responsibility / key entry points |
 | --- | --- |
-| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit cover) expect=?(%pass %fail)]`; `judge` classifies reports; terminal states are stable |
+| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `step state` → state; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit coverage) expect=?(%pass %fail)]`, where `coverage` is `[cover tables confidence]`; `judge` classifies reports; terminal states are stable |
 | [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
 | [quiz-harness](../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
 | [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |

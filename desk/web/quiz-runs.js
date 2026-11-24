@@ -353,7 +353,9 @@
     const coverage = (parent, id, title, rows) => {
       if (!rows?.length) return;
       const list = node('ul', id);
-      for (const row of rows) list.append(node('li', '', `${row.label}: ${row.got}% of accepted samples, required ${row.want}%`));
+      for (const row of rows) list.append(node('li', '', row.table == null
+        ? `${row.label}: ${row.got}% of accepted samples, required ${row.want}%`
+        : `${row.table} = ${row.label}: ${row.got}% of the table's entries, required ${row.want}%`));
       parent.append(node('h3', '', title), list);
     };
     // A false verdict may carry the fate's notes and an expected/actual pair.

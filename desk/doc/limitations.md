@@ -107,8 +107,8 @@ authoritative behavior and recovery guidance.
   label's share at the requested count. `%confident` keeps testing until
   Wilson bounds decide, as QuickCheck's `checkCoverage` does, but stops at
   `requested-max` (10,000) or a budget, where the plain threshold decides.
-  Only QuickCheck's default certainty (1 in 10^9) and tolerance (0.9) are
-  offered. See
+  `++confidence` sets certainty from 1 in 10 to 1 in 10^15 (powers of ten
+  only) and tolerance in whole percent. See
   [reports, labels and coverage](reference.md#reports-labels-and-coverage).
 - **Labels are bounded and not shrunk per class.** At most 100 distinct labels
   and 100 table rows of at most 256 bytes; the run otherwise ends

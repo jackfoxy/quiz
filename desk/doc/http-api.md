@@ -211,7 +211,9 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
 - `passed`: `warnings` (coverage shortfalls under `%warn`, usually empty) and
   `examples`.
 - `uncovered`: `shortfalls` and `examples`. A shortfall is
-  `{"label","want","got"}`, percentages as numbers. An example is
+  `{"label","want","got","table"}`, percentages as numbers. `table` is `null`
+  for a label row; for a `++cover-table` row it is the table's name and
+  `label` is the value. An example is
   `{"label","sample"}`, with a sample shaped like evidence samples.
 - `passed-unexpectedly`: no fields.
 - `failed` and `failed-as-expected`: `evidence` with `why`, `original`, `shrunk`.
