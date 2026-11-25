@@ -253,8 +253,8 @@ to 20, and ignores requested checks and attempt/drop/duplicate budgets. It
 shows at most 20 candidates for the first sample; it does not search for a
 minimal failure. A repeat marker indicates what a normal run would skip.
 
-The API permits candidates without verdicts, but the UI has only the three
-presets above. A verdict preview of a hanging fate interrupts regardless of
+**Samples and shrink candidates** shows candidates without running the fate.
+A verdict preview of a hanging fate interrupts regardless of
 the normal run's timeout policy. Use **Samples only** to inspect that norn.
 
 ## 6. Control size, repeats and budgets
@@ -289,8 +289,9 @@ uncapped. A size cap makes expensive size-driven generators manageable.
 ### Set a budget in the document
 
 The panel overrides requested checks, seed, first/largest size and repeat
-policy. All other configuration is still accessible through the editor's
-`++conf`. For example, replace `guide/threshold`'s `conf` arm with this
+policy; **More limits** overrides the other budgets, **On timeout** and each
+bound for one run without editing the source. To keep a setting with the
+document, put it in the editor's `++conf`. For example, replace `guide/threshold`'s `conf` arm with this
 fragment, keeping its import and the closing `--`:
 
 ```hoon
@@ -1074,8 +1075,8 @@ implementation interfaces, not additional workbench operations.
 | Draft and saved properties; all nine property arms | Editor and Run controls | Available |
 | Generator/shrinker/report/function/harness libraries | Editor imports, preview and run | Available; libraries have no dedicated GUI editors |
 | Counts, seed, sizes and repeat-policy overrides | Run-panel fields | Available |
-| Other budgets, bounds and timeout policy | Edit `++conf` | Available in source; no one-off UI override on unchanged saved source |
-| Sample/verdict/candidate previews | Three Preview presets | Partial: no candidates-without-verdicts preset |
+| Other budgets, bounds and timeout policy | More limits; or `++conf` | Available |
+| Sample/verdict/candidate previews | Four Preview presets | Available |
 | Diagnosis, counterexamples, coverage and shrink trace | Selected history result | Available with bounded retained evidence |
 | Exact property replay; request rerun | Result buttons | Available; suites/previews cannot exact-replay by design |
 | Saved-suite discovery and named/all arms | Run controls | Available for openable saved suites |
@@ -1084,7 +1085,7 @@ implementation interfaces, not additional workbench operations.
 | Browse indexed properties and suites at numeric revisions | Clay source | Available |
 | Advance a saved tab's revision | Use latest revision | Available |
 | General Clay-file chooser, including unindexed external suites | Open → clay | Available at the context browsed in Clay source |
-| Date/label revision selection | No selector in the panel | API/Gall only; UI uses immutable numeric revisions |
+| Date/label revision selection | Pinned revision | Available; Clay source browsing stays numeric |
 | Delete one completed run or clear completed history | Delete record; Clear completed history | Available; queued and active runs are kept |
 | Full machine-readable record and sample noun export | No result-download control | HTTP status or Gall reads; Copy copies the document only |
 | Secondary shrinker error alongside retained failure | Result shows stage and retained evidence | Separate error cause is omitted when evidence is present; full record retains it |

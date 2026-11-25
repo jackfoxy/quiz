@@ -47,6 +47,11 @@ Choose a source workflow in each tab's run controls:
 - **Draft property** runs the current editor buffer. Imports use the selected
   desk and immutable revision.
 - **Saved property** and **Saved suite** run the file at that desk/revision.
+  **Pinned revision** takes a number, a date (`~2026.11.25`, or with
+  `..12.00.00`) or a label; a date or label resolves to the numeric revision
+  current when the run is built, which the result shows as its context
+  beside the requested revision. An unknown label ends the run `invalid`
+  with `revision-unavailable`.
   Unsaved edits are excluded. Saving does not advance the selected revision;
   choose **Use latest revision** to run the newly saved version.
 - Examples default to saved suites. Clay tabs use their displayed context.
@@ -61,8 +66,12 @@ uses Hoon `@uv` notation, for example `0v123`. A largest size of 0 removes the
 cap. **Repeated samples** chooses the
 [duplicates policy](reference.md#default-generation-size-and-duplicates):
 skip a repeated mug, skip only an equal sample, or evaluate every sample.
-Suite execution has no controlled seed or property sample counters; those
-controls are disabled.
+**More limits** folds away the other configuration fields: the attempts,
+drops and duplicates budgets, **On timeout**, and each of the twelve bounds.
+Blank keeps the document's value. A bounds override sends a complete
+`bounds`, so setting any bound reads the document's conf once (one build) to
+fill the others; the other fields need no build. Suite execution has no
+controlled seed or property sample counters; those controls are disabled.
 
 **Preview samples** shows what the generator makes before a run, as
 QuickCheck's `sample` does. It makes up to **Preview samples** (1–100, blank
@@ -71,7 +80,8 @@ sample a run would make at that position. **Preview shows** chooses how much
 else to show: the default, *Samples, verdicts and shrink candidates*, also
 runs the fate on each sample and shows its verdict and labels, then the first
 sample's shrink candidates, each marked lighter or not; *Samples and
-verdicts* leaves out the candidates; *Samples only* runs no fate. The result
+verdicts* leaves out the candidates; *Samples and shrink candidates* runs no
+fate but shows the candidates; *Samples only* runs no fate. The result
 is a table of Size, Sample, Verdict, Labels and Repeat ("skipped by a run"
 where the duplicate policy would skip it), followed by **First sample's
 shrink candidates**. Requested checks are ignored; suites cannot be

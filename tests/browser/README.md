@@ -41,7 +41,9 @@ cancellation/replay/rerun, delete and clear with in-page confirmation,
 unavailable suite
 metrics, empty history, rejection, reload cancellation, interrupted runs,
 generator previews (the request's mode, the rows and candidates, the count
-bound, no replay) and network failures.
+bound, no replay, alternates without verdicts), More limits overrides (a bound
+completed from the document conf with one build), date and label revisions,
+and network failures.
 The Playwright run suite exercises document configuration, real draft failure
 and shrinking, replay, rerun, session restoration, saved Clay suites,
 cancellation, compilation diagnostics and disconnected progress. Server run
@@ -69,8 +71,9 @@ to check fallback help. The workbench suite's fallback scenario also expects
 other spec reaches: F1 and F2, Alt-C (copies to the clipboard), Alt-O, Ctrl-S
 and Ctrl-Shift-S, F5, Add Ref, Use latest revision with Clay source browsing,
 the Vim setting, run-history deletion (Delete record, Clear completed history,
-404/409 refusals, an unfinished run surviving Clear), and the remaining gap
-(no budget fields in the run panel).
+404/409 refusals, an unfinished run surviving Clear), and the run panel's
+More limits (budgets, on-timeout and a bound reaching the effective
+configuration), the alternates-only preview, and date and label revisions.
 
 When switching an existing disposable ship from installed to absent, `%docs`
 can leave its landing page in Eyre's response cache after uninstall. Clear

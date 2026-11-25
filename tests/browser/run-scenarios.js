@@ -209,6 +209,33 @@ async function scenario(env, mock, name) {
     assert.equal(el('run-replay').disabled,true,'a preview is not replayed');
     field('previewCount','101'); await runs.preview();
     assert.match(el('run-message').textContent,/between 1 and 100/);
+    field('previewCount','2'); field('previewShow','alts'); await runs.preview();
+    assert.deepEqual(mock.records.get(docs.active('property').runIds[0]).request.mode,
+      {kind:'preview',count:2,verdicts:false,alts:true}, 'alternates without verdicts');
+    // More limits: budgets and on-timeout go as single fields; a bound
+    // sends the document's other bounds too, read with one conf build.
+    field('requested','');
+    field('attemptsMax','40'); field('onTimeout','fail'); field('bound-trace-steps','7');
+    const builds = mock.calls.filter(c => c.op === 'document-conf').length;
+    await runs.run();
+    assert.match(el('run-message').textContent, /admitted/);
+    const limited = mock.records.get(docs.active('property').runIds[0]);
+    assert.equal(limited.request.config['attempts-max'], 40);
+    assert.equal(limited.request.config['on-timeout'], 'fail');
+    assert.deepEqual(limited.request.config.bounds, {...mock.config.bounds, 'trace-steps': 7});
+    assert.equal(limited.request.config['drops-max'], undefined, 'blank keeps the document');
+    assert.equal(mock.calls.filter(c => c.op === 'document-conf').length, builds + 1);
+    field('attemptsMax',''); field('onTimeout',''); field('bound-trace-steps','');
+    // A revision is a number, a date or a label.
+    field('revision','~2026.11.25'); await runs.run();
+    assert.deepEqual(mock.records.get(docs.active('property').runIds[0]).request.revision,
+      {kind:'da',value:'~2026.11.25'});
+    field('revision','release-1'); await runs.run();
+    assert.deepEqual(mock.records.get(docs.active('property').runIds[0]).request.revision,
+      {kind:'tas',value:'release-1'});
+    field('revision','~2026.13'); await runs.run();
+    assert.match(el('run-message').textContent, /a date such as/);
+    field('revision','20');
     // Delete asks in the page first; Keep leaves the record.
     const settle = async () => { for (let i = 0; i < 20; i++) await env.tick(); };
     const pick = async (runId) => {
@@ -251,6 +278,15 @@ async function scenario(env, mock, name) {
   assert.equal(cleaned.runSettings.sizeStart,'');
   assert.equal(cleaned.runSettings.sizeMax,'');
   assert.equal(cleaned.runSettings.duplicates,'');
+  const more = env.window.quizRunFields({runSettings:{revision:'~2026.11.25..12.00.00',
+    attemptsMax:'5',onTimeout:'discard','bound-trace-steps':'0',dropsMax:'-1',
+    'bound-sample-bytes':'x'}});
+  assert.equal(more.runSettings.revision,'~2026.11.25..12.00.00');
+  assert.equal(more.runSettings.attemptsMax,'5');
+  assert.equal(more.runSettings.onTimeout,'discard');
+  assert.equal(more.runSettings['bound-trace-steps'],'0');
+  assert.equal(more.runSettings.dropsMax,'');
+  assert.equal(more.runSettings['bound-sample-bytes'],'');
   runs.stop();
 }
 module.exports={mockApi,scenario};

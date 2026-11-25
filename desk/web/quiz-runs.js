@@ -6,7 +6,21 @@
   const seedPattern = /^0v[0-9a-v]+(?:\.[0-9a-v]+)*$/;
   const modes = ['draft', 'file', 'suite'];
   const policies = ['mug', 'exact', 'allow'];
-  const previewShows = ['all', 'verdicts', 'samples'];
+  const previewShows = ['all', 'alts', 'verdicts', 'samples'];
+  const timeoutPolicies = ['interrupt', 'fail', 'discard'];
+  // Every limit of a conf's bounds; a bounds override sends all twelve.
+  const boundKeys = ['source-bytes', 'requested-max', 'shrink-candidates',
+    'shrink-depth', 'sample-bytes', 'rendered-bytes', 'diagnostics-bytes',
+    'alts-bytes', 'seen-bytes', 'retained-runs', 'samples-per-slice', 'trace-steps'];
+  // Optional whole-number overrides of the document's conf, by run field.
+  const budgetKeys = {attemptsMax: 'attempts-max', dropsMax: 'drops-max',
+    duplicatesMax: 'duplicates-max'};
+  const wholeText = /^(0|[1-9][0-9]*)$/;
+  // A revision is a number, a date (~2026.11.25 or with ..hh.mm.ss) or a label.
+  const datePattern = /^~[1-9][0-9]*\.[1-9][0-9]?\.[1-9][0-9]?(\.\.[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2})?$/;
+  const caseOf = (text) => idPattern.test(text) ? {kind: 'ud', value: text}
+    : datePattern.test(text) ? {kind: 'da', value: text}
+      : deskPattern.test(text) ? {kind: 'tas', value: text} : null;
   const cleanFields = (saved = {}) => {
     const value = saved.runSettings || {};
     const bounded = (key, pattern, max) => typeof value[key] === 'string'
@@ -15,11 +29,17 @@
       runSettings: {
         mode: modes.includes(value.mode) ? value.mode : 'draft',
         desk: bounded('desk', deskPattern, 64),
-        revision: bounded('revision', idPattern, 40),
+        revision: typeof value.revision === 'string' && value.revision.length <= 40
+          && caseOf(value.revision) ? value.revision : '',
         requested: bounded('requested', /^(0|[1-9][0-9]*)$/, 10),
         sizeStart: bounded('sizeStart', /^[1-9][0-9]*$/, 10),
         sizeMax: bounded('sizeMax', /^(0|[1-9][0-9]*)$/, 10),
         duplicates: policies.includes(value.duplicates) ? value.duplicates : '',
+        ...Object.fromEntries(Object.keys(budgetKeys).map((key) =>
+          [key, bounded(key, wholeText, 10)])),
+        onTimeout: timeoutPolicies.includes(value.onTimeout) ? value.onTimeout : '',
+        ...Object.fromEntries(boundKeys.map((key) =>
+          [`bound-${key}`, bounded(`bound-${key}`, wholeText, 12)])),
         seed: bounded('seed', seedPattern, 256),
         arms: typeof value.arms === 'string' && value.arms.length <= 6400
           && /^[a-z0-9,\s-]*$/.test(value.arms) ? value.arms : '',
@@ -48,11 +68,11 @@
     };
     const controls = el('run-controls');
     const fields = {};
-    const addField = (key, label, tag = 'input') => {
+    const addField = (key, label, tag = 'input', parent = controls) => {
       const wrap = node('label', '', label);
       const input = node(tag, `run-${key}`);
       if (tag === 'input') input.type = 'text';
-      wrap.append(input); controls.append(wrap); fields[key] = input;
+      wrap.append(input); parent.append(wrap); fields[key] = input;
       input.addEventListener('change', saveControls);
       if (tag === 'input') input.addEventListener('input', saveControls);
       return input;
@@ -63,7 +83,7 @@
       const option = node('option', '', label); option.value = value; mode.append(option);
     }
     addField('desk', 'Dependency / source desk', 'select');
-    addField('revision', 'Pinned revision').inputMode = 'numeric';
+    addField('revision', 'Pinned revision (number, ~date or label)');
     addField('requested', 'Requested checks (blank = document conf)').inputMode = 'numeric';
     addField('seed', 'Seed (blank = document conf / new seed)').placeholder = '0v123';
     addField('sizeStart', 'First sample size (blank = document conf)').inputMode = 'numeric';
@@ -73,10 +93,29 @@
       ['exact', 'Skip only an equal sample'], ['allow', 'Evaluate every sample']]) {
       const option = node('option', '', label); option.value = value; dups.append(option);
     }
+    // Budgets, timeout policy and bounds, folded away; blank keeps the
+    // document's value. Setting any bound sends the document's other bounds.
+    const more = node('details', 'run-more');
+    more.append(node('summary', '', 'More limits (blank = document conf)'));
+    controls.append(more);
+    addField('attemptsMax', 'Attempts budget', 'input', more).inputMode = 'numeric';
+    addField('dropsMax', 'Drops budget', 'input', more).inputMode = 'numeric';
+    addField('duplicatesMax', 'Duplicates budget', 'input', more).inputMode = 'numeric';
+    const onTimeout = addField('onTimeout', 'On timeout', 'select', more);
+    const timeoutDefault = node('option', '', 'Document conf'); timeoutDefault.value = '';
+    onTimeout.append(timeoutDefault);
+    for (const [value, label] of [['interrupt', 'Interrupt the run'],
+      ['fail', 'Fail with the sample'], ['discard', 'Discard the sample']]) {
+      const option = node('option', '', label); option.value = value; onTimeout.append(option);
+    }
+    for (const key of boundKeys) {
+      addField(`bound-${key}`, `Bound: ${key}`, 'input', more).inputMode = 'numeric';
+    }
     addField('arms', 'Suite arms (comma separated; blank = all)');
     addField('previewCount', 'Preview samples (1-100, blank = 20)').inputMode = 'numeric';
     const shows = addField('previewShow', 'Preview shows', 'select');
     for (const [value, label] of [['all', 'Samples, verdicts and shrink candidates'],
+      ['alts', 'Samples and shrink candidates'],
       ['verdicts', 'Samples and verdicts'], ['samples', 'Samples only']]) {
       const option = node('option', '', label); option.value = value; shows.append(option);
     }
@@ -150,6 +189,10 @@
       fields.sizeStart.placeholder = 'Document conf';
       fields.sizeMax.placeholder = 'Document conf';
       fields.seed.placeholder = 'Document conf / new seed';
+      timeoutDefault.textContent = 'Document conf';
+      for (const key of [...Object.keys(budgetKeys), ...boundKeys.map((k) => `bound-${k}`)]) {
+        fields[key].placeholder = 'Document conf';
+      }
     }
     function pathFor(tab) {
       const path = tab?.path;
@@ -209,7 +252,8 @@
     function updateButtons() {
       const tab = active(); const value = tab ? settings(tab) : {};
       const suite = value.mode === 'suite';
-      for (const key of ['requested', 'seed', 'sizeStart', 'sizeMax', 'duplicates']) fields[key].disabled = suite;
+      for (const key of ['requested', 'seed', 'sizeStart', 'sizeMax', 'duplicates', 'onTimeout',
+        ...Object.keys(budgetKeys), ...boundKeys.map((k) => `bound-${k}`)]) fields[key].disabled = suite;
       fields.arms.disabled = !suite;
       for (const key of ['previewCount', 'previewShow']) fields[key].disabled = suite;
       inspectButton.disabled = busy || suite || !online;
@@ -235,9 +279,9 @@
     }
     function requestFor(tab) {
       const value = {...settings(tab)};
-      if (!deskPattern.test(value.desk) || value.desk.length > 64
-        || !idPattern.test(value.revision) || value.revision.length > 40) {
-        throw new Error('Choose a desk and a positive pinned revision.');
+      const revision = value.revision.length <= 40 ? caseOf(value.revision) : null;
+      if (!deskPattern.test(value.desk) || value.desk.length > 64 || !revision) {
+        throw new Error('Choose a desk and a pinned revision: a positive number, a date such as ~2026.11.25, or a label.');
       }
       if (tab.path?.at(-1) === 'md') throw new Error('Open a Hoon document to run.');
       const path = pathFor(tab);
@@ -252,7 +296,7 @@
       const source = value.mode === 'draft' ? {kind: 'draft', text: tab.text}
         : {kind: value.mode, path, ...(value.mode === 'suite' ? {arms: [...new Set(arms)]} : {})};
       return {op: 'run', source, desk: value.desk,
-        revision: {kind: 'ud', value: value.revision},
+        revision,
         seed: value.mode === 'suite' ? null : value.seed || null};
     }
     async function latest() {
@@ -287,6 +331,9 @@
         fields.seed.placeholder = result.seed || 'New recorded seed';
         fields.sizeStart.placeholder = String(conf['size-start']);
         fields.sizeMax.placeholder = String(conf['size-max']);
+        for (const [key, name] of Object.entries(budgetKeys)) fields[key].placeholder = String(conf[name]);
+        for (const key of boundKeys) fields[`bound-${key}`].placeholder = String(conf.bounds[key]);
+        timeoutDefault.textContent = `Document conf (${conf['on-timeout']})`;
         settingsNote.textContent = `Document conf: ${conf.requested} checks; sizes from ${conf['size-start']}${conf['size-max'] ? ` up to ${conf['size-max']}` : ', uncapped'}; repeats ${conf.duplicates}; seed ${result.seed || 'chosen for each run'}. Other budgets are preserved when overriding these fields.`;
       } catch (error) { if (key === null || current()) tell(errorText(error)); }
     }
@@ -350,13 +397,17 @@
           tell('Preview between 1 and 100 samples.'); return;
         }
         req.mode = {kind: 'preview', count,
-          verdicts: value.previewShow !== 'samples', alts: value.previewShow === 'all'};
+          verdicts: ['all', 'verdicts'].includes(value.previewShow),
+          alts: ['all', 'alts'].includes(value.previewShow)};
       }
       await action(async () => {
-        const {sizeStart, sizeMax, duplicates} = value;
+        const {sizeStart, sizeMax, duplicates, onTimeout} = value;
         // A preview's count replaces requested checks.
         const requested = previewing ? '' : value.requested;
-        if (req.source.kind !== 'suite' && [requested, sizeStart, sizeMax, duplicates].some((item) => item)) {
+        const budgets = Object.keys(budgetKeys).filter((key) => value[key] !== '');
+        const bounds = boundKeys.filter((key) => value[`bound-${key}`] !== '');
+        if (req.source.kind !== 'suite' && ([requested, sizeStart, sizeMax, duplicates, onTimeout]
+          .some((item) => item) || budgets.length || bounds.length)) {
           const whole = (text) => /^(0|[1-9][0-9]*)$/.test(text) && Number.isSafeInteger(Number(text));
           const maximum = getDefaults()?.bounds?.['requested-max'];
           if (requested !== '' && (!whole(requested) || maximum === undefined || Number(requested) > maximum)) {
@@ -373,6 +424,20 @@
           if (sizeStart !== '') next['size-start'] = Number(sizeStart);
           if (sizeMax !== '') next['size-max'] = Number(sizeMax);
           if (duplicates) next.duplicates = duplicates;
+          if (onTimeout) next['on-timeout'] = onTimeout;
+          for (const key of budgets) {
+            if (!whole(value[key])) throw new Error(`The ${budgetKeys[key]} budget must be a whole number.`);
+            next[budgetKeys[key]] = Number(value[key]);
+          }
+          if (bounds.length) {
+            for (const key of bounds) {
+              if (!whole(value[`bound-${key}`])) throw new Error(`Bound ${key} must be a whole number.`);
+            }
+            // A bounds patch is complete: fill the rest from the document.
+            const {config} = await post('/apps/quiz/api', {...req, op: 'document-conf'});
+            next.bounds = {...config.bounds,
+              ...Object.fromEntries(bounds.map((key) => [key, Number(value[`bound-${key}`])]))};
+          }
           if (next['size-max'] && next['size-start'] && next['size-max'] < next['size-start']) {
             throw new Error(`The largest sample size (${next['size-max']}) is below the first (${next['size-start']}).`);
           }
@@ -513,6 +578,8 @@
       line(detail, 'Workflow', rec.kind === 'draft' ? 'Draft property' : rec.kind === 'suite' ? 'Saved suite' : 'Saved property');
       if (snapshot) {
         line(detail, 'Context', `%${snapshot.context.desk} revision ${snapshot.context.revision}`);
+        const wanted = rec.request?.revision;
+        if (wanted && wanted.kind !== 'ud') line(detail, 'Requested revision', `${wanted.kind} ${wanted.value}`);
         line(detail, 'Source hash', snapshot['source-hash']);
         line(detail, 'Source path', snapshot.path.join('/'));
       }

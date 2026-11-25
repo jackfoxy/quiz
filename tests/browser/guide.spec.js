@@ -124,11 +124,69 @@ test('Delete record and Clear completed history keep unfinished runs', async ({p
   expect((await json({op: 'runs'})).ids).not.toContain(slow);
 });
 
-test('the run panel has no budget or timeout override fields', async ({page}) => {
+test('More limits, alternates-only preview and date or label revisions', async ({page}) => {
+  test.setTimeout(180000);
   await open(page);
-  for (const id of ['run-attemptsMax', 'run-dropsMax', 'run-duplicatesMax', 'run-onTimeout', 'run-bounds']) {
-    await expect(page.locator(`#${id}`)).toHaveCount(0);
+  const api = async (data) => (await page.request.post('/apps/quiz/api', {data})).json();
+  const finished = async () => {
+    const newest = () => page.evaluate(() =>
+      window.quiz.documents.active('property').runIds?.[0] || null);
+    const before = await newest();
+    await page.locator('#run-start').click();
+    let id;
+    await expect.poll(async () => (id = await newest()) !== before).toBe(true);
+    let record;
+    await expect.poll(async () => (record = await api({op: 'status', id})).status,
+      {timeout: 60000}).toBe('done');
+    return record;
+  };
+  await page.evaluate(path => window.quiz.documents.open('property', path),
+    ['props', '01-success', 'hoon']);
+  await expect(page.locator('#run-mode')).toHaveValue('file');
+  await page.locator('#run-more summary').click();
+  await page.locator('#run-attemptsMax').fill('500');
+  await page.locator('#run-dropsMax').fill('3');
+  await page.locator('#run-onTimeout').selectOption('fail');
+  await page.locator('#run-bound-trace-steps').fill('5');
+  const record = await finished();
+  expect(record.outcome.kind).toBe('passed');
+  expect(record.config['attempts-max']).toBe(500);
+  expect(record.config['drops-max']).toBe(3);
+  expect(record.config['on-timeout']).toBe('fail');
+  expect(record.config.bounds['trace-steps']).toBe(5);
+  const {defaults} = await api({op: 'contexts'});
+  expect(record.config.bounds['sample-bytes']).toBe(defaults.bounds['sample-bytes']);
+  await expect(page.locator('#run-config')).toContainText('"attempts-max": 500');
+  for (const id of ['attemptsMax', 'dropsMax', 'bound-trace-steps']) {
+    await page.locator(`#run-${id}`).fill('');
   }
+  await page.locator('#run-onTimeout').selectOption('');
+  // Alternates without verdicts, on a document whose first sample shrinks.
+  await page.evaluate(path => window.quiz.documents.open('property', path),
+    ['failing', '08-seeded-threshold', 'hoon']);
+  await page.locator('#run-previewShow').selectOption('alts');
+  await page.locator('#run-previewCount').fill('3');
+  await page.locator('#run-preview').click();
+  await expect(page.locator('#run-preview-candidates')).toBeVisible({timeout: 60000});
+  const id = await page.evaluate(() => window.quiz.documents.active('property').runIds[0]);
+  const preview = await api({op: 'status', id});
+  expect(preview.request.mode).toEqual({kind: 'preview', count: 3, verdicts: false, alts: true});
+  expect(preview.outcome.rows.every((row) => row.verdict === null)).toBeTruthy();
+  expect(preview.outcome.candidates.length).toBeGreaterThan(0);
+  // A date revision pins the revision current at that time; an unknown
+  // label ends invalid.
+  const now = new Date();
+  const date = `~${now.getUTCFullYear()}.${now.getUTCMonth() + 1}.${now.getUTCDate()}`;
+  await page.locator('#run-revision').fill(date);
+  const dated = await finished();
+  expect(dated.request.revision).toEqual({kind: 'da', value: date});
+  expect(Number(dated.snapshot.context.revision)).toBeGreaterThan(0);
+  await expect(page.locator('#run-detail')).toContainText(`Requested revision: da ${date}`);
+  await page.locator('#run-revision').fill('no-such-label');
+  const labelled = await finished();
+  expect(labelled.request.revision).toEqual({kind: 'tas', value: 'no-such-label'});
+  expect(labelled.outcome.kind).toBe('invalid');
+  expect(labelled.outcome.diagnostic.code).toBe('revision-unavailable');
 });
 
 test('F5 runs the selected property from the run panel', async ({page}) => {
