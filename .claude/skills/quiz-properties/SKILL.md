@@ -252,9 +252,20 @@ not necessarily the global minimum.
 To see why shrinking stopped, read the evidence's `trace` (workbench:
 **Shrink trace**; `bounds.trace-steps`, default 100, 0 off). It records each
 alts call and each candidate's fate: `accepted`, `timeout`, `passed`,
-`dropped`, `other-failure`, `heavier` (not lighter) or `visited`. The last
-alts call's candidates show what the shrinker still offered. Tracing never
-changes the result.
+`dropped`, `other-failure`, `heavier` (not lighter) or `visited`. The
+workbench groups it into steps, one per alts call, and opens on the last:
+its candidates show what the shrinker still offered. Tracing never changes
+the result.
+
+Candidates are tried in order and the first accepted one wins, so order the
+shrinker deliberately: structural cuts first (`shrink-list` deletes chunks,
+then shrinks one element), then each field on its own (`shrink-pair`).
+Moving independent fields together strands the irrelevant one:
+[38-shrink-order](../../../desk/examples/failing/38-shrink-order.hoon) ends
+at `[[4 1] 0]`,
+[39-shrink-together](../../../desk/examples/failing/39-shrink-together.hoon)
+at `[[4 13] 0]`. Shrink fields together only when they are coupled
+(`shrink-equal`, example 29).
 
 Write a custom `alts` when the default would leave the domain. Example: a
 domain of positive even numbers, where halving gives odd values. Rules:

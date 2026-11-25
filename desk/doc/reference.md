@@ -542,15 +542,18 @@ negative double can reach NaN (`-0` minus one is all ones) or a huge positive
 value.
 
 The app accepts a candidate only when its mug is new (whatever the duplicates
-policy), its noun weight strictly
-decreases, and it reproduces the original failure **category**. Atom weight is
+policy), its noun weight is strictly below the best sample's (the
+**strict-weight rule**), and it reproduces the original failure
+**category**. Atom weight is
 `value + 1`; cell weight is `1 + weight(head) + weight(tail)`. Equal-weight
 permutations and growing candidates are skipped. Crash traces need not match:
 preserving `%crash` does not prove the underlying crash cause stayed identical.
 `%.y` and `%drop` candidates are never accepted as failures.
 
-After accepting a candidate, the engine asks for alternatives of that new best
-sample. When candidates end, the result is `%failed`; hitting a bound produces
+Candidates are tried in the order alts returns them, so that order is the
+shrink order. The first accepted candidate becomes the best sample and the
+rest of the list is never tried: the engine then asks for alternatives of
+that new best sample. When candidates end, the result is `%failed`; hitting a bound produces
 `%limited`, and an alts error produces `%error`, retaining bounded evidence
 when available. The best sample is not guaranteed globally minimal.
 
@@ -572,6 +575,11 @@ JSON. It answers "why did shrinking stop here?":
 | `%other-failure` | It failed in another category, including a hang when the failure is not a timeout | yes | yes |
 | `%heavier` | Not lighter than the best sample | yes | no |
 | `%visited` | Its mug was seen before | no | no |
+
+Grouped by `%alts` row, the trace is a sequence of steps; every candidate in
+a step is judged against that row's `best`. The workbench shows it this way
+([workbench](workbench.md)). The oldest rows of a cut trace can belong to an
+alts call it no longer holds.
 
 Text is at most 160 bytes, cut with `...`. A rejected candidate is rendered
 only for the trace; if rendering fails, the row has no text. Tracing never

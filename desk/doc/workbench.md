@@ -96,10 +96,15 @@ and **Rerun request** previews again. See the
 Results show only confirmed server status, effective configuration and seed,
 counters, diagnostics, and original/shrunk counterexamples. A property run
 also shows **Call limit: N ms per call**, the limit its last slice ran under. Under the
-counterexample, a collapsed **Shrink trace (last N steps)** lists the last
-shrink steps, oldest first: each alts call with its candidate count, and each
-candidate's fate (`accepted`, `passed`, `heavier`, `visited`, …) with its
-weight and rendered text where the engine computed them. Select a history
+counterexample, a collapsed **Shrink trace** shows the retained trace as
+steps: one alts call on the best sample, its weight and candidate count, and
+each candidate tried, with its weight, outcome (still fails, passed, dropped,
+other failure, not lighter, seen), the reason in words and its rendered text
+where the engine computed one. A rejected heavier candidate names the
+strict-weight rule. The view opens on the last step, which says why
+shrinking stopped; **First**, **Previous**, **Next** and **Last** move
+between steps, and **Accepted path only** lists each accepted candidate with
+the weight it replaced. Select a history
 entry to inspect it. **Cancel selected run** requests cancellation at the next
 server boundary. **Rerun request** submits the original request again (including
 its pinned revision and any explicit seed); **Replay exact property** reuses

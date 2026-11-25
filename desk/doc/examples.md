@@ -52,6 +52,8 @@ settings, not universal outcomes of similar-looking properties.
 | [35-cover-table](../examples/props/35-cover-table.hoon) | Passed, 100 accepted; 64 duplicates | `++cover-table`: each list's least element is tabulated, and three values must each be 5% of the table's entries |
 | [36-weak-generator](../examples/props/36-weak-generator.hoon) | Passed, 100 accepted; 215 dropped | A weak generator: arbitrary lists, unsorted ones dropped, so only 6 accepted lists are long. Preview 200 with verdicts: 132 dropped, 1 long |
 | [37-insert-generated](../examples/props/37-insert-generated.hoon) | Passed, 100 accepted; 61 long | 36 repaired: `sorted:gen` makes sorted lists, nothing is dropped, and `++cover` requires half to be long. Preview 200: no drops, 119 long |
+| [38-shrink-order](../examples/failing/38-shrink-order.hoon) | Failed, false; 3 lines → `[[4 1] 0]` | Deliberate shrink order: `shrink-list` deletes lines first, then `shrink-pair` shrinks quantity and price one at a time |
+| [39-shrink-together](../examples/failing/39-shrink-together.hoon) | Failed, false; 3 lines → `[[4 13] 0]` | 38's bug with a pitfall: quantity and price only shrink together, so the price is never lowered alone |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -132,7 +134,7 @@ note and comparison follow the shrunk sample, not the original 3.
 
 ## Generator library examples
 
-Examples 16 to 20 and 29 to 31 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
+Examples 16 to 20, 29 to 31, 38 and 39 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
 
 `16-sorted-insert` generates a sorted list and a value, inserts the value,
 and checks the result with `same` under `all`. It labels where the value
@@ -165,6 +167,14 @@ deleted key is also in the tree, so shrinking either copy alone loses the
 failure, and 17 stops at `[~[12 0 13] 12]`. Viewing the sample as one list,
 the deleted key first, `shrink-equal` replaces every copy of a value at once
 and reaches `[~[1 0 2] 1]`: delete the root of a three-key tree.
+
+`38-shrink-order` and `39-shrink-together` share one bug: a line of four or
+more items is charged for one fewer. Both delete the two irrelevant lines
+first. 38 then shrinks a line's quantity and price separately, so the price
+falls 13 → 7 → 4 → 2 → 1 while the quantity stays at 4. 39 only moves both
+fields at once; every such move takes the quantity below 4 and passes, so the
+price stays at 13. The users' guide walks through both in the step view of
+**Shrink trace**.
 
 `30-dependent-inner` regenerates a list of at most `bound` values from the
 seed; the false claim is that every value is below 90. It builds its norn,
@@ -280,6 +290,8 @@ queue, report, coverage, generator-library, size and function rows in
 | 35-cover-table | 164 | 100 | 0 | 64 | 0 | 0 | — |
 | 36-weak-generator | 324 | 100 | 215 | 9 | 0 | 0 | — |
 | 37-insert-generated | 101 | 100 | 0 | 1 | 0 | 0 | — |
+| 38-shrink-order | 1 | 0 | 0 | 0 | 35 | 6 | `[[4 13] [0 33] [0 18] 0]` → `[[4 1] 0]` |
+| 39-shrink-together | 1 | 0 | 0 | 0 | 9 | 2 | `[[4 13] [0 33] [0 18] 0]` → `[[4 13] 0]` |
 
 ## Example suites
 

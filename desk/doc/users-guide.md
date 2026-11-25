@@ -369,19 +369,27 @@ Run the restored `guide/threshold` draft. Its original counterexample is
 541 and its shrunk counterexample is 501. In this example Quiz considered
 82 candidates and accepted 40 replacements.
 
-Expand **Shrink trace**. The engine accepts a candidate only when it has a
-new mug, a strictly lower noun weight and the same failure category. Passing
-or dropped candidates cannot replace a failure. Equal-weight rearrangements
-are rejected even if they would look simpler to a person.
+Expand **Shrink trace**. Each step is one call of the shrinker on the best
+sample so far, and the candidates tried against it. The engine accepts a
+candidate only when it has a new mug, a weight strictly below the best
+weight and the same failure category: the strict-weight rule. Passing or
+dropped candidates cannot replace a failure. Equal-weight rearrangements are
+rejected even if they would look simpler to a person. Candidates are tried
+in the order the shrinker gives them; the first accepted one becomes the
+best sample, and the rest of that list is never tried.
 
-| Trace entry | Interpretation |
+The trace opens on its last step, which says why shrinking stopped there.
+**First**, **Previous**, **Next** and **Last** move between steps, and
+**Accepted path only** lists just the replacements, from the original down
+to the shrunk sample.
+
+| Outcome | Interpretation |
 | --- | --- |
-| `alts` | The shrinker was called on the current best sample |
-| `accepted` | This smaller failure replaced the previous best |
-| `passed`, `dropped` | The candidate did not reproduce the failure |
-| `heavier`, `visited` | It failed the weight or visited-mug guard |
-| `other-failure` | It failed for a different category |
-| `timeout` | A hanging candidate became the best under `%fail` timeout handling |
+| still fails | This lighter failure replaced the previous best (`accepted`) |
+| passed, dropped | The candidate did not reproduce the failure |
+| not lighter, seen | It failed the strict-weight rule or the visited-mug guard |
+| other failure | It failed for a different category |
+| still fails (timeout) | A hanging candidate became the best under `%fail` timeout handling |
 
 Only the configured tail of the trace is kept. The shrunk sample is the best
 this bounded search found, not a promise of a global minimum. Two crashes
@@ -407,6 +415,39 @@ number was intended rather than any `@ud`.
 
 For a typed shrinker, `(alts-of:gen mold shrinker)` supplies the required
 vase interface. Chapter 12 uses this to shrink command lists.
+
+### Deliberate shrink order
+
+Because the first accepted candidate wins, a shrinker's order decides the
+path, and its moves decide where the path can end. QuickCheck's advice for
+[`shrink`](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck-Arbitrary.html#v:shrink)
+holds here too: offer the largest structural cuts first, then shrink the
+parts one at a time.
+
+Run `failing/38-shrink-order`. An order is a list of `[qty price]` lines;
+the bug charges a bulk line, of four or more, for one item fewer. The
+original order is `lines=[[4 13] [0 33] [0 18] 0]`. Its shrinker is
+`(shrink-list:gen (shrink-pair:gen shrink-atom:gen shrink-atom:gen))`:
+delete lines, the largest chunks first, then shrink one line, its quantity
+and its price separately. Open **Shrink trace** and choose **First**. Steps
+1 and 2 delete the two irrelevant lines; steps 3 to 6 lower the price, 13 →
+7 → 4 → 2 → 1, while the quantity stays at 4 because 3 passes. The last
+step finds nothing lighter that fails: `lines=[[4 1] 0]`, after 35
+candidates in 6 accepted steps.
+
+Now run `failing/39-shrink-together`. The bug, generator and seed are the
+same, but each line's fields only move together: both halved, or both
+decremented. The same deletions happen, then step 3 offers `[2 6]` and
+`[3 12]`, both of which pass because the quantity fell below 4. Shrinking
+stops at `lines=[[4 13] 0]`, after 9 candidates in 2 accepted steps. The
+price never shrank, because no move lowered it alone.
+
+Quantity and price are independent, so they must shrink independently.
+Shrink fields together only when they are coupled, as the deleted key and
+its copy in the tree are in `failing/29-bst-coordinated` (chapter 13). If a
+shrunk counterexample still holds values that look irrelevant, open the last
+step: when every candidate also changed something that matters, the
+shrinker needs a move that changes one part alone.
 
 ## 8. Replay a failure and keep a regression
 
@@ -1052,6 +1093,8 @@ their settings. A file under `props` can deliberately produce a failure:
 | `props/35-cover-table` | Passed, 100 accepted; 64 duplicates | 10 |
 | `props/36-weak-generator` | Passed, 100 accepted; 215 dropped | 5 |
 | `props/37-insert-generated` | Passed, 100 accepted; 61 long | 5 |
+| `failing/38-shrink-order` | Failed, false; 3 lines → `[[4 1] 0]` | 7 |
+| `failing/39-shrink-together` | Failed, false; 3 lines → `[[4 13] 0]` | 7 |
 | `examples/01-quiz-tutorial` | Suite passes, 12 arms | 17 |
 | `examples/02-boxcar` | Suite passes, 3 arms | 17 |
 | `examples/03-euler` | Suite passes, 4 arms | 17 |

@@ -30,6 +30,8 @@
 /*  weak  %hoon  /examples/props/36-weak-generator/hoon
 /*  strong  %hoon  /examples/props/37-insert-generated/hoon
 /*  custom  %hoon  /examples/failing/09-custom-alts/hoon
+/*  order  %hoon  /examples/failing/38-shrink-order/hoon
+/*  together  %hoon  /examples/failing/39-shrink-together/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -438,6 +440,26 @@
     =/  weak-long  (~(gut by labels.weak-sum) 'long' 0)
     =/  strong-long  (~(gut by labels.strong-sum) 'long' 0)
     (expect-eq !>(`[@ud @ud]`[1 119]) !>([weak-long strong-long]))
+  ==
+::
+++  test-shrink-order
+  ::  One bug, two shrinkers: field by field reaches ~[[4 1]]; quantity
+  ::  and price shrinking together stop at a heavier order.
+  ^-  tang
+  =/  imports  ~[!>(engine) !>(gen)]
+  =/  one  (run /examples/failing/'38-shrink-order'/hoon order imports)
+  =/  two  (run /examples/failing/'39-shrink-together'/hoon together imports)
+  =/  a  (need result.one)
+  =/  b  (need result.two)
+  ?>  &(?=(%failed -.a) ?=(%failed -.b))
+  =/  start  ~[[4 13] [0 33] [0 18]]
+  ;:  weld
+    (expect-eq !>(`*`start) !>(q.original.a))
+    (expect-eq !>(`*`start) !>(q.original.b))
+    (expect-eq !>(`counters:engine`[1 0 0 0 35 6]) !>(counts.one))
+    (expect-eq !>(`*`~[[4 1]]) !>(q.shrunk.a))
+    (expect-eq !>(`counters:engine`[1 0 0 0 9 2]) !>(counts.two))
+    (expect-eq !>(`*`~[[4 13]]) !>(q.shrunk.b))
   ==
 ::
 ++  test-trace-invariant

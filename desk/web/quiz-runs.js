@@ -563,6 +563,117 @@
       if (sum.samples > listed) box.append(node('p', '', `The first ${listed} samples are listed below.`));
       return box;
     }
+    // What became of a shrink candidate, as a short outcome and in words.
+    const fates = {
+      accepted: ['still fails', () => 'Accepted: lighter, and fails the same way. It becomes the best sample.'],
+      timeout: ['still fails (timeout)', () => 'Accepted: it hung under on-timeout %fail, as the best sample did.'],
+      passed: ['passed', () => 'Rejected: the fate passed, so it is not a counterexample.'],
+      dropped: ['dropped', () => 'Rejected: the fate dropped it (%drop, or a hang under on-timeout %discard).'],
+      'other-failure': ['other failure', () => 'Rejected: it failed in a different category from the best sample.'],
+      heavier: ['not lighter', (row, best) => `Skipped: weight ${row.weight} is not below the best weight${best == null ? '' : ` ${best}`} (strict-weight rule).`],
+      visited: ['seen', () => 'Skipped: a candidate with the same mug was tried before.']
+    };
+    const isAccepted = (row) => row.why === 'accepted' || row.why === 'timeout';
+    const tally = (tried) => {
+      const counts = new Map();
+      for (const row of tried) {
+        const what = fates[row.why]?.[0] ?? row.why;
+        counts.set(what, (counts.get(what) || 0) + 1);
+      }
+      return [...counts].map(([what, n]) => `${n} ${what}`).join(', ');
+    };
+    // The shrink trace as steps: one alts call on the best sample and the
+    // candidates tried against it, oldest first, with why each was or was
+    // not accepted. Opens on the last step: why shrinking stopped there.
+    function shrinkTrace(rows) {
+      const steps = [];
+      for (const row of rows) {
+        if (row.kind === 'alts') steps.push({best: row.best, count: row.count, tried: []});
+        else {
+          // The trace's oldest rows can belong to an alts call it no longer holds.
+          if (!steps.length) steps.push({best: null, count: null, tried: []});
+          steps.at(-1).tried.push(row);
+        }
+      }
+      const box = node('details', 'run-shrink-trace');
+      const taken = steps.filter((step) => step.tried.some(isAccepted)).length;
+      box.append(node('summary', '', `Shrink trace: ${steps.length} steps, ${taken} accepted (last ${rows.length} trace rows)`),
+        node('p', 'run-trace-rule', 'A candidate replaces the best sample only when it was not seen before, its weight is strictly below the best weight, and it fails in the same category. Candidates are tried in the order alts gives them; the first accepted one becomes the best sample, and alts is asked again for it.'));
+      const controls = node('div', 'run-trace-controls');
+      const buttons = {};
+      for (const [key, label] of [['first', 'First'], ['prev', 'Previous'], ['next', 'Next'], ['last', 'Last']]) {
+        buttons[key] = node('button', `run-trace-${key}`, label);
+        buttons[key].type = 'button';
+        controls.append(buttons[key]);
+      }
+      const position = node('span', 'run-trace-position');
+      const filter = node('input', 'run-trace-accepted');
+      filter.type = 'checkbox';
+      const filterLabel = node('label', '', 'Accepted path only');
+      filterLabel.htmlFor = 'run-trace-accepted';
+      controls.append(position, filter, filterLabel);
+      const view = node('div', 'run-trace-view');
+      box.append(controls, view);
+      let at = steps.length - 1;
+      const heading = (step, i) => {
+        const opened = step.best == null
+          ? 'its alts call is older than the retained trace'
+          : `alts on the best sample (weight ${step.best}) offered ${step.count} candidates`;
+        const won = step.tried.findIndex(isAccepted);
+        const end = won >= 0
+          ? `candidate ${won + 1} was accepted (weight ${step.tried[won].weight})${step.count != null && step.count > won + 1 ? `; the other ${step.count - won - 1} were not tried` : ''}`
+          : i < steps.length - 1 ? 'none was accepted'
+            : step.count == null || step.tried.length >= step.count
+              ? `none was accepted (${tally(step.tried) || 'no candidates'}), so shrinking stopped here`
+              : `the run stopped after ${step.tried.length} of ${step.count} candidates`;
+        return `Step ${i + 1}: ${opened}; ${end}.`;
+      };
+      const show = () => {
+        view.replaceChildren();
+        const path = filter.checked;
+        for (const key of ['first', 'prev']) buttons[key].disabled = path || at <= 0;
+        for (const key of ['next', 'last']) buttons[key].disabled = path || at >= steps.length - 1;
+        if (path) {
+          position.textContent = `${taken} of ${steps.length} steps accepted a candidate`;
+          const table = node('table', 'run-trace-path');
+          const head = node('tr', '');
+          for (const title of ['Step', 'Weight', 'From weight', 'Sample']) head.append(node('th', '', title));
+          table.append(head);
+          steps.forEach((step, i) => {
+            const won = step.tried.find(isAccepted);
+            if (!won) return;
+            const tr = node('tr', '');
+            for (const text of [String(i + 1), won.weight ?? '—', step.best ?? '—', won.text ?? '']) tr.append(node('td', '', text));
+            table.append(tr);
+          });
+          view.append(table, node('p', 'run-trace-end', heading(steps.at(-1), steps.length - 1)));
+          return;
+        }
+        const step = steps[at];
+        position.textContent = `Step ${at + 1} of ${steps.length}`;
+        view.append(node('p', 'run-trace-heading', heading(step, at)));
+        const table = node('table', 'run-trace-step');
+        const head = node('tr', '');
+        for (const title of ['#', 'Weight', 'Outcome', 'Reason', 'Sample']) head.append(node('th', '', title));
+        table.append(head);
+        step.tried.forEach((row, i) => {
+          const [outcome, words] = fates[row.why] ?? [row.why, () => ''];
+          const tr = node('tr', '');
+          for (const text of [String(i + 1), row.weight ?? '—', outcome, words(row, step.best),
+            row.text ?? (row.why === 'heavier' || row.why === 'visited' ? '(not rendered)' : '')]) tr.append(node('td', '', text));
+          table.append(tr);
+        });
+        view.append(table);
+      };
+      const go = (to) => { at = Math.max(0, Math.min(steps.length - 1, to)); show(); };
+      buttons.first.addEventListener('click', () => go(0));
+      buttons.prev.addEventListener('click', () => go(at - 1));
+      buttons.next.addEventListener('click', () => go(at + 1));
+      buttons.last.addEventListener('click', () => go(steps.length - 1));
+      filter.addEventListener('change', show);
+      show();
+      return box;
+    }
     // A false verdict may carry the fate's notes and an expected/actual pair.
     const failure = (parent, why) => {
       if (why?.kind === 'timeout') {
@@ -700,16 +811,7 @@
         block(detail, 'run-original', 'Original counterexample', proof.original.text);
         block(detail, 'run-shrunk', 'Shrunk counterexample', proof.shrunk.text);
         failure(detail, proof.why);
-        if (proof.trace?.length) {
-          // The last shrink steps, oldest first: why shrinking stopped where it did.
-          const trace = node('details', 'run-shrink-trace');
-          const rows = node('ol', '');
-          for (const row of proof.trace) rows.append(node('li', '', row.kind === 'alts'
-            ? `alts on best (weight ${row.best}): ${row.count} candidates`
-            : `${row.why}${row.weight == null ? '' : ` (weight ${row.weight})`}${row.text == null ? '' : `: ${row.text}`}`));
-          trace.append(node('summary', '', `Shrink trace (last ${proof.trace.length} steps)`), rows);
-          detail.append(trace);
-        }
+        if (proof.trace?.length) detail.append(shrinkTrace(proof.trace));
       } else if (outcome?.why) failure(detail, outcome.why);
       if (outcome?.arms) {
         const list = node('ul', 'run-suite-arms');

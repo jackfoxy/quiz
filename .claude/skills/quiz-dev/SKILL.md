@@ -153,8 +153,9 @@ hangs stay slow. A `timeout` failure is the policy's result, not a crash. Under 
 (the default) the same hang ends the run `%interrupted`.
 
 **Shrinking stopped too early.** Read the evidence's shrink trace (the
-workbench's **Shrink trace**, or `trace` in the record). If the last alts
-call's candidates are all `heavier`, the shrinker offers nothing lighter; if
+workbench's **Shrink trace**, which opens on the last step, or `trace` in
+the record). If the last alts call's candidates are all `heavier`, the
+shrinker offers nothing lighter; if
 they are `other-failure`, they fail in a different category. Fix the
 document's `alts`, not the engine. A trace is empty when
 `bounds.trace-steps` is 0.

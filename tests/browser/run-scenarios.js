@@ -188,6 +188,51 @@ async function scenario(env, mock, name) {
     await runs.refresh();
     assert.equal(el('run-original').textContent,'541');
     assert.equal(el('run-shrunk').textContent,'501');
+    // Example 11's whole shrink, as recorded: 21 alts calls in 89 rows.
+    // A finished record is fetched once, so each trace gets its own run.
+    const traced = async (trace) => {
+      await runs.run();
+      const rec = mock.records.get(docs.active('property').runIds[0]);
+      rec.status = 'done';
+      rec.outcome = {kind:'failed', evidence:{why:{kind:'false'},
+        original:{text:'cmds=…'}, shrunk:{text:'cmds=…'}, trace}};
+      await runs.refresh();
+    };
+    await traced(require('./fixtures/queue-model-bug-trace.json'));
+    const text = (id) => env.descendants(el(id)).map(n=>n.textContent).join(' ');
+    assert.match(text('run-shrink-trace'), /21 steps, 20 accepted \(last 89 trace rows\)/);
+    assert.match(el('run-trace-rule').textContent, /strictly below the best weight/);
+    // It opens on the last step: why shrinking stopped.
+    assert.equal(el('run-trace-position').textContent, 'Step 21 of 21');
+    assert.match(el('run-trace-heading').textContent,
+      /offered 4 candidates; none was accepted \(2 seen, 2 passed\), so shrinking stopped here/);
+    assert.match(text('run-trace-step'), /Skipped: a candidate with the same mug/);
+    assert.equal(el('run-trace-next').disabled, true);
+    el('run-trace-first').listeners.click();
+    assert.equal(el('run-trace-position').textContent, 'Step 1 of 21');
+    assert.match(el('run-trace-heading').textContent,
+      /weight 17239453263\) offered 20 candidates; candidate 1 was accepted \(weight 15536932056\); the other 19 were not tried/);
+    el('run-trace-next').listeners.click(); el('run-trace-next').listeners.click();
+    el('run-trace-next').listeners.click(); el('run-trace-prev').listeners.click();
+    el('run-trace-next').listeners.click();
+    assert.equal(el('run-trace-position').textContent, 'Step 4 of 21');
+    assert.match(text('run-trace-step'), /Rejected: the fate passed/);
+    assert.match(text('run-trace-step'), /still fails/);
+    el('run-trace-accepted').checked = true; el('run-trace-accepted').listeners.change();
+    assert.equal(el('run-trace-path').children.length, 21, 'heading and 20 accepted rows');
+    assert.equal(el('run-trace-first').disabled, true);
+    assert.match(el('run-trace-end').textContent, /Step 21: .*so shrinking stopped here/);
+    // A heavier candidate names the strict-weight rule; a trace cut by
+    // trace-steps starts inside an alts call it no longer holds.
+    await traced([
+      {kind:'candidate', why:'passed', weight:'5', text:'n=4'},
+      {kind:'alts', best:'9', count:2},
+      {kind:'candidate', why:'heavier', weight:'9', text:null}]);
+    assert.match(el('run-trace-heading').textContent, /Step 2: .*the run stopped after 1 of 2 candidates/);
+    assert.match(text('run-trace-step'), /weight 9 is not below the best weight 9 \(strict-weight rule\)/);
+    assert.match(text('run-trace-step'), /\(not rendered\)/);
+    el('run-trace-prev').listeners.click();
+    assert.match(el('run-trace-heading').textContent, /its alts call is older than the retained trace/);
     await runs.rerun(); assert.notEqual(tab.runIds[0], replayId);
     const original = tab.runIds[0];
     const other = docs.create('property', {text:'another'});

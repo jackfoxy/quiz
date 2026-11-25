@@ -38,6 +38,8 @@ const examples = [
   ['props', '35-cover-table', 'passed'],
   ['props', '36-weak-generator', 'passed'],
   ['props', '37-insert-generated', 'passed'],
+  ['failing', '38-shrink-order', 'failed', 'false'],
+  ['failing', '39-shrink-together', 'failed', 'false'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -98,7 +100,33 @@ for (const [root, name, outcome, why] of examples) {
       // The whole shrink fits the 100-row trace: 68 candidates and 21 alts calls.
       expect(got.outcome.evidence.trace.length).toBe(89);
       expect(got.outcome.evidence.trace.filter(row => row.why === 'accepted').length).toBe(20);
-      await expect(page.locator('#run-shrink-trace')).toContainText('Shrink trace (last 89 steps)');
+      // The step view: 21 alts calls, 20 accepting a candidate; it opens on
+      // the last, whose candidates were all seen before or passed.
+      const trace = page.locator('#run-shrink-trace');
+      await expect(trace).toContainText('Shrink trace: 21 steps, 20 accepted (last 89 trace rows)');
+      await trace.locator('summary').click();
+      await expect(page.locator('#run-trace-position')).toHaveText('Step 21 of 21');
+      await expect(page.locator('#run-trace-heading')).toContainText('none was accepted (2 seen, 2 passed), so shrinking stopped here');
+      await page.locator('#run-trace-first').click();
+      await expect(page.locator('#run-trace-heading')).toContainText('offered 20 candidates; candidate 1 was accepted');
+      await page.locator('#run-trace-next').click();
+      await expect(page.locator('#run-trace-position')).toHaveText('Step 2 of 21');
+      await page.locator('#run-trace-accepted').check();
+      await expect(page.locator('#run-trace-path tr')).toHaveCount(21);
+      await expect(page.locator('#run-trace-path')).toContainText('cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]');
+    }
+    if (name === '38-shrink-order' || name === '39-shrink-together') {
+      // One bug, two shrinkers: fields one at a time reach the smallest
+      // order; quantity and price moving together stop at a heavier one.
+      const order = name === '38-shrink-order';
+      expect(got.outcome.evidence.original.text).toBe('lines=[[4 13] [0 33] [0 18] 0]');
+      expect(got.outcome.evidence.shrunk.text).toBe(order ? 'lines=[[4 1] 0]' : 'lines=[[4 13] 0]');
+      expect(got.counts).toMatchObject(order ? {'shrink-tried':35, 'shrink-steps':6}
+        : {'shrink-tried':9, 'shrink-steps':2});
+      await page.locator('#run-shrink-trace summary').click();
+      await expect(page.locator('#run-trace-heading')).toContainText(order
+        ? 'none was accepted (2 seen, 3 passed)' : 'none was accepted (1 seen, 2 passed)');
+      if (!order) await expect(page.locator('#run-trace-step')).toContainText('lines=[[3 12] 0]');
     }
     if (name === '28-confident-coverage') {
       // %confident runs past requested until the Wilson bound decides.
