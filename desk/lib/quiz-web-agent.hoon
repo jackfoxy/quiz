@@ -307,9 +307,13 @@
       =/  got  (properties:qfiles bowl desk.cmd revision.cmd)
       ?:  ?=(%.n -.got)  [(refuse:ufiles id p.got) this]
       =/  entry
-        |=  rel=path
+        |=  [rel=path =role:qfiles]
         ^-  json
-        (pairs:enjs:format ~[['path' (path-out:codec rel)] ['kind' s+'file']])
+        %-  pairs:enjs:format
+        :~  ['path' (path-out:codec rel)]
+            ['kind' s+'file']
+            ['role' s+role]
+        ==
       =/  entries=json  a+(turn p.got entry)
       [(reply id 200 (pairs:enjs:format ~[['entries' entries]])) this]
     %suite-arms

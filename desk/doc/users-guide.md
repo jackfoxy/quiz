@@ -60,7 +60,7 @@ The explorer has four views:
 | **My documents** | Your saved Hoon properties, suites and Markdown notes |
 | **Examples** | Read-only `props`, intentionally `failing` properties, and `examples` containing existing suites |
 | **Documentation** | Shipped Markdown documentation as read-only text |
-| **Clay source** | Indexed properties on a selected desk at a pinned revision |
+| **Clay source** | Indexed properties and suites on a selected desk at a pinned revision |
 
 The document editor holds your source. The run controls below it choose what
 to execute. **Run results** holds server-confirmed history and the selected
@@ -846,24 +846,24 @@ Each property runs with a dependency/source desk and a pinned revision.
 The draft buffer supplies the main text; imports still come from that desk
 and revision. A saved run reads both the file and imports there.
 
-To browse indexed properties:
+To browse indexed properties and suites:
 
 1. Open **Clay source** and select a desk.
 2. Enter an available positive decimal **Revision**.
-3. Click **Browse revision** and select a listed file.
+3. Click **Browse revision** and select a listed file. Suites are marked
+   “(suite)”.
 4. Inspect its read-only source and pinned context, or use **Open editable
    copy** to experiment with a draft.
 
-The index is textual: it looks for `engine=quiz-engine` on a `/+` prelude
-line and a top-level `++  fate`. A valid minimal property without that import,
-an alternative import alias, or an ordinary suite can be absent.
+The index is textual: a property imports `quiz-engine` on a `/+` prelude line,
+under any face, and has a top-level `++  fate`; a suite has a top-level
+`++  test-` arm. A valid minimal property without the engine import is absent.
 
-**Current browsing gap:** the general **Open → clay** chooser sends a bare
-`clay` scope, while the file service requires `clay/desk/revision`. Choosing
-a context in **Clay source** does not repair this. Use indexed properties,
-bundled examples and **My documents** for the lessons here. General file
-access with an explicit context is available to API clients, but is not a
-working workbench-only route.
+Any other Hoon file at that context opens through **Open** (Alt-O): choose
+the `clay` location, which lists every Hoon file at the desk and revision last
+browsed in **Clay source**. A file with `++  test-` arms and no `++  fate`
+opens ready to run as a saved suite, so external suites run from the
+workbench.
 
 ### Import dependencies
 
@@ -1081,9 +1081,9 @@ implementation interfaces, not additional workbench operations.
 | Saved-suite discovery and named/all arms | Run controls | Available for openable saved suites |
 | CPU limits and document call limit | Settings and `++within` | Available |
 | Queue observation, cancellation and history refresh | Result controls | Available; cancellation waits for a scheduling boundary |
-| Browse indexed properties at numeric revisions | Clay source | Available |
+| Browse indexed properties and suites at numeric revisions | Clay source | Available |
 | Advance a saved tab's revision | Use latest revision | Available |
-| General Clay-file chooser, including unindexed external suites | Open → clay | Broken context propagation; API can address explicit paths |
+| General Clay-file chooser, including unindexed external suites | Open → clay | Available at the context browsed in Clay source |
 | Date/label revision selection | No selector in the panel | API/Gall only; UI uses immutable numeric revisions |
 | Delete one completed run or clear completed history | Delete record; Clear completed history | Available; queued and active runs are kept |
 | Full machine-readable record and sample noun export | No result-download control | HTTP status or Gall reads; Copy copies the document only |

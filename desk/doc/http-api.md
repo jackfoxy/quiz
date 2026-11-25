@@ -299,20 +299,20 @@ Returns 200 with pinned `context` and ordered `arms` names after an asynchronous
 Clay build. Discovery does not execute the test arms. Invalid/missing source,
 desk, revision, or test core returns 422 with the located diagnostic object.
 
-### Property documents on a desk
+### Property documents and suites on a desk
 
 ```json
 {"op":"properties","desk":"quiz","revision":"100"}
 ```
 
-Returns 200 with `entries`: every Hoon file on the desk at that decimal
-revision whose prelude imports `engine=quiz-engine` on a `/+` line and that
-declares a `++  fate` arm, as
-`{"path":["clay","quiz","100",…,"hoon"],"kind":"file"}` in path order. Only
-that exact face and library qualify; the first 4,096 bytes of each file are
-parsed for the prelude, in whole lines. The fate check is textual: a line must
-start with `++  fate`, at column 0 with nothing before it, followed by a space
-or the end of the line; nothing is compiled. The paths open through the file
+Returns 200 with `entries`, in path order, as
+`{"path":["clay","quiz","100",…,"hoon"],"kind":"file","role":…}`. `role` is
+`property` for a Hoon file whose prelude imports `/lib/quiz-engine` on a `/+`
+line, under any face, and that declares a `++  fate` arm; otherwise `suite`
+for a file with a `++  test-` arm. Other files are omitted. The first 4,096
+bytes of each file are parsed for the prelude, in whole lines. The arm checks
+are textual: a line must start at column 0 with `++  fate` followed by a
+space or the end of the line, or with `++  test-`; nothing is compiled. The paths open through the file
 wire below. The workbench's **Clay source** view uses this; the file wire's
 `browse` lists every file. A missing or unavailable desk or revision returns
 the file wire's error envelope (400 or 404). The command is a read and takes
@@ -366,4 +366,5 @@ is the mark, such as `hoon` or `md`):
 The earlier relative Hoon paths remain writable aliases under `/data/quiz`.
 Read-only restrictions are enforced by the server, including save and
 delete requests. Browse Clay with a desk and revision; bare `clay` returns
-a context-selection error. Unavailable desks or revisions return 404.
+a context-selection error. The workbench's Open chooser sends the context
+last browsed in Clay source instead of a bare `clay`. Unavailable desks or revisions return 404.

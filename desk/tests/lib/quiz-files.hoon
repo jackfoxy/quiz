@@ -68,19 +68,20 @@
   (of-wain:format (weld lines `wain`~['|%' '++  fate  |=(@ud &)' '--']))
 ::
 ++  test-imports-engine
-  ::  Only an `engine=quiz-engine` face on a /+ import marks a property.
+  ::  A /+ import of quiz-engine, under any face, marks a property.
   ^-  tang
   =/  yes=(list @t)
     :~  (source ~['/+  engine=quiz-engine'])
         (source ~['/-  app=quiz-app' '/+  gen=quiz-gen, engine=quiz-engine'])
         (source ~['/+  gen=quiz-gen,' '    engine=quiz-engine'])
         (source ~['::  a property' '/+  engine=quiz-engine'])
+        (source ~['/+  quiz-engine'])
+        (source ~['/+  e=quiz-engine'])
     ==
   =/  no=(list @t)
     :~  (source ~)
-        (source ~['/+  quiz-engine'])
-        (source ~['/+  e=quiz-engine'])
         (source ~['/+  *test, quiz'])
+        (source ~['/+  quiz-engine-extra'])
         (source ~['::  /+  engine=quiz-engine'])
     ==
   ;:  weld
@@ -104,8 +105,24 @@
         (of-wain:format ~[prelude '|%' '++  fated  !!' '--'])
     ==
   ;:  weld
-    (expect !>((levy yes has-fate:files)))
-    (expect !>(!(lien no has-fate:files)))
+    (expect !>((levy yes (cury has-arm:files '++  fate'))))
+    (expect !>(!(lien no (cury has-arm:files '++  fate'))))
+  ==
+::
+++  test-role-of
+  ::  A property needs the engine and ++fate; a suite needs a ++test- arm.
+  ^-  tang
+  =/  suite  (of-wain:format ~['/+  *test' '|%' '++  test-one  ~' '--'])
+  =/  both
+    %-  of-wain:format
+    ~['/+  e=quiz-engine' '|%' '++  fate  |=(@ud &)' '++  test-x  ~' '--']
+  =/  bare  (of-wain:format ~['|%' '++  test  ~' '++  tests-x  ~' '--'])
+  ;:  weld
+    (expect-eq !>(`%suite) !>((role-of:files suite)))
+    (expect-eq !>(`%property) !>((role-of:files both)))
+    (expect-eq !>(`%property) !>((role-of:files (source ~['/+  quiz-engine']))))
+    (expect-eq !>(~) !>((role-of:files (source ~))))
+    (expect-eq !>(~) !>((role-of:files bare)))
   ==
 ::
 ++  test-imports-engine-long-source

@@ -25,7 +25,9 @@ cover open/edit/save, dirty protection, read-only copies, session restoration
 and invalid application context. They do not substitute for real DOM/Ace tests.
 
 Playwright logs in, creates uniquely named temporary files, saves/reopens
-and restores a document, checks copies, pins/restores a Clay context, checks
+and restores a document, checks copies, pins/restores a Clay context, indexes
+a property with a non-default engine face and a suite, opens and runs an
+arbitrary suite through Open → clay, checks
 help and Hoon tokenization. Temporary files are deleted in a `finally` block.
 The ship needs at least two revisions. The context test uses its previous
 revision; retain the packaged library there. No code is committed to Git.

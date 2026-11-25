@@ -169,3 +169,71 @@ test('Settings saves ship-wide CPU limits that stop a looping run', async ({page
     await api({op: 'set-timeouts', ...defaults});
   }
 });
+
+test('Open → clay lists every Hoon file at the Clay source context', async ({page}) => {
+  test.setTimeout(180000);
+  const api = async (data) => (await page.request.post('/apps/quiz/api', {data})).json();
+  const stamp = Date.now();
+  const property = `face-${stamp}`;
+  const suite = `suite-${stamp}`;
+  const save = (name, text) => page.request.post('/apps/quiz/files',
+    {data: {op: 'save', path: ['work', name, 'hoon'], text}});
+  expect((await save(property,
+    '/+  e=quiz-engine\n|%\n++  fate\n  |=  n=@ud\n  =(n n)\n--\n')).ok()).toBeTruthy();
+  expect((await save(suite,
+    '/+  *test\n|%\n++  test-one\n  (expect-eq !>(1) !>(1))\n--\n')).ok()).toBeTruthy();
+  const ran = async () => {
+    const before = await page.evaluate(() =>
+      window.quiz.documents.active('property').runIds?.[0] || null);
+    await page.locator('#run-start').click();
+    let id;
+    await expect.poll(async () => (id = await page.evaluate(() =>
+      window.quiz.documents.active('property').runIds?.[0] || null)) !== before).toBe(true);
+    let record;
+    await expect.poll(async () => (record = await api({op: 'status', id})).status,
+      {timeout: 60000}).toBe('done');
+    return record;
+  };
+  try {
+    // Both land in %quiz at a new revision; the index finds each by role.
+    let rev;
+    await expect.poll(async () => {
+      rev = (await api({op: 'contexts'})).contexts.find((item) => item.desk === 'quiz').revision;
+      const {entries} = await api({op: 'properties', desk: 'quiz', revision: rev});
+      return entries.filter((entry) => entry.path.join('/').includes(String(stamp)))
+        .map((entry) => entry.role).sort().join(',');
+    }, {timeout: 30000}).toBe('property,suite');
+    await page.evaluate(() => window.quiz.runtime.explorer.setView('clay-source'));
+    await page.locator('#clay-revision').fill(String(rev));
+    await page.locator('#clay-browse').click();
+    const listed = page.locator('#clay-files button');
+    await expect(listed.filter({hasText: `data/quiz/${suite}/hoon (suite)`})).toHaveCount(1);
+    // A property importing the engine as `e` is indexed and runs saved.
+    await listed.filter({hasText: `data/quiz/${property}/hoon`}).click();
+    await expect(page.locator('#run-mode')).toHaveValue('file');
+    expect((await ran()).outcome.kind).toBe('passed');
+    // Open → clay lists every Hoon file at that context, and an arbitrary
+    // suite opened from it runs as a saved suite.
+    await page.locator('#run-controls select').first().focus();
+    await page.keyboard.press('Alt+o');
+    await expect(page.locator('#urui-file-dialog')).toBeVisible();
+    const root = await page.locator('#urui-file-dialog-root option')
+      .filter({hasText: /^clay$/}).getAttribute('value');
+    await page.locator('#urui-file-dialog-root').selectOption(root);
+    const entries = page.locator('#urui-file-dialog-list .file-dialog-entry');
+    await expect(entries.filter({hasText: `clay/quiz/${rev}/lib/quiz-engine/hoon`}))
+      .toHaveCount(1, {timeout: 30000});
+    await entries.filter({hasText: `data/quiz/${suite}/hoon`}).dblclick();
+    await expect(page.locator('#document-location'))
+      .toHaveText(`Read-only: clay/quiz/${rev}/data/quiz/${suite}/hoon`);
+    await expect(page.locator('#run-mode')).toHaveValue('suite');
+    const record = await ran();
+    expect(record.outcome.status).toBe('passed');
+    expect(record.outcome.arms.map((arm) => arm.name)).toEqual(['test-one']);
+  } finally {
+    for (const name of [property, suite]) {
+      await page.request.post('/apps/quiz/files',
+        {data: {op: 'delete', path: ['work', name, 'hoon']}});
+    }
+  }
+});

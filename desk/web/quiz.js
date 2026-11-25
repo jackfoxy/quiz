@@ -51,6 +51,49 @@
   let runner = null;
   let contexts = [];
   let browseGeneration = 0;
+  // urui's file wire, except that Open's bare /clay root browses the
+  // context chosen in Clay source: urui's chooser lists one flat scope and
+  // the server cannot know which desk and revision this browser picked.
+  async function filesPost(body) {
+    const response = await fetch('/apps/quiz/files', {
+      method: 'POST', credentials: 'same-origin',
+      headers: {'content-type': 'application/json'}, body: JSON.stringify(body)
+    });
+    let reply = null;
+    try { reply = JSON.parse(await response.text()); } catch (_) { reply = null; }
+    if (!response.ok || !reply || reply.ok === false) {
+      const error = new Error(reply?.error?.message || `Request failed (${response.status})`);
+      error.status = response.status;
+      error.code = reply?.error?.code || null;
+      error.retryable = Boolean(reply?.error?.retryable);
+      error.details = Array.isArray(reply?.error?.details) ? reply.error.details : [];
+      throw error;
+    }
+    return reply;
+  }
+  const transport = {
+    browse: async (scope) => {
+      const bare = scope.length === 1 && scope[0] === 'clay';
+      if (bare && !context) {
+        throw new Error('Choose a desk and revision in Clay source, then Browse revision.');
+      }
+      const target = bare ? ['clay', context.desk, context.revision] : scope;
+      return (await filesPost({op: 'browse', scope: target})).entries || [];
+    },
+    load: async (path) => {
+      const reply = await filesPost({op: 'load', path});
+      return {text: String(reply.text ?? ''), hash: reply.hash ?? null,
+        readonly: reply.readonly === true};
+    },
+    save: async (path, text, choices = {}) => {
+      const reply = await filesPost({op: 'save', path, text,
+        base: choices.base ?? null, overwrite: Boolean(choices.overwrite)});
+      return {hash: reply.hash ?? null};
+    },
+    remove: async (path, choices = {}) => {
+      await filesPost({op: 'delete', path, base: choices.base ?? null});
+    }
+  };
   const problem = (message = '') => {
     const node = byId('quiz-error');
     node.textContent = message;
@@ -64,6 +107,7 @@
       editorStatus: byId('source-status')
     },
     onChange: () => { runtime.session.queue(); runner?.changed(); },
+    transport,
     session: {
       read: (key) => key === 'clayContext' ? context
         : key === 'runSelection' ? runSelection : undefined,
@@ -186,21 +230,25 @@
     runtime.session.queue();
     state.textContent = `Loading %${context.desk} at revision ${context.revision}…`;
     try {
-      // Only property documents: Hoon files whose prelude imports
-      // engine=quiz-engine and that declare ++fate.  Open's /clay location
-      // still lists every file.
+      // Property documents (the engine imported under any face, ++fate)
+      // and suites (++test- arms).  Open's /clay location, at this same
+      // context, lists every Hoon file.
       const result = await post('/apps/quiz/api',
         {op: 'properties', desk: context.desk, revision: context.revision});
       if (generation !== browseGeneration) return false;
       const entries = result.entries.filter((entry) => entry.kind === 'file');
       for (const entry of entries) {
-        const button = control('button', '', entry.path.slice(3).join('/'));
+        const name = entry.path.slice(3).join('/');
+        const button = control('button', '',
+          entry.role === 'suite' ? `${name} (suite)` : name);
+        button.dataset.role = entry.role || 'property';
         button.type = 'button';
         button.dataset.path = entry.path.join('/');
         button.addEventListener('click', () => docs.open('property', entry.path));
         files.append(button);
       }
-      state.textContent = `${entries.length} property documents — revision ${selected.revision}`;
+      const suites = entries.filter((entry) => entry.role === 'suite').length;
+      state.textContent = `${entries.length - suites} property documents and ${suites} suites — revision ${selected.revision}. Open → clay lists every Hoon file here.`;
       return true;
     } catch (cause) {
       if (generation !== browseGeneration) return false;

@@ -45,12 +45,13 @@
   ==
 ::
 ++  properties
-  ::  Hoon files on `desk` at `revision` whose prelude imports
-  ::  `engine=quiz-engine` and that declare `++  fate`, as workbench paths
-  ::  under /clay. The Clay source view lists these; urui's browse, used
-  ::  by Open, lists all.
+  ::  Hoon files on `desk` at `revision` that are property documents (the
+  ::  prelude imports quiz-engine, under any face, and `++  fate` is
+  ::  declared) or suites (a `++  test-` arm), as workbench paths under
+  ::  /clay with their role. The Clay source view lists these; Open lists
+  ::  every Hoon file at the same context.
   |=  [bol=bowl:gall desk=@tas revision=@ud]
-  ^-  (each (list path) failure:ufiles)
+  ^-  (each (list [path role]) failure:ufiles)
   ::  a-co, not scot: +locate parses the revision with +dem, so no dots.
   =/  scope=path  /clay/[desk]/(crip (a-co:co revision))
   =/  where  (locate bol scope)
@@ -59,23 +60,34 @@
   =/  found
     %-  mule
     |.
-    %+  skim  (browse-paths:ufiles p.where)
+    %+  murn  (browse-paths:ufiles p.where)
     |=  sub=path
-    ^-  ?
-    ?~  sub  |
-    ?.  =(%hoon (rear sub))  |
+    ^-  (unit [path role])
+    ?~  sub  ~
+    ?.  =(%hoon (rear sub))  ~
     =/  beam  (en-beam beak.p.where (weld rel.p.where sub))
-    ?.  .^(? %cx (weld tomb beam))  |
+    ?.  .^(? %cx (weld tomb beam))  ~
     =/  text  (from-stored:ufiles %cord .^(* %cq beam))
-    ?~(text | &((imports-engine u.text) (has-fate u.text)))
+    ?~  text  ~
+    =/  role  (role-of u.text)
+    ?~(role ~ `[(weld scope sub) u.role])
   ?:  ?=(%.n -.found)
     [%.n (fail-with:ufiles %internal 500 'clay browse failed' p.found)]
-  =/  kept=(list path)  p.found
-  [%.y (turn kept (cury weld scope))]
+  [%.y p.found]
+::
++$  role  ?(%property %suite)
+::
+++  role-of
+  ::  A property document, else a suite, else neither.
+  |=  text=@t
+  ^-  (unit role)
+  ?:  &((imports-engine text) (has-arm '++  fate' text))  `%property
+  ?:  (has-arm '++  test-' text)  `%suite
+  ~
 ::
 ++  imports-engine
-  ::  Whether the prelude has `/+  engine=quiz-engine`. Only whole lines
-  ::  within the first prelude-bytes are parsed.
+  ::  Whether the prelude imports /lib/quiz-engine under any face. Only
+  ::  whole lines within the first prelude-bytes are parsed.
   |=  text=@t
   ^-  ?
   =/  lines=wain  (to-wain:format (end [3 prelude-bytes] text))
@@ -84,17 +96,20 @@
   ?~  q.parsed  |
   %+  lien  p.u.q.parsed
   |=  dep=dependency:build
-  &(=(`%engine face.dep) =(/lib/quiz-engine/hoon path.dep))
+  =(/lib/quiz-engine/hoon path.dep)
 ::
-++  has-fate
-  ::  Whether a line starts with `++  fate`, alone or followed by a space:
-  ::  the arm every property needs, at column 0. Textual; the build still
-  ::  type-checks.
-  |=  text=@t
+++  has-arm
+  ::  Whether a line at column 0 is `++  fate` alone or before a space
+  ::  (`head` is `'++  fate'`), or starts with `head` when that ends in a
+  ::  hyphen (`'++  test-'`). Textual; the build still type-checks.
+  |=  [head=@t text=@t]
   ^-  ?
+  =/  size  (met 3 head)
+  =/  prefix  =('-' (cut 3 [(dec size) 1] head))
   %+  lien  (to-wain:format text)
   |=  line=@t
-  |(=('++  fate' line) =('++  fate ' (end [3 9] line)))
+  ?:  prefix  =(head (end [3 size] line))
+  |(=(head line) =((cat 3 head ' ') (end [3 +(size)] line)))
 ::
 ++  prelude-bytes
   ::  Far longer than any real prelude; no need to read a whole file.
