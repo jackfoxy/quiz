@@ -924,4 +924,169 @@
     (expect-eq !>(want) !>(candidates.result))
     (expect !>(?=([~ %error %norn *] result.bad)))
   ==
+::
+++  toward-zero
+  ::  0, then n-n/2, n-n/4, ..., n-1, as shrink-atom:quiz-gen.
+  !>  |=  sam=vase
+      ^-  (list vase)
+      =/  n  !<(@ud sam)
+      =/  step  n
+      =|  out=(list vase)
+      |-
+      ?:  =(0 step)  (flop out)
+      $(step (div step 2), out [sam(q (sub n step)) out])
+::
+++  spread
+  ::  Below 20 times the size, and below 1.000: small values first.
+  !>(|=([size=@ud rng=_og] ^-(@ud (rad:rng (min 1.000 (mul 20 size))))))
+::
+++  sorts
+  ::  Labels by size and parity; fails from `top` up.
+  |=  top=@ud
+  !>  |=  n=@ud
+      ^-  report:engine
+      =/  labels=(list @t)
+        ;:  weld
+          ?:((lth n 10) ~['small'] ~)
+          ?:((gte n 100) ~['big'] ~)
+          ?:(=(0 (mod n 2)) ~['even'] ~)
+        ==
+      [%report (lth n top) [~ ~] labels ~]
+::
+++  searched
+  ::  Search a property's labels over `count` passes, to completion.
+  |=  [=parts:engine count=@ud cfg=conf:engine]
+  ^-  state:engine
+  =/  s  (searching:engine (init:engine 0v1 cfg parts) count)
+  =/  left  20.000
+  |-
+  ?:  !=(~ result.s)  s
+  ?>  (gth left 0)
+  $(s (step:engine s), left (dec left))
+::
+++  ends
+  ::  Each label's value and how its shrink ended.
+  |=  s=state:engine
+  ^-  (list [@t * ?(%done %limited %stopped)])
+  =/  out  (need result.s)
+  ?>  ?=(%examples -.out)
+  %+  turn  found.out
+  |=(l=labelled:engine [label.l q.vase.example.l end.l])
+::
+++  test-examples-minimal
+  ::  Every label seen is shrunk, in label order, to its smallest value
+  ::  that passes and keeps the label. A run's counters stop at `count`.
+  ^-  tang
+  =/  parts  [(sorts 1.000) `spread `toward-zero ~ %pass]
+  =/  done  (searched parts 50 (config 100 200 5 50))
+  =/  out  (need result.done)
+  ?>  ?=(%examples -.out)
+  ;:  weld
+    =/  want=(list [@t * ?(%done %limited %stopped)])
+      ~[['big' 100 %done] ['even' 0 %done] ['small' 0 %done]]
+    (expect-eq !>(want) !>((ends done)))
+    (expect-eq !>(50) !>(accepted.counts.done))
+    (expect-eq !>([~ ~ ~]) !>([unseen budget evidence]:out))
+    ::  Weights and texts are the shrunk samples'.
+    %+  expect-eq  !>(`(list [@ud @t])`~[[101 'n=100'] [1 'n=0'] [1 'n=0']])
+    !>((turn found.out |=(l=labelled:engine [weight.l text.example.l])))
+    (expect !>((levy found.out |=(l=labelled:engine (gth tried.l 0)))))
+    ::  The search is deterministic.
+    =/  again  (searched parts 50 (config 100 200 5 50))
+    (expect-eq !>(out) !>((need result.again)))
+  ==
+::
+++  test-examples-unseen-and-budget
+  ::  ++cover labels never seen are listed; a budget ends generation early
+  ::  and is named, and the labels seen so far are still shrunk.
+  ^-  tang
+  =/  cover=coverage:engine
+    [[%warn ~[['small' 1] ['huge' 1]]] ~ default-confidence:engine]
+  =/  parts  [(sorts 1.000) `spread `toward-zero `cover %pass]
+  =/  done  (searched parts 100 (config 100 3 5 50))
+  =/  out  (need result.done)
+  ?>  ?=(%examples -.out)
+  ;:  weld
+    (expect-eq !>(`(list @t)`~['huge']) !>(unseen.out))
+    (expect-eq !>(`(unit budget-name:engine)``%attempts) !>(budget.out))
+    (expect-eq !>(3) !>(attempted.counts.done))
+    (expect !>((levy found.out |=(l=labelled:engine =(%done end.l)))))
+  ==
+::
+++  test-examples-failure-in-generation
+  ::  A failing sample ends the search: it is shrunk as a run's failure,
+  ::  and the labels seen before it keep their first samples, %stopped.
+  ^-  tang
+  =/  parts  [(sorts 900) `spread `toward-zero ~ %pass]
+  =/  done  (searched parts 100 (config 100 200 5 50))
+  =/  out  (need result.done)
+  ?>  ?=(%examples -.out)
+  ?>  ?=(^ evidence.out)
+  ;:  weld
+    (expect-eq !>(`*`900) !>(q.shrunk.u.evidence.out))
+    (expect-eq !>(`failure:engine`[%false ~ ~]) !>(why.u.evidence.out))
+    (expect !>(?=(^ found.out)))
+    %-  expect
+    !>((levy found.out |=(l=labelled:engine &(=(%stopped end.l) =(0 steps.l)))))
+  ==
+::
+++  test-examples-failing-candidate
+  ::  A candidate the fate fails on is rejected, not reported: a shrinker
+  ::  can leave the generator's domain. The label shrinks past it.
+  ^-  tang
+  =/  fate
+    !>  |=  n=@ud
+        ^-  report:engine
+        ?<  =(0 n)
+        [%report & [~ ~] ~['any'] ~]
+  =/  one  !>(|=([size=@ud rng=_og] ^-(@ud +((rad:rng 999)))))
+  =/  parts  [fate `one `toward-zero ~ %pass]
+  =/  done  (searched parts 5 (config 100 200 5 50))
+  =/  out  (need result.done)
+  ?>  ?=(%examples -.out)
+  ;:  weld
+    (expect-eq !>(~) !>(evidence.out))
+    =/  want=(list [@t * ?(%done %limited %stopped)])  ~[['any' 1 %done]]
+    (expect-eq !>(want) !>((ends done)))
+  ==
+::
+++  test-examples-limits
+  ::  A shrink limit ends only that label's shrink; a count over
+  ::  requested-max is refused before any sample.
+  ^-  tang
+  =/  cfg  (config 100 200 5 50)
+  =.  shrink-depth.bounds.cfg  2
+  =/  parts  [(sorts 1.000) `spread `toward-zero ~ %pass]
+  =/  done  (searched parts 50 cfg)
+  =/  out  (need result.done)
+  ?>  ?=(%examples -.out)
+  =/  over  (searching:engine (init:engine 0v1 cfg parts) 10.001)
+  ;:  weld
+    %-  expect
+    !>((levy found.out |=(l=labelled:engine (lte steps.l 2))))
+    %-  expect
+    !>((lien found.out |=(l=labelled:engine =(%limited end.l))))
+    %+  expect-eq  !>(`(unit outcome:engine)``[%limited %requested ~])
+    !>(result.over)
+  ==
+::
+++  test-examples-doing
+  ::  A search's work: generating, then one label at a time.
+  ^-  tang
+  =/  parts  [(sorts 1.000) `spread `toward-zero ~ %pass]
+  =/  s  (searching:engine (init:engine 0v1 (config 100 200 5 50) parts) 50)
+  =/  last  (doing:engine s)
+  =/  seen=(list _last)  ~[last]
+  =.  seen
+    =/  left  20.000
+    |-
+    ?:  |(=(0 left) !=(~ result.s))  (flop seen)
+    =/  now  (doing:engine (step:engine s))
+    =?  seen  !=(now last)  [now seen]
+    $(s (step:engine s), last now, left (dec left))
+  =/  want=(list _last)
+    :~  %generate  [%label 'big']  [%label 'even']  [%label 'small']
+        %generate
+    ==
+  (expect-eq !>(want) !>(seen))
 --

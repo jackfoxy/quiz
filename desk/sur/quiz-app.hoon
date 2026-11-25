@@ -27,9 +27,11 @@
 +$  mode
   ::  Run the property, or preview `count` samples without a run's
   ::  budgets: with `verdicts` the fate judges each one, with `alts` the
-  ::  first one's shrink candidates are shown.
+  ::  first one's shrink candidates are shown. Or, over `count` passes,
+  ::  find each label's smallest example.
   $%  [%run ~]
       [%preview count=@ud verdicts=? alts=?]
+      [%examples count=@ud]
   ==
 ::
 +$  request
@@ -69,6 +71,16 @@
 ::
 +$  examples  (list [label=@t =sample])
 ::
++$  labelled
+  ::  A label's smallest example found, as the engine's without a vase.
+  $:  label=@t
+      =sample
+      weight=@ud
+      steps=@ud
+      tried=@ud
+      end=?(%done %limited %stopped)
+  ==
+::
 +$  outcome
   $%  [%passed warnings=(list shortfall:engine) =examples]
       [%uncovered shortfalls=(list shortfall:engine) =examples]
@@ -77,7 +89,7 @@
       [%failed-as-expected evidence]
       [%error stage=error-stage:engine why=failure:engine proof=(unit evidence)]
       [%limited which=limit-name:engine proof=(unit evidence)]
-      [%exhausted budget=?(%attempts %drops %duplicates) all-dropped=?]
+      [%exhausted budget=budget-name:engine all-dropped=?]
       [%invalid diagnostic:build]
       [%cancelled reason=?(%request %reload)]
       $:  %interrupted
@@ -90,6 +102,12 @@
           rows=(list preview-row:engine)
           candidates=(list candidate-row:engine)
           =summary:engine
+      ==
+      $:  %examples
+          found=(list labelled)
+          unseen=(list @t)
+          budget=(unit budget-name:engine)
+          proof=(unit evidence)
       ==
   ==
 ::
@@ -123,7 +141,7 @@
   ::  One history row, enough to label a run without its whole record.
   ::  `outcome` is the result's kind, or a suite's passed/failed status.
   $:  id=run-id
-      kind=?(%draft %file %suite %preview)
+      kind=?(%draft %file %suite %preview %examples)
       =status
       outcome=(unit @tas)
   ==

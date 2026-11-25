@@ -207,6 +207,40 @@
       sum=summary
   ==
 ::
++$  budget-name  ?(%attempts %drops %duplicates)
+::
++$  labelled
+  ::  A label's smallest example found: the sample and its text, its
+  ::  weight, the shrink steps that reached it and the candidates tried,
+  ::  and how its shrink ended: %done when no candidate kept the label,
+  ::  %limited at a shrink limit, %stopped when a failing sample ended the
+  ::  search before the shrinks began.
+  $:  label=@t
+      =example
+      weight=@ud
+      steps=@ud
+      tried=@ud
+      end=?(%done %limited %stopped)
+  ==
+::
++$  hunt
+  ::  One label's shrink in progress: its best example so far, the mugs
+  ::  tried and the candidates left from the last alts call.
+  [best=labelled visited=(set @) pending=(unit (list vase))]
+::
++$  search
+  ::  A labelled-example search: `count` passes, then each label's first
+  ::  sample shrunk, in label order, while it passes and keeps the label.
+  ::  `budget` names a budget that ended generation early; `done` holds
+  ::  finished labels, newest first.
+  $:  count=@ud
+      phase=?(%generate %label)
+      budget=(unit budget-name)
+      waiting=(list @t)
+      hunt=(unit hunt)
+      done=(list labelled)
+  ==
+::
 +$  outcome
   $%  [%passed warnings=(list shortfall)]
       [%uncovered shortfalls=(list shortfall)]
@@ -217,11 +251,17 @@
           why=failure  evidence=(unit counterexample)
       ==
       [%limited which=limit-name evidence=(unit counterexample)]
-      [%exhausted budget=?(%attempts %drops %duplicates) all-dropped=?]
+      [%exhausted budget=budget-name all-dropped=?]
       $:  %preview
           rows=(list preview-row)
           candidates=(list candidate-row)
           =summary
+      ==
+      $:  %examples
+          found=(list labelled)
+          unseen=(list @t)
+          budget=(unit budget-name)
+          evidence=(unit counterexample)
       ==
   ==
 ::
@@ -242,6 +282,7 @@
       examples=(map @t example)
       pending=(unit [=vase =shown])
       preview=(unit preview)
+      search=(unit search)
       ::  A document's ++within: its calls' limit, below the ship's.
       within=(unit @dr)
   ==
@@ -299,7 +340,7 @@
   =/  size  ?:(=(0 size-max.config) start (min size-max.config start))
   %-  finish
   :*  seed  config  compiled  (slot 6 fate.compiled)  size  ~(. og seed)
-      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~  ~  ~
+      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~  ~  ~  ~
   ==
 ::
 ++  preview-max
@@ -322,6 +363,26 @@
   ^-  state
   =/  wanted  (min count preview-max)
   s(result ~, preview `[wanted verdicts alts ~ ~ *summary])
+::
+++  searching
+  ::  Turn a fresh run into a search for each label's smallest example
+  ::  over `count` passes, at most requested-max. A result init set from
+  ::  the requested count is cleared; the run's budgets still apply.
+  |=  [s=state count=@ud]
+  ^-  state
+  ?:  (gth count requested-max.bounds.config.s)
+    s(result `[%limited %requested ~])
+  s(result ~, search `[count %generate ~ ~ ~ ~])
+::
+++  doing
+  ::  What the next step works on, so a slice keeps to one kind of work:
+  ::  generating, shrinking a failure, or shrinking one label's example.
+  |=  s=state
+  ^-  $@(?(%generate %shrink) [%label @t])
+  ?^  shrink.s  %shrink
+  ?~  search.s  %generate
+  ?~  hunt.u.search.s  %generate
+  [%label label.best.u.hunt.u.search.s]
 ::
 ++  classify
   ::  Retain the virtualized trace, blocked request, or unexpected product.
@@ -371,6 +432,7 @@
   ^-  state
   ?:  !=(~ result.s)  s
   ?:  !=(~ shrink.s)  s
+  ?^  search.s  (gather s)
   ?:  (gth requested.config.s requested-max.bounds.config.s)
     s(result `[%limited %requested ~])
   =/  accepted  accepted.counts.s
@@ -382,20 +444,137 @@
     ?.  &(met |(last (checkpoint s)))  s
     (conclude s last)
   ?^  result.decided  decided
-  =/  budget=(unit ?(%attempts %drops %duplicates))
-    ?:  (gte attempted.counts.s attempts-max.config.s)  `%attempts
-    ?:  (gte dropped.counts.s drops-max.config.s)  `%drops
-    ?:  ?&  !?=(%allow duplicates.config.s)
-            (gte duplicate.counts.s duplicates-max.config.s)
-        ==
-      `%duplicates
-    ~
+  =/  budget  (spent s)
   ?~  budget  s
   ::  Requested checks were met: the coverage decides, not the budget.
   ?:  met  (conclude s &)
   ::  Duplicates do not prevent all evaluated samples from being drops.
   =/  all-dropped  &(=(accepted.counts.s 0) (gth dropped.counts.s 0))
   s(result `[%exhausted u.budget all-dropped])
+::
+++  spent
+  ::  The first budget used up, if any: attempts, drops, then duplicates,
+  ::  which %allow ignores.
+  |=  s=state
+  ^-  (unit budget-name)
+  ?:  (gte attempted.counts.s attempts-max.config.s)  `%attempts
+  ?:  (gte dropped.counts.s drops-max.config.s)  `%drops
+  ?:  ?&  !?=(%allow duplicates.config.s)
+          (gte duplicate.counts.s duplicates-max.config.s)
+      ==
+    `%duplicates
+  ~
+::
+++  gather
+  ::  A search generates until `count` passes or a budget ends it, then
+  ::  starts on the first label, in label order.
+  |=  s=state
+  ^-  state
+  =/  find  (need search.s)
+  ?:  ?=(%label phase.find)  s
+  =/  budget  (spent s)
+  ?.  |((gte accepted.counts.s count.find) ?=(^ budget))  s
+  =/  labels=(list @t)  (sort ~(tap in ~(key by examples.s)) aor)
+  (next-label s find(phase %label, budget budget, waiting labels))
+::
+++  next-label
+  ::  Start the next waiting label's shrink from its first sample, or end
+  ::  the search. The sample was weighed when it was first shown.
+  |=  [s=state find=search]
+  ^-  state
+  ?~  waiting.find  (found s find(hunt ~) ~)
+  =/  label  i.waiting.find
+  =/  =example  (~(got by examples.s) label)
+  =/  best=labelled  [label example (weight q.vase.example) 0 0 %done]
+  =/  visited  (~(put in *(set @)) (mug q.vase.example))
+  s(search `find(waiting t.waiting.find, hunt `[best visited ~]))
+::
+++  found
+  ::  End a search: each label's example in label order, the ++cover
+  ::  labels never seen, the budget that ended generation, and the failure
+  ::  that ended the search, if one did. Only a generated sample can fail,
+  ::  so then no label was shrunk: each keeps its first sample, %stopped.
+  |=  [s=state find=search evidence=(unit counterexample)]
+  ^-  state
+  =/  finished=(map @t labelled)
+    (malt (turn done.find |=(l=labelled [label.l l])))
+  =/  rows=(list labelled)
+    %+  turn  (sort ~(tap by examples.s) |=([a=[@t *] b=[@t *]] (aor -.a -.b)))
+    |=  [label=@t =example]
+    ^-  labelled
+    =/  got  (~(get by finished) label)
+    ?^  got  u.got
+    [label example (weight q.vase.example) 0 0 %stopped]
+  =/  cover  cover.compiled.s
+  =/  wanted=(list @t)  ?~(cover ~ (turn rows.cover.u.cover head))
+  =/  unseen  (skip wanted ~(has by examples.s))
+  %=  s
+    shrink  ~
+    search  `find
+    result  `[%examples rows unseen budget.find evidence]
+  ==
+::
+++  hunt-step
+  ::  One step of a label's shrink: ask alts for candidates of its best
+  ::  example, or judge the next one. A candidate is kept when it is new,
+  ::  lighter, passes and still carries the label. A failing candidate is
+  ::  rejected, not reported: a shrinker can leave the generator's domain,
+  ::  as a run's shrink rejects another failure. The shrink limits, or an
+  ::  alts product over alts-bytes, end only this label's shrink. A
+  ::  candidate over sample-bytes is skipped.
+  |=  s=state
+  ^-  state
+  =/  find  (need search.s)
+  =/  work  (need hunt.find)
+  =/  keep  |=([t=state w=hunt] ^-(state t(search `find(hunt `w))))
+  =/  close
+    |=  [w=hunt end=?(%done %limited)]
+    ^-  state
+    (next-label s find(done [best.w(end end) done.find], hunt ~))
+  =/  bounds  bounds.config.s
+  ?:  ?|  (gte tried.best.work shrink-candidates.bounds)
+          (gte steps.best.work shrink-depth.bounds)
+      ==
+    (close work %limited)
+  ?~  pending.work
+    =/  made  (alternatives time.s vase.example.best.work alts.compiled.s)
+    ?.  ?=(%0 -.made)
+      =/  why  (classify made)
+      ?>  ?=(^ why)
+      (stop-error s %alts why ~)
+    =/  candidates  !<((list vase) [p:!>(*(list vase)) p.made])
+    =/  values=(list *)  (turn candidates tail)
+    ?.  (fits alts-bytes.bounds values)  (close work %limited)
+    (keep s work(pending `candidates))
+  ::  Bound first: narrowing `pending` would block the write below.
+  =/  left=(list vase)  u.pending.work
+  ?~  left  (close work %done)
+  =/  sam  i.left
+  =.  pending.work  `t.left
+  =.  tried.best.work  +(tried.best.work)
+  ?:  (gth (met 3 (jam q.sam)) sample-bytes.bounds)  (keep s work)
+  =/  hash  (mug q.sam)
+  ?:  (~(has in visited.work) hash)  (keep s work)
+  =.  visited.work  (~(put in visited.work) hash)
+  =/  weighed  (sandbox time.s weight q.sam)
+  ?.  ?=(%0 -.weighed)
+    =/  why  (classify weighed)
+    ?>  ?=(^ why)
+    (stop-error s %alts why ~)
+  ?.  (lth ;;(@ p.weighed) weight.best.work)  (keep s work)
+  =/  [got=verdict =tags]  (judge (sandbox time.s q.fate.compiled.s q.sam))
+  =/  label  label.best.work
+  ?.  &(?=(%pass got) (lien labels.tags |=(l=@t =(l label))))
+    (keep s work)
+  =/  shown  (show s sam ~)
+  ?:  ?=(%.n -.shown)  (unshown s %alts p.shown ~)
+  =.  best.work
+    %=  best.work
+      example  [sam text.p.shown]
+      weight   weight.p.shown
+      steps    +(steps.best.work)
+    ==
+  (keep s work(pending ~))
 ::
 ++  step
   ::  Attempted counts generated samples, including duplicates and failures.
@@ -416,6 +595,7 @@
   =.  s  (finish s)
   ?:  !=(~ result.s)  s
   ?:  !=(~ shrink.s)  (shrink-step s)
+  ?:  ?=([~ * %label *] search.s)  (hunt-step s)
   =/  [fill-rng=_og next-rng=_og]  (split-rng:quiz rng.s)
   =/  time  time.s
   =/  made  (generate time size.s fill-rng sample.s norn.compiled.s)
@@ -453,7 +633,9 @@
     ==
   ?:  (gth seen-used.s seen-bytes.bounds.config.s)
     s(result `[%limited %seen-bytes ~])
-  ?:  =(%interrupt on-timeout.config.s)  (evaluate s sam ~)
+  ::  A search judges inline, as a preview does: a hang interrupts it.
+  ?:  |(=(%interrupt on-timeout.config.s) ?=(^ search.s))
+    (evaluate s sam ~)
   ::  Under a split policy the fate runs on a later tick, from `pending`.
   ::  Show the sample first: the error wake after a timeout keeps it as
   ::  evidence and must run no user code.
@@ -859,9 +1041,11 @@
   (div:rd top (add:rd .~1 (div:rd zz nn)))
 ::
 ++  failed
-  ::  Shrinking ended. An expected failure is reported as such.
+  ::  Shrinking ended. A search reports the failure with its examples so
+  ::  far; otherwise an expected failure is reported as such.
   |=  [s=state evidence=counterexample]
   ^-  state
+  ?^  search.s  (found s u.search.s `evidence)
   ?:  ?=(%fail expect.compiled.s)
     s(shrink ~, result `[%failed-as-expected evidence])
   s(shrink ~, result `[%failed evidence])

@@ -543,6 +543,63 @@
     (expect-eq !>(%preview) !>(kind:(summarize:job out)))
   ==
 ::
+++  test-examples-job
+  ::  An examples request starts the engine searching. A slice ends where
+  ::  its work changes, so generation and each label's shrink take their
+  ::  own slices, reported as %shrinking, and an abort there is blamed on
+  ::  shrinking. History lists it as an examples run.
+  ^-  tang
+  =/  text  '|%  ++  fate  |=(n=@ud &)  --'
+  =/  doc  (prepare:build [~zod %quiz 1] /draft/hoon text)
+  ?>  ?=(%.y -.doc)
+  =/  s  (activate:job (queued 1) now:bol)
+  =/  rec  (get-record s 1)
+  =.  rec  rec(request request.rec(mode [%examples 5], seed `0v0))
+  =.  s  s(records.saved (~(put by records.saved.s) 1 rec))
+  =/  a  ~(. agent bol)
+  =.  a  a(state s(active `[1 [%file p.doc]], build-token `10))
+  =/  core
+    !>  |%
+        ++  fate
+          |=  n=@ud
+          [%report & [~ ~] ~[?:((lth n 3) 'low' 'high')] ~]
+        --
+  =/  reply=rant:clay
+    [[%a [%ud 1] %quiz] /draft/hoon %vase !>(core)]
+  =/  ready  (on-arvo.a /quiz/build/10 [%clay %writ `reply])
+  ::  Slices until generation ends.
+  =/  first
+    =/  next  (advance:job state:+.ready now:bol)
+    =/  left  20
+    |-
+    ?:  |(=(0 left) !=(%running status:(get-record next 1)))  next
+    $(next (advance:job next now:bol), left (dec left))
+  =/  middle  (get-record first 1)
+  =/  stopped  (get-record (interrupt:job first now:bol ~s0) 1)
+  =/  dropped
+    (get-record (advance:job (cancel:job first 1 now:bol) now:bol) 1)
+  =/  done
+    =/  left  50
+    |-
+    ?:  |(=(0 left) =(%done status:(get-record first 1)))  first
+    $(first (advance:job first now:bol), left (dec left))
+  =/  out  (get-record done 1)
+  =/  result  (need result.out)
+  ?>  ?=(%examples -.result)
+  =/  counts  counts.out
+  ?>  ?=(%property -.counts)
+  ;:  weld
+    (expect-eq !>(%shrinking) !>(status.middle))
+    (expect !>(?=([~ %interrupted %shrinking ~ ~] result.stopped)))
+    (expect !>(=(`[%cancelled %request] result.dropped)))
+    (expect-eq !>(%done) !>(status.out))
+    %+  expect-eq  !>(`(list @t)`~['high' 'low'])
+    !>((turn found.result |=(l=labelled:app label.l)))
+    (expect !>((levy found.result |=(l=labelled:app =(%done end.l)))))
+    (expect-eq !>(`@ud`5) !>(accepted.counts))
+    (expect-eq !>(%examples) !>(kind:(summarize:job out)))
+  ==
+::
 ++  test-replay-unavailable
   ^-  tang
   =/  req  request
@@ -738,6 +795,8 @@
   =/  first  (advance:job s now:bol)
   =/  done  (get-record first 1)
   =/  stopped  (get-record (interrupt:job first now:bol ~s0) 1)
+  =/  dropped
+    (get-record (advance:job (cancel:job first 1 now:bol) now:bol) 1)
   ?>  ?=(%property -.counts.done)
   ;:  weld
     (expect !>(=(%shrinking status.done)))

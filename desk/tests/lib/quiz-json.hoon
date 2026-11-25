@@ -29,9 +29,15 @@
   =/  without  [%o (~(del by (~(put by p.req) 'op' s+'run')) 'mode')]
   =/  as-preview=(unit command:codec)  `[%run preview]
   =/  as-run=(unit command:codec)  `[%run request]
+  =/  search=request:app  base(mode [%examples 50])
+  =/  found  (request-out:codec search)
+  ?>  ?=([%o *] found)
+  =/  as-search=(unit command:codec)  `[%run search]
   ;:  weld
     (expect-eq !>(as-preview) !>((decode:codec with)))
     (expect-eq !>(as-run) !>((decode:codec without)))
+    %+  expect-eq  !>(as-search)
+    !>((decode:codec [%o (~(put by p.found) 'op' s+'run')]))
   ==
 ::
 ++  test-source-kinds
@@ -172,6 +178,15 @@
           ~[[1 1 '1' | `%pass ~['odd']] [2 1 '1' & ~ ~]]
           ~[[0 '0' `1 &] [5 '5' ~ |]]
         [2 1 ~[1 2] ~[3 3] (malt ~[[%pass 1]]) (malt ~[['odd' 1]])]
+        :*  %examples
+            :~  ['even' [0 '0'] 1 3 7 %done]
+                ['big' [100 '100'] 101 9 40 %limited]
+            ==
+            ~['huge']
+            `%attempts
+            `proof
+        ==
+        [%examples ~ ~ ~ ~]
     ==
   %-  zing
   %+  turn  outcomes

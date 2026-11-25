@@ -134,6 +134,17 @@ is at most 1,000; the first 100 samples are returned as rows. A preview has no b
 duplicate budgets in `config` are ignored, while sizes, the duplicate policy
 and byte bounds apply. Suites cannot be previewed.
 
+A [labelled-example search](reference.md#labelled-examples) finds each
+label's smallest example over `count` passing samples, at most the conf's
+`requested-max`:
+
+```json
+{"kind":"examples","count":100}
+```
+
+`requested` is ignored; the attempt, drop and duplicate budgets can end
+generation early. Suites cannot be searched.
+
 Replay uses the stored property text, immutable context, effective settings,
 seed, and engine version. Suite replay is refused. Neither operation accepts
 replacement replay inputs.
@@ -190,7 +201,7 @@ with 400 `invalid-command`. The workbench's **Settings** dialog uses both.
 
 `runs` returns 200 `{"ids":["42","41"],"runs":[...]}` newest first. Each
 `runs` row is `{"id","kind","status","outcome"}`: `kind` is the source kind,
-or `preview` for a preview,
+`preview` for a preview or `examples` for a labelled-example search,
 `outcome` the result's kind (a suite's `passed`/`failed`) or `null` while
 unfinished. Rows label history; fetch a whole record with `status`. `status` returns 200
 with one complete record (the workbench's **Download record** saves this
@@ -210,7 +221,7 @@ A record contains:
 
 - `id`, source `kind`, `status`, `engine-version`, `created`, `updated`, `finished`.
 - `request`: submitted source, desk, revision, seed, configuration, replay ID
-  and `mode` (`{"kind":"run"}` or the preview's mode).
+  and `mode` (`{"kind":"run"}`, or the preview's or search's mode).
 - `snapshot`: null until available, then pinned `context`, `path`, exact `source`,
   and `source-hash` (`@uv`).
 - Effective `seed`, `config`, and `replay-of` (nullable).
@@ -234,7 +245,7 @@ and is null for suites:
 
 Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
 `failed-as-expected`, `error`, `limited`, `exhausted`, `invalid`, `cancelled`,
-`interrupted`, `suite`, or `preview`. Additional fields follow the typed result:
+`interrupted`, `suite`, `preview`, or `examples`. Additional fields follow the typed result:
 
 - `passed`: `warnings` (coverage shortfalls under `%warn`, usually empty) and
   `examples`.
@@ -269,6 +280,13 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
   and `bytes` list each sample's size and jammed byte length in order,
   `verdicts` maps each verdict kind to its count (empty without `verdicts`)
   and `labels` maps each label to the number of samples carrying it.
+- `examples`: `found`, `unseen`, nullable `budget` and nullable `evidence`.
+  A `found` row is `{"label","sample","weight","steps","tried","end"}`: the
+  label, its smallest sample (shaped like evidence samples), that sample's
+  weight as a decimal string, accepted shrink steps, candidates tried, and
+  `end` (`done`, `limited` or `stopped`). `unseen` lists `++cover` labels
+  never seen; `budget` is `attempts`, `drops` or `duplicates` when one ended
+  generation; `evidence` is a failure that ended the search.
 
 Evidence samples have rendered `text` and `noun-jam` (a jammed noun as `@uv`).
 `why` has `kind` (`false`, `timeout`, `crash`, `scry`, `bad-product`) and

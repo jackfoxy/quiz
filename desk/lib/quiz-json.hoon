@@ -62,12 +62,14 @@
   p.value
 ::
 ++  mode-in
-  ::  {"kind":"run"}, or {"kind":"preview","count","verdicts","alts"}.
+  ::  {"kind":"run"}, {"kind":"preview","count","verdicts","alts"} or
+  ::  {"kind":"examples","count"}.
   |=  value=json
   ^-  mode:app
   =/  fields  (object value)
   =/  kind  (text (field fields 'kind'))
   ?:  =(%run kind)  [%run ~]
+  ?:  =(%examples kind)  [%examples (natural (field fields 'count'))]
   ?>  =(%preview kind)
   :*  %preview
       (natural (field fields 'count'))
@@ -88,6 +90,9 @@
         ['verdicts' b+verdicts.value]
         ['alts' b+alts.value]
     ==
+  ::
+      %examples
+    ~[['kind' s+'examples'] ['count' (numb:enjs:format count.value)]]
   ==
 ::
 ++  name
@@ -296,6 +301,20 @@
   |=  [label=@t =sample:app]
   (pairs:enjs:format ~[['label' s+label] ['sample' (sample-out sample)]])
 ::
+++  labelled-out
+  ::  A label's smallest example. The weight is a decimal string: it can
+  ::  exceed a JavaScript number's exact range.
+  |=  row=labelled:app
+  ^-  json
+  %-  pairs:enjs:format
+  :~  ['label' s+label.row]
+      ['sample' (sample-out sample.row)]
+      ['weight' s+(crip (a-co:co weight.row))]
+      ['steps' (numb:enjs:format steps.row)]
+      ['tried' (numb:enjs:format tried.row)]
+      ['end' s+end.row]
+  ==
+::
 ++  distribution-out
   ::  Label and table-row counts over accepted samples.
   |=  value=distribution:engine
@@ -438,6 +457,12 @@
       :~  ['rows' a+(turn rows.value preview-row-out)]
           ['candidates' a+(turn candidates.value candidate-out)]
           ['summary' (preview-summary-out summary.value)]
+      ==
+    %examples
+      :~  ['found' a+(turn found.value labelled-out)]
+          ['unseen' a+(turn unseen.value |=(l=@t s+l))]
+          ['budget' ?~(budget.value ~ s+u.budget.value)]
+          ['evidence' ?~(proof.value ~ (evidence-out u.proof.value))]
       ==
     %limited
       :~  ['which' s+which.value]

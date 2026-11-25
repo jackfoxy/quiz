@@ -170,6 +170,14 @@ whatever `on-timeout` says. Preview without verdicts to see the samples.
 Preview logic is `preview-step`/`preview-end` in the engine, started by
 `previewing` from `quiz-agent` when the request's `mode` is `%preview`.
 
+**A labelled-example search ends `%examples` with `evidence`, or a label
+barely shrinks.** A generated sample failed: that ends the search, as it
+would end a run. Failing candidates are only rejected, so a label that stays
+large usually means its shrinker offers nothing lighter that passes and
+keeps the label (a `*` sample with no `++alts` is typical). Search logic is
+`gather`, `next-label`, `hunt-step` and `found`, started by `searching` when
+the request's `mode` is `%examples`; `doing` decides where a slice ends.
+
 **Replay refused.** `%engine-version` means `++version` changed since the
 record was made. This is intentional (post-release only; the version is
 held until release). `%source-hash` means the stored text

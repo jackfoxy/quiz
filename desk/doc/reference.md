@@ -646,7 +646,8 @@ limits; an already known empty candidate list finishes normally first.
 Additional fixed boundaries: queue length 100 waiting jobs; at most 100 explicit
 suite arms; at most 1,000 samples (`preview-max`), 100 of them as rows
 (`row-max`), and 20 shrink candidates (`candidate-max`) per
-[generator preview](#generator-preview); HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
+[generator preview](#generator-preview); at most `requested-max` passes per
+[labelled-example search](#labelled-examples); HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
 pending API mutation/discovery/configuration inspection at a time and times it
 out after 30 seconds. The file wire permits one pending write and verifies it
 with a 10-second timeout. These are request timers, not Hoon execution limits.
@@ -814,6 +815,7 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 | `interrupted` | The runtime aborted the run's event: a CPU limit, Ctrl-C or memory exhaustion. `during` (`building`, `running`, `shrinking`), optional best evidence, optional suite arm. Under `on-timeout %fail` or `%discard` a fate's CPU limit does not interrupt the run; see the timeout policy below |
 | `suite` | Aggregate status, arm counters and per-arm outcomes |
 | `preview` | A [generator preview](#generator-preview)'s `rows` and `candidates` |
+| `examples` | A [labelled-example search](#labelled-examples)'s smallest example per label, unseen `++cover` labels, the budget that ended generation and any failure's evidence |
 
 The durable Hoon [record](../sur/quiz-app.hoon) contains `id`, `request`, nullable
 `snapshot` and `replay`, nullable effective `seed` and `config`, `engine-version`,
@@ -870,6 +872,54 @@ A row is `[size value text repeat verdict labels]`; a candidate is
 `[value text weight lighter]`. The outcome is `[%preview rows candidates
 summary]`. The workbench's **Preview samples** button shows all three.
 Previews cannot be replayed.
+
+### Labelled examples
+
+A request whose `mode` is `[%examples count]` finds the smallest example of
+each label, as QuickCheck's
+[`labelledExamples`](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#v:labelledExamples)
+does, instead of judging coverage. It is an ordinary queued job and record:
+it runs in slices, can be cancelled or `interrupted`, and its history row's
+kind is `examples`.
+
+- **Generation.** It generates and judges samples exactly as a run does,
+  with the same streams, sizes, duplicate policy and counters, until `count`
+  samples have passed. `count` must fit `requested-max`; `requested` is
+  ignored. An attempt, drop or duplicate budget ends generation early, and
+  the outcome names it in `budget`. A label's first passing sample is kept,
+  as a run keeps one example per label; the `label-max` and `label-bytes`
+  caps apply.
+- **Shrinking.** Then each label in label order is shrunk from its first
+  sample, using `++alts` or `quiz-auto`'s `sink`. A candidate replaces the
+  label's best sample when its mug is new, its weight is strictly below the
+  best's, it passes and its report still carries the label. A candidate that
+  is dropped, fails or loses the label is rejected: a shrinker can leave the
+  generator's domain, so a failing candidate is not a bug report. Each label
+  has its own `shrink-candidates` and `shrink-depth` budget; reaching one, or
+  an alts product over `alts-bytes`, ends only that label's shrink as
+  `%limited`. A candidate over `sample-bytes` is skipped. Shrink counters
+  are per label; the record's `shrink-tried` and `shrink-steps` stay zero
+  unless a failure is shrunk.
+- **Failure.** A generated sample that fails ends the search. It is shrunk
+  as a run's failure is, and the outcome carries it as `evidence` with every
+  label seen so far, each `%stopped` at its first sample. `++expect %fail`
+  does not change this. If shrinking that failure hits a limit or errors,
+  the outcome is that `limited` or `error`, as in a run.
+- **Timeouts.** The fate runs inline, as a preview's does: a call over the
+  limit interrupts the search whatever `on-timeout` says.
+- **Slices.** A slice ends where its work changes: from generating to a
+  label's shrink, and from one label to the next, so an abort has one
+  culprit. The record's status is `running` while generating and
+  `shrinking` while shrinking a label or a failure.
+
+The outcome is `[%examples found unseen budget evidence]`. Each `found` row
+is `[label example weight steps tried end]`: the label, its smallest sample
+and text, that sample's noun weight, the accepted shrink steps, the
+candidates tried, and `end`: `%done` when no candidate kept the label,
+`%limited` at a limit, `%stopped` when a failure ended the search first.
+Rows are in label order. `unseen` lists `++cover` labels no passing sample
+carried; table values are not searched. Searches cannot be replayed; a
+replay of one runs the property.
 
 ### Suites
 
@@ -1077,7 +1127,7 @@ already checked parts/configuration and own scheduling and persistence.
 
 | Module | Responsibility / key entry points |
 | --- | --- |
-| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `previewing [state count verdicts alts]` → a preview state; `step state` → state (`preview-step`/`preview-end` while previewing); `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit coverage) expect=?(%pass %fail)]`, where `coverage` is `[cover tables confidence]`; `judge` classifies reports; terminal states are stable |
+| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `previewing [state count verdicts alts]` → a preview state; `searching [state count]` → a labelled-example search; `step state` → state (`preview-step`/`preview-end` while previewing, `gather`/`hunt-step` while searching); `doing state` → the work the next step does, which a slice keeps to; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit coverage) expect=?(%pass %fail)]`, where `coverage` is `[cover tables confidence]`; `judge` classifies reports; terminal states are stable |
 | [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
 | [quiz-harness](../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
 | [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |

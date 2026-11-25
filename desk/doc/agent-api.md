@@ -32,7 +32,7 @@ The request fields, in order, are:
 | `config` | `(unit patch)`; optional per-field settings override |
 | `seed` | `(unit @uv)`; optional seed override, including zero |
 | `replay-of` | `(unit @ud)`; replay an existing property's captured inputs |
-| `mode` | `[%run ~]`, or `[%preview count=@ud verdicts=? alts=?]` for a [generator preview](reference.md#generator-preview) |
+| `mode` | `[%run ~]`, `[%preview count=@ud verdicts=? alts=?]` for a [generator preview](reference.md#generator-preview), or `[%examples count=@ud]` for a [labelled-example search](reference.md#labelled-examples) |
 
 Absent overrides use the document's `conf`, then engine defaults. Entropy is
 captured on admission; a document seed takes precedence over that entropy.
@@ -49,6 +49,16 @@ cancelled or interrupted, and ends with the outcome
 first 100 as rows and all in the summary, never shrinks,
 and ignores `requested` and the attempt, drop and duplicate budgets. Its
 summary's kind is `%preview`. A suite cannot be previewed.
+
+An `%examples` request is also an ordinary job. It generates and judges as a
+run does until `count` samples pass (at most `requested-max`; a budget can
+end generation first), then shrinks each label's first sample while it passes
+and keeps the label, one label per slice. It ends with
+`[%examples found unseen budget proof]`: per label a `labelled` row
+`[label sample weight steps tried end]`, `++cover` labels never seen, the
+budget that ended generation, and the evidence of a generated sample that
+failed, which ends the search. Its summary's kind is `%examples`. A suite
+cannot be searched.
 
 When `replay-of` is present, its stored source, path, context, seed, and settings
 replace the other request fields. Missing/pruned records and records without
@@ -97,7 +107,7 @@ Scries return `%noun` cages:
 | --- | --- |
 | `/x/run/<id>` | `record:quiz-app`; known path with absent ID returns no value |
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
-| `/x/summaries` | Newest-first `(list summary)`: id, source kind (`%preview` for a preview), status and outcome tag per run |
+| `/x/summaries` | Newest-first `(list summary)`: id, source kind (`%preview` for a preview, `%examples` for a labelled-example search), status and outcome tag per run |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
 | `/x/version` | Engine semantics version (`%quiz-engine-1`) |
 | `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |

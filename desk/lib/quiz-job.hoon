@@ -142,8 +142,8 @@
     ?:  ?=(%suite -.u.result)  `status.u.result
     `-.u.result
   =/  kind
-    ?:  ?=(%preview -.mode.request.rec)  %preview
-    -.source.request.rec
+    ?:  ?=(%run -.mode.request.rec)  -.source.request.rec
+    -.mode.request.rec
   [id.rec kind status.rec outcome]
 ::
 ++  activate
@@ -322,6 +322,19 @@
       :*  %limited  which.out
           ?~(evidence.out ~ `(persist-evidence u.evidence.out))
       ==
+    %examples
+      :*  %examples
+          %+  turn  found.out
+          |=  l=labelled:engine
+          ^-  labelled:app
+          =/  =example:engine  example.l
+          :*  label.l  [q.vase.example text.example]
+              weight.l  steps.l  tried.l  end.l
+          ==
+          unseen.out
+          budget.out
+          ?~(evidence.out ~ `(persist-evidence u.evidence.out))
+      ==
   ==
 ::
 ++  adapt
@@ -367,18 +380,21 @@
       =/  left
         ?.  =(%interrupt on-timeout.config.running)  1
         (min cap ?:(=(0 slice.pace.s) slice-start slice.pace.s))
-      =/  shrinking  !=(~ shrink.running)
+      ::  A slice also ends where its work changes: from generating to
+      ::  shrinking, or from one label's shrink to the next.
+      =/  doing  (doing:engine running)
       =.  running
         |-  ^-  state:engine
         ?:  |(=(left 0) !=(~ result.running))  running
         =/  next  (step:engine running)
-        ?:  &(!shrinking !=(~ shrink.next))  next
+        ?.  =(doing (doing:engine next))  next
         $(running next, left (dec left))
       =.  rec
         %=  rec
           counts  [%property counts.running seen-tags.running size.running]
           updated  now
-          status  ?:(=(~ shrink.running) %running %shrinking)
+          status
+            ?:(=(%generate (doing:engine running)) %running %shrinking)
           call  `time.running
         ==
       =.  s

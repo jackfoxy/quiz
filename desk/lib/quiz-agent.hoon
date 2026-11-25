@@ -107,6 +107,7 @@
         =/  =mode:app  mode.request.rec
         =?  run  ?=(%preview -.mode)
           (previewing:engine run count.mode verdicts.mode alts.mode)
+        =?  run  ?=(%examples -.mode)  (searching:engine run count.mode)
         :-  ~
         %=  s
           active  `[id [%property run]]
