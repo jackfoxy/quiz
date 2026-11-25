@@ -36,6 +36,8 @@ const examples = [
   ['failing', '33-expiry-agent-bug', 'failed', 'false'],
   ['failing', '34-typed-defaults', 'failed', 'false'],
   ['props', '35-cover-table', 'passed'],
+  ['props', '36-weak-generator', 'passed'],
+  ['props', '37-insert-generated', 'passed'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -81,7 +83,8 @@ for (const [root, name, outcome, why] of examples) {
     if (outcome === 'passed' && name !== '28-confident-coverage')
       expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
         '21-small-domain-allow', '22-size-capped', '23-map-fusion',
-        '25-counter-agent', '32-expiry-agent', '35-cover-table'].includes(name) ? 100 : 20);
+        '25-counter-agent', '32-expiry-agent', '35-cover-table', '36-weak-generator',
+        '37-insert-generated'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -156,6 +159,15 @@ for (const [root, name, outcome, why] of examples) {
       // No norn or alts: quiz-auto fills printable text and a list of terms.
       expect(got.outcome.evidence.shrunk.text).toBe("[name='' tags=~[%a %a %a]]");
       expect(got.counts).toMatchObject({attempted:3, accepted:2, 'shrink-tried':44, 'shrink-steps':8});
+    }
+    if (name === '36-weak-generator') {
+      // Passes, but on dropped samples and short lists.
+      expect(got.counts).toMatchObject({attempted:324, accepted:100, dropped:215, duplicate:9});
+      expect(got.distribution.labels).toEqual({short:94, long:6});
+    }
+    if (name === '37-insert-generated') {
+      expect(got.counts).toMatchObject({attempted:101, accepted:100, dropped:0, duplicate:1});
+      expect(got.distribution.labels).toEqual({short:39, long:61});
     }
     if (name === '35-cover-table') {
       // ++cover-table shares are of the table's entries; all are met.
@@ -329,4 +341,39 @@ test('hanging samples are discarded and counted as drops under %discard', async 
   } finally {
     expect((await limits(10)).status()).toBe(202);
   }
+});
+test('Preview summarizes a weak generator against its repair', async ({page}) => {
+  test.setTimeout(120000);
+  const login = await page.request.post('/~/login', {form:{password:process.env.QUIZ_CODE}});
+  expect(login.ok()).toBeTruthy();
+  await page.goto('/apps/quiz/');
+  await page.waitForFunction(() => window.quiz?.ready);
+  await page.evaluate(() => window.quiz.ready);
+  const summary = async (name) => {
+    await page.evaluate(path => window.quiz.documents.open('property', path),
+      ['props', name, 'hoon']);
+    await page.locator('#run-previewShow').selectOption('verdicts');
+    await page.locator('#run-previewCount').fill('200');
+    const newest = () => page.evaluate(() =>
+      window.quiz.documents.active('property').runIds?.[0] || null);
+    const before = await newest();
+    await page.locator('#run-preview').click();
+    let id;
+    await expect.poll(async () => (id = await newest()) !== before).toBe(true);
+    let record;
+    await expect.poll(async () => (record = await (await page.request.post('/apps/quiz/api',
+      {data:{op:'status', id}})).json())?.outcome?.kind, {timeout:60000}).toBe('preview');
+    await expect(page.locator('#run-preview-summary')).toContainText('Generator summary: 200 samples');
+    return record.outcome;
+  };
+  const weak = await summary('36-weak-generator');
+  expect(weak.rows.length).toBe(100);
+  expect(weak.summary.verdicts.drop).toBe(132);
+  expect(weak.summary.labels.long).toBe(1);
+  await expect(page.locator('#run-preview-notes')).toContainText('66% of samples were discarded');
+  await expect(page.locator('#run-detail')).toContainText('Preview: first 100 of 200 samples');
+  const strong = await summary('37-insert-generated');
+  expect(strong.summary.verdicts.drop).toBeUndefined();
+  expect(strong.summary.labels.long).toBe(119);
+  await expect(page.locator('#run-preview-notes')).toHaveCount(0);
 });

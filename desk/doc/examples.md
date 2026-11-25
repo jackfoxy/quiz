@@ -50,6 +50,8 @@ settings, not universal outcomes of similar-looking properties.
 | [33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon) | Failed, false; two puts of `%a` and a wait | A re-put that does not `%rest` its old timer; the old wake deletes the new value early |
 | [34-typed-defaults](../examples/failing/34-typed-defaults.hoon) | Failed, false; `[name='' tags=~[%a %a %a]]` | No norn or alts: `quiz-auto` fills printable text and a list of terms from the sample's type and shrinks the list |
 | [35-cover-table](../examples/props/35-cover-table.hoon) | Passed, 100 accepted; 64 duplicates | `++cover-table`: each list's least element is tabulated, and three values must each be 5% of the table's entries |
+| [36-weak-generator](../examples/props/36-weak-generator.hoon) | Passed, 100 accepted; 215 dropped | A weak generator: arbitrary lists, unsorted ones dropped, so only 6 accepted lists are long. Preview 200 with verdicts: 132 dropped, 1 long |
+| [37-insert-generated](../examples/props/37-insert-generated.hoon) | Passed, 100 accepted; 61 long | 36 repaired: `sorted:gen` makes sorted lists, nothing is dropped, and `++cover` requires half to be long. Preview 200: no drops, 119 long |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -276,6 +278,8 @@ queue, report, coverage, generator-library, size and function rows in
 | 33-expiry-agent-bug | 9 | 6 | 0 | 2 | 56 | 7 | `~[[%put %a 0 ~s1] [%put %a 0 ~s2] [%wait ~s1]]` (expected `{%a}`, actual `{}`) |
 | 34-typed-defaults | 3 | 2 | 0 | 0 | 44 | 8 | `[name='-]' tags=~[%vby %m0g6 %q7qa]]` → `[name='' tags=~[%a %a %a]]` |
 | 35-cover-table | 164 | 100 | 0 | 64 | 0 | 0 | — |
+| 36-weak-generator | 324 | 100 | 215 | 9 | 0 | 0 | — |
+| 37-insert-generated | 101 | 100 | 0 | 1 | 0 | 0 | — |
 
 ## Example suites
 

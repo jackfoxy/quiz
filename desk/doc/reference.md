@@ -636,8 +636,9 @@ attempts, then drops, then duplicates. Shrink candidate limits precede depth
 limits; an already known empty candidate list finishes normally first.
 
 Additional fixed boundaries: queue length 100 waiting jobs; at most 100 explicit
-suite arms; at most 100 samples (`preview-max`) and 20 shrink candidates
-(`candidate-max`) per [generator preview](#generator-preview); HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
+suite arms; at most 1,000 samples (`preview-max`), 100 of them as rows
+(`row-max`), and 20 shrink candidates (`candidate-max`) per
+[generator preview](#generator-preview); HTTP JSON bodies at most 524,288 bytes. The web adapter permits one
 pending API mutation/discovery/configuration inspection at a time and times it
 out after 30 seconds. The file wire permits one pending write and verifies it
 with a 10-second timeout. These are request timers, not Hoon execution limits.
@@ -831,7 +832,7 @@ generator, as QuickCheck's `sample` does, instead of running the property. It
 is an ordinary queued job and record: it runs in slices, can be cancelled or
 `interrupted`, and its history row's kind is `preview`.
 
-- It makes `count` samples, at most `preview-max` (100), with the run's RNG
+- It makes `count` samples, at most `preview-max` (1,000), with the run's RNG
   split, size schedule and `++norn` or [type-directed fill](#type-directed-defaults-quiz-auto).
   Sample *i* is therefore sample *i* of a run with the same seed and conf, up
   to the run's first skipped repeat.
@@ -850,9 +851,17 @@ is an ordinary queued job and record: it runs in slices, can be cancelled or
   limits and norn, generation or alts errors end a preview `limited` or
   `error`, as they end a run.
 
+- Only the first `row-max` (100) samples become rows, rendered and weighed.
+  Every sample counts in the `summary`: `[samples repeats sizes bytes
+  verdicts labels]`, the sample count, how many a run would skip as
+  repeats, each sample's size and jammed byte length in order, and, with
+  `verdicts`, a count per verdict kind and the number of samples carrying
+  each label (a label counts once per sample).
+
 A row is `[size value text repeat verdict labels]`; a candidate is
-`[value text weight lighter]`. The workbench's **Preview samples** button
-shows both. Previews cannot be replayed.
+`[value text weight lighter]`. The outcome is `[%preview rows candidates
+summary]`. The workbench's **Preview samples** button shows all three.
+Previews cannot be replayed.
 
 ### Suites
 

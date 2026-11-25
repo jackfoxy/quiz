@@ -168,9 +168,10 @@
         [%cancelled %reload]
         [%interrupted %shrinking `proof ~]
         [%interrupted %running ~ `%test-loop]
-        :+  %preview
+        :^  %preview
           ~[[1 1 '1' | `%pass ~['odd']] [2 1 '1' & ~ ~]]
-        ~[[0 '0' `1 &] [5 '5' ~ |]]
+          ~[[0 '0' `1 &] [5 '5' ~ |]]
+        [2 1 ~[1 2] ~[3 3] (malt ~[[%pass 1]]) (malt ~[['odd' 1]])]
     ==
   %-  zing
   %+  turn  outcomes

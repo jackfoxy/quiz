@@ -43,7 +43,7 @@
         seed: bounded('seed', seedPattern, 256),
         arms: typeof value.arms === 'string' && value.arms.length <= 6400
           && /^[a-z0-9,\s-]*$/.test(value.arms) ? value.arms : '',
-        previewCount: bounded('previewCount', /^[1-9][0-9]*$/, 3),
+        previewCount: bounded('previewCount', /^[1-9][0-9]*$/, 4),
         previewShow: previewShows.includes(value.previewShow) ? value.previewShow : 'all'
       },
       runIds: Array.isArray(saved.runIds)
@@ -112,7 +112,7 @@
       addField(`bound-${key}`, `Bound: ${key}`, 'input', more).inputMode = 'numeric';
     }
     addField('arms', 'Suite arms (comma separated; blank = all)');
-    addField('previewCount', 'Preview samples (1-100, blank = 20)').inputMode = 'numeric';
+    addField('previewCount', 'Preview samples (1-1000, blank = 20; first 100 listed)').inputMode = 'numeric';
     const shows = addField('previewShow', 'Preview shows', 'select');
     for (const [value, label] of [['all', 'Samples, verdicts and shrink candidates'],
       ['alts', 'Samples and shrink candidates'],
@@ -393,8 +393,8 @@
       catch (error) { tell(error.message); return; }
       if (previewing) {
         const count = value.previewCount === '' ? 20 : Number(value.previewCount);
-        if (!Number.isSafeInteger(count) || count < 1 || count > 100) {
-          tell('Preview between 1 and 100 samples.'); return;
+        if (!Number.isSafeInteger(count) || count < 1 || count > 1000) {
+          tell('Preview between 1 and 1000 samples.'); return;
         }
         req.mode = {kind: 'preview', count,
           verdicts: ['all', 'verdicts'].includes(value.previewShow),
@@ -521,6 +521,48 @@
         : `${row.table} = ${row.label}: ${row.got}% of the table's entries, required ${row.want}%`));
       parent.append(node('h3', '', title), list);
     };
+    // What a generator makes, over every previewed sample: sizes, jammed
+    // bytes, repeats, verdicts and labels, with a note where it looks weak.
+    function previewSummary(sum, listed) {
+      const box = node('section', 'run-preview-summary');
+      box.append(node('h3', '', `Generator summary: ${sum.samples} samples`));
+      const spread = (values) => {
+        const sorted = [...values].sort((a, b) => a - b);
+        return sorted.length ? `${sorted[0]} / ${sorted[Math.floor((sorted.length - 1) / 2)]} / ${sorted.at(-1)}` : '—';
+      };
+      const share = (n) => sum.samples ? `${Math.round(n * 100 / sum.samples)}%` : '—';
+      line(box, 'Size min / median / max', spread(sum.sizes));
+      line(box, 'Sample bytes min / median / max', spread(sum.bytes));
+      // Jammed size in power-of-two buckets: how big the samples really are.
+      const buckets = new Map();
+      for (const bytes of sum.bytes) {
+        let top = 1; while (top < bytes) top *= 2;
+        buckets.set(top, (buckets.get(top) || 0) + 1);
+      }
+      const table = node('table', 'run-preview-bytes');
+      for (const [top, count] of [...buckets].sort((a, b) => a[0] - b[0])) {
+        const row = node('tr', '');
+        row.append(node('td', '', `≤ ${top} bytes`), node('td', '', String(count)),
+          node('td', '', share(count)), node('td', '', '█'.repeat(Math.ceil(count * 20 / sum.samples))));
+        table.append(row);
+      }
+      box.append(table);
+      line(box, 'Repeats a run would skip', `${sum.repeats} (${share(sum.repeats)})`);
+      shares(box, 'run-preview-verdicts', 'Verdicts', sum.verdicts, sum.samples);
+      shares(box, 'run-preview-labels', 'Labels (share of samples)', sum.labels, sum.samples);
+      const notes = [];
+      const drops = sum.verdicts?.drop || 0;
+      if (drops * 2 >= sum.samples && drops) notes.push(`${share(drops)} of samples were discarded (%drop): a run tests only the rest, and may exhaust its drops budget. Generate valid inputs directly.`);
+      if (sum.repeats * 2 >= sum.samples && sum.repeats) notes.push(`${share(sum.repeats)} of samples repeat an earlier one: the generator's range may be too small for the requested checks.`);
+      if (!Object.keys(sum.verdicts || {}).length) notes.push('Preview with verdicts to see drops and labels.');
+      if (notes.length) {
+        const list = node('ul', 'run-preview-notes');
+        for (const text of notes) list.append(node('li', '', text));
+        box.append(list);
+      }
+      if (sum.samples > listed) box.append(node('p', '', `The first ${listed} samples are listed below.`));
+      return box;
+    }
     // A false verdict may carry the fate's notes and an expected/actual pair.
     const failure = (parent, why) => {
       if (why?.kind === 'timeout') {
@@ -612,6 +654,7 @@
         detail.append(node('h3', '', 'First example per label'), list);
       }
       if (outcome?.kind === 'preview') {
+        if (outcome.summary) detail.append(previewSummary(outcome.summary, outcome.rows.length));
         const table = node('table', 'run-preview-rows');
         const head = node('tr', '');
         for (const title of ['Size', 'Sample', 'Verdict', 'Labels', 'Repeat']) head.append(node('th', '', title));
@@ -622,7 +665,9 @@
             row.labels.join(', '), row.repeat ? 'skipped by a run' : '']) tr.append(node('td', '', text));
           table.append(tr);
         }
-        detail.append(node('h3', '', `Preview: ${outcome.rows.length} samples`), table);
+        detail.append(node('h3', '', outcome.summary?.samples > outcome.rows.length
+          ? `Preview: first ${outcome.rows.length} of ${outcome.summary.samples} samples`
+          : `Preview: ${outcome.rows.length} samples`), table);
         if (outcome.candidates?.length) {
           const list = node('ol', 'run-preview-candidates');
           for (const item of outcome.candidates) list.append(node('li', '', item.weight == null

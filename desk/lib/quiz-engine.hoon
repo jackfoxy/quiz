@@ -183,13 +183,28 @@
   ::  and lighter false, when the candidate could not be shown.
   [value=* text=@t weight=(unit @ud) lighter=?]
 ::
++$  summary
+  ::  Totals over every previewed sample, shown as a row or not: how many,
+  ::  how many a run would skip as repeats, each sample's size and jammed
+  ::  bytes in order, and, with verdicts, each verdict kind's count and the
+  ::  number of samples carrying each label.
+  $:  samples=@ud
+      repeats=@ud
+      sizes=(list @ud)
+      bytes=(list @ud)
+      verdicts=(map @tas @ud)
+      labels=(map @t @ud)
+  ==
+::
 +$  preview
-  ::  A preview in progress: its request and the rows so far, newest first.
+  ::  A preview in progress: its request, the rows so far and the summary,
+  ::  lists newest first.
   $:  count=@ud
       verdicts=?
       alts=?
       rows=(list preview-row)
       first=(unit [=vase weight=@ud])
+      sum=summary
   ==
 ::
 +$  outcome
@@ -203,7 +218,11 @@
       ==
       [%limited which=limit-name evidence=(unit counterexample)]
       [%exhausted budget=?(%attempts %drops %duplicates) all-dropped=?]
-      [%preview rows=(list preview-row) candidates=(list candidate-row)]
+      $:  %preview
+          rows=(list preview-row)
+          candidates=(list candidate-row)
+          =summary
+      ==
   ==
 ::
 +$  state
@@ -284,7 +303,11 @@
   ==
 ::
 ++  preview-max
-  ::  Most samples one preview makes.
+  ::  Most samples one preview makes; its summary covers all of them.
+  1.000
+::
+++  row-max
+  ::  Most previewed samples shown as rows: the first ones.
   100
 ::
 ++  candidate-max
@@ -298,7 +321,7 @@
   |=  [s=state count=@ud verdicts=? alts=?]
   ^-  state
   =/  wanted  (min count preview-max)
-  s(result ~, preview `[wanted verdicts alts ~ ~])
+  s(result ~, preview `[wanted verdicts alts ~ ~ *summary])
 ::
 ++  classify
   ::  Retain the virtualized trace, blocked request, or unexpected product.
@@ -439,14 +462,15 @@
   s(pending `[sam p.got])
 ::
 ++  preview-step
-  ::  One preview step: make, show and, when asked, judge one sample, with
-  ::  the run's streams and sizes, so sample i is a run's sample i up to the
-  ::  run's first skipped repeat. A repeat is flagged, not skipped. After
-  ::  the last sample, ++preview-end.
+  ::  One preview step: make and, when asked, judge one sample, with the
+  ::  run's streams and sizes, so sample i is a run's sample i up to the
+  ::  run's first skipped repeat. A repeat is flagged, not skipped. Every
+  ::  sample counts in the summary; the first row-max are also shown as
+  ::  rows. After the last sample, ++preview-end.
   |=  s=state
   ^-  state
   =/  p  (need preview.s)
-  ?:  (gte (lent rows.p) count.p)  (preview-end s p)
+  ?:  (gte samples.sum.p count.p)  (preview-end s p)
   =/  [fill-rng=_og next-rng=_og]  (split-rng:quiz rng.s)
   =/  made  (generate time.s size.s fill-rng sample.s norn.compiled.s)
   ?.  ?=(%0 -.made)
@@ -457,7 +481,8 @@
   =/  made-at  size.s
   =.  s  s(rng next-rng, size (grow size.s size-max.config.s))
   =.  attempted.counts.s  +(attempted.counts.s)
-  ?:  (gth (met 3 (jam q.sam)) sample-bytes.bounds.config.s)
+  =/  bytes  (met 3 (jam q.sam))
+  ?:  (gth bytes sample-bytes.bounds.config.s)
     s(result `[%limited %sample-bytes ~])
   =/  hash  (mug q.sam)
   =/  repeat=?
@@ -467,12 +492,29 @@
       %exact  (lien (~(get ja seen.s) hash) |=(n=* =(n q.sam)))
     ==
   =?  seen.s  !repeat  (~(add ja seen.s) hash q.sam)
-  =/  got  (show s sam ~)
-  ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
   =/  judged=[(unit @tas) (list @t)]
     ?.  verdicts.p  [~ ~]
     =/  [found=verdict =tags]  (judge (sandbox time.s q.fate.compiled.s q.sam))
     [`?@(found found -.found) labels.tags]
+  =/  sum  sum.p
+  =.  sum
+    %=  sum
+      samples  +(samples.sum)
+      repeats  ?:(repeat +(repeats.sum) repeats.sum)
+      sizes    [made-at sizes.sum]
+      bytes    [bytes bytes.sum]
+    ==
+  =?  verdicts.sum  ?=(^ -.judged)
+    =/  kind  u.-.judged
+    (~(put by verdicts.sum) kind +((~(gut by verdicts.sum) kind 0)))
+  =.  labels.sum
+    %-  ~(rep in (silt +.judged))
+    |=  [label=@t counts=_labels.sum]
+    (~(put by counts) label +((~(gut by counts) label 0)))
+  =.  p  p(sum sum)
+  ?.  (lth (lent rows.p) row-max)  s(preview `p)
+  =/  got  (show s sam ~)
+  ?:  ?=(%.n -.got)  (unshown s (source-stage s) p.got ~)
   =/  row=preview-row  [made-at q.sam text.p.got repeat judged]
   =/  first  ?^(first.p first.p `[sam weight.p.got])
   s(preview `p(rows [row rows.p], first first))
@@ -483,7 +525,8 @@
   |=  [s=state p=preview]
   ^-  state
   =/  rows  (flop rows.p)
-  ?.  &(alts.p ?=(^ first.p))  s(preview ~, result `[%preview rows ~])
+  =/  sum  sum.p(sizes (flop sizes.sum.p), bytes (flop bytes.sum.p))
+  ?.  &(alts.p ?=(^ first.p))  s(preview ~, result `[%preview rows ~ sum])
   =/  [sam=vase top=@ud]  u.first.p
   =/  made  (alternatives time.s sam alts.compiled.s)
   ?.  ?=(%0 -.made)
@@ -498,7 +541,7 @@
     =/  got  (show s c ~)
     ?:  ?=(%.n -.got)  [q.c '' ~ |]
     [q.c text.p.got `weight.p.got (lth weight.p.got top)]
-  s(preview ~, result `[%preview rows candidates])
+  s(preview ~, result `[%preview rows candidates sum])
 ::
 ++  judge-pending
   ::  The fate on the sample or candidate a split tick stored.

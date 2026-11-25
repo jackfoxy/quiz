@@ -16,11 +16,11 @@ The guide describes Quiz at commit `7210f00`, engine `%quiz-engine-1`,
 targeting `%zuse 408`. It assumes you can read simple Hoon gates. The
 [reference][reference] supplies exact library signatures.
 
-**Workbench coverage is substantial but incomplete.** All property-document
-features can be authored in its editor; property and saved-suite workflows
-have workbench controls. Completed-history deletion, some request options,
-and general Clay-file browsing have gaps. [Appendix C](#appendix-c-workbench-access-and-validation)
-records those boundaries rather than promising a button that does not exist.
+**Workbench coverage.** All property-document features can be authored in
+its editor; property and saved-suite workflows, request options, history
+deletion, Clay browsing and record export have workbench controls.
+[Appendix C](#appendix-c-workbench-access-and-validation) records the
+remaining boundaries, such as operator tasks that belong in Dojo.
 
 ## Contents
 
@@ -248,14 +248,48 @@ Before running:
    are absent because the fate was not called. **Samples and verdicts**
    evaluates the fate but omits candidate generation.
 
-Preview creates its own history record. It accepts 1–100 samples, defaults
-to 20, and ignores requested checks and attempt/drop/duplicate budgets. It
+Preview creates its own history record. It accepts 1–1000 samples, lists
+the first 100, defaults to 20, and ignores requested checks and attempt/drop/duplicate budgets. It
 shows at most 20 candidates for the first sample; it does not search for a
 minimal failure. A repeat marker indicates what a normal run would skip.
 
 **Samples and shrink candidates** shows candidates without running the fate.
 A verdict preview of a hanging fate interrupts regardless of
 the normal run's timeout policy. Use **Samples only** to inspect that norn.
+
+### Inspect the generator before trusting a pass
+
+A pass says only that the samples tried did not fail. If the generator makes
+few interesting samples, or the fate discards most of them, a pass tests
+little. QuickCheck's documentation recommends sampling and classifying a
+generator before relying on it
+([Arbitrary](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck-Arbitrary.html));
+Preview's **Generator summary** does both over up to 1,000 samples.
+
+1. Run `props/36-weak-generator`. It checks example 16's insert law but
+   generates arbitrary lists and drops every unsorted one. It **passes**:
+   100 accepted from 324 attempts, with 215 dropped.
+2. Set **Preview shows** to **Samples and verdicts**, **Preview samples** to
+   `200`, and click **Preview samples**. The summary says 66% of samples
+   were discarded, and the Labels table shows 1 `long` sample (a list of
+   three or more) among 200. The run's own distribution agrees: 94 `short`,
+   6 `long`. The law held, but almost only on lists of length 0–2.
+3. Open `props/37-insert-generated`, which generates sorted lists directly
+   with `sorted:gen`, and preview it the same way. Nothing is discarded and
+   119 of 200 samples are `long`; its run accepts 100 from 101 attempts with
+   61 `long`, and its `++cover` requires at least half.
+
+Read a summary before trusting a pass:
+
+- **Discards.** A high `drop` share means the fate filters what the
+  generator should have produced. Generate valid inputs instead, as 37
+  does; a filter also risks `exhausted` when the drops budget runs out.
+- **Sizes and bytes.** If the median sample is tiny, larger cases are
+  rare; raise `size-max` or change the generator's length or magnitude.
+- **Repeats.** Many repeats mean the domain is small for the requested
+  checks; see [chapter 6](#6-control-size-repeats-and-budgets).
+- **Labels.** A label you care about that is rare in the preview is rare
+  in the run. Require it with `++cover` once the generator is right.
 
 ## 6. Control size, repeats and budgets
 
@@ -1016,6 +1050,8 @@ their settings. A file under `props` can deliberately produce a failure:
 | `failing/33-expiry-agent-bug` | Failed, false; two puts of `%a` and a wait | 15 |
 | `failing/34-typed-defaults` | Failed, false; `[name='' tags=~[%a %a %a]]` | 11 |
 | `props/35-cover-table` | Passed, 100 accepted; 64 duplicates | 10 |
+| `props/36-weak-generator` | Passed, 100 accepted; 215 dropped | 5 |
+| `props/37-insert-generated` | Passed, 100 accepted; 61 long | 5 |
 | `examples/01-quiz-tutorial` | Suite passes, 12 arms | 17 |
 | `examples/02-boxcar` | Suite passes, 3 arms | 17 |
 | `examples/03-euler` | Suite passes, 4 arms | 17 |

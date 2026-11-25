@@ -369,6 +369,23 @@
       ['labels' a+(turn labels.row (lead %s))]
   ==
 ::
+++  preview-summary-out
+  ::  A preview's totals; sizes and bytes in sample order.
+  |=  sum=summary:engine
+  ^-  json
+  =/  counts
+    |=  m=(map @t @ud)
+    ^-  json
+    o+(~(run by m) numb:enjs:format)
+  %-  pairs:enjs:format
+  :~  ['samples' (numb:enjs:format samples.sum)]
+      ['repeats' (numb:enjs:format repeats.sum)]
+      ['sizes' a+(turn sizes.sum numb:enjs:format)]
+      ['bytes' a+(turn bytes.sum numb:enjs:format)]
+      ['verdicts' (counts verdicts.sum)]
+      ['labels' (counts labels.sum)]
+  ==
+::
 ++  candidate-out
   ::  One alts candidate; the weight is a decimal string or null.
   |=  row=candidate-row:engine
@@ -420,6 +437,7 @@
     %preview
       :~  ['rows' a+(turn rows.value preview-row-out)]
           ['candidates' a+(turn candidates.value candidate-out)]
+          ['summary' (preview-summary-out summary.value)]
       ==
     %limited
       :~  ['which' s+which.value]

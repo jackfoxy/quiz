@@ -27,6 +27,8 @@
 /*  expiry-bug-src  %hoon  /examples/failing/33-expiry-agent-bug/hoon
 /*  typed  %hoon  /examples/failing/34-typed-defaults/hoon
 /*  table  %hoon  /examples/props/35-cover-table/hoon
+/*  weak  %hoon  /examples/props/36-weak-generator/hoon
+/*  strong  %hoon  /examples/props/37-insert-generated/hoon
 /*  custom  %hoon  /examples/failing/09-custom-alts/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
@@ -38,11 +40,14 @@
   ::  only locates diagnostics; a digit-led segment needs a cord.
   |=  [=path source=@t imports=(list vase)]
   ^-  state:engine
-  (run-steps path source imports ~)
+  (run-steps path source imports ~ ~)
 ::
 ++  run-steps
-  ::  As ++run, with the shrink trace's length set when `steps` is given.
-  |=  [=path source=@t imports=(list vase) steps=(unit @ud)]
+  ::  As ++run, with the shrink trace's length set when `steps` is given,
+  ::  or as a preview of `count` samples with verdicts when that is.
+  |=  $:  =path  source=@t  imports=(list vase)
+          steps=(unit @ud)  count=(unit @ud)
+      ==
   ^-  state:engine
   =/  parsed  (prepare:build [~zod %quiz 1] path source)
   ~|  ?:(?=(%.n -.parsed) p.parsed ~)
@@ -55,6 +60,7 @@
   =/  cfg  config.settings.built
   =?  trace-steps.bounds.cfg  ?=(^ steps)  u.steps
   =/  s  (init:engine seed cfg parts.built)
+  =?  s  ?=(^ count)  (previewing:engine s u.count & |)
   =/  left  20.000
   |-
   ?:  !=(~ result.s)  s
@@ -394,6 +400,46 @@
     (expect-eq !>(`@ud`99) !>((roll ~(val by least) add)))
   ==
 ::
+++  test-weak-generator
+  ::  36 passes on mostly dropped samples and short lists; 37, generating
+  ::  sorted lists, drops none and makes long ones common.
+  ^-  tang
+  =/  imports  ~[!>(engine) !>(gen) !>(prop)]
+  =/  weak-path=path  /examples/props/'36-weak-generator'/hoon
+  =/  strong-path=path  /examples/props/'37-insert-generated'/hoon
+  =/  one  (run weak-path weak imports)
+  =/  two  (run strong-path strong imports)
+  =/  long
+    |=  s=state:engine
+    ^-  @ud
+    (~(gut by labels.seen-tags.s) 'long' 0)
+  ::  Preview's generator summary shows the same, 200 samples each.
+  =/  summed
+    |=  [=path source=@t]
+    ^-  summary:engine
+    =/  done  (run-steps path source imports ~ `200)
+    =/  out  (need result.done)
+    ?>  ?=(%preview -.out)
+    summary.out
+  =/  weak-sum  (summed weak-path weak)
+  =/  strong-sum  (summed strong-path strong)
+  =/  drops
+    |=  sum=summary:engine
+    ^-  @ud
+    (~(gut by verdicts.sum) %drop 0)
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.one))
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.two))
+    (expect-eq !>(`counters:engine`[324 100 215 9 0 0]) !>(counts.one))
+    (expect-eq !>(`counters:engine`[101 100 0 1 0 0]) !>(counts.two))
+    (expect-eq !>(`[@ud @ud]`[6 61]) !>([(long one) (long two)]))
+    %+  expect-eq  !>(`[@ud @ud]`[132 0])
+    !>([(drops weak-sum) (drops strong-sum)])
+    =/  weak-long  (~(gut by labels.weak-sum) 'long' 0)
+    =/  strong-long  (~(gut by labels.strong-sum) 'long' 0)
+    (expect-eq !>(`[@ud @ud]`[1 119]) !>([weak-long strong-long]))
+  ==
+::
 ++  test-trace-invariant
   ::  The shrink trace never changes a run: examples 09, 11, 17 and 29
   ::  end identically with tracing off, apart from the trace itself.
@@ -401,8 +447,8 @@
   =/  both
     |=  [=path source=@t imports=(list vase)]
     ^-  ?
-    =/  on  (run-steps path source imports `100)
-    =/  off  (run-steps path source imports `0)
+    =/  on  (run-steps path source imports `100 ~)
+    =/  off  (run-steps path source imports `0 ~)
     =/  a  (need result.on)
     =/  b  (need result.off)
     ?>  &(?=(%failed -.a) ?=(%failed -.b))

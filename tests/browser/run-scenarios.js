@@ -216,15 +216,26 @@ async function scenario(env, mock, name) {
     mock.records.get(previewId).status='done';
     mock.records.get(previewId).outcome={kind:'preview',candidates:[{sample:{text:'n=0'},weight:'1',lighter:true}],
       rows:[{size:1,sample:{text:'n=1'},repeat:false,verdict:'pass',labels:['odd']},
-        {size:2,sample:{text:'n=1'},repeat:true,verdict:'false',labels:[]}]};
+        {size:2,sample:{text:'n=1'},repeat:true,verdict:'false',labels:[]}],
+      summary:{samples:4,repeats:1,sizes:[1,2,3,4],bytes:[1,1,3,9],
+        verdicts:{pass:1,false:1,drop:2},labels:{odd:1}}};
     await runs.refresh();
+    // The summary covers all four samples though only two are listed.
+    const summary = env.descendants(el('run-preview-summary')).map(n=>n.textContent).join(' ');
+    assert.match(summary, /Generator summary: 4 samples/);
+    assert.match(summary, /Sample bytes min \/ median \/ max:\s+1 \/ 1 \/ 9/);
+    assert.match(summary, /≤ 16 bytes/);
+    assert.match(summary, /50% of samples were discarded/);
+    assert.match(env.descendants(el('run-preview-verdicts')).map(n=>n.textContent).join(' '), /drop/);
+    assert.match(env.descendants(el('run-detail')).map(n=>n.textContent).join(' '),
+      /Preview: first 2 of 4 samples/);
     const shown = env.descendants(el('run-preview-rows')).map(n=>n.textContent).join(' ');
     assert.match(shown, /skipped by a run/);
     assert.match(shown, /odd/);
     assert.match(env.descendants(el('run-preview-candidates')).map(n=>n.textContent).join(' '), /lighter/);
     assert.equal(el('run-replay').disabled,true,'a preview is not replayed');
-    field('previewCount','101'); await runs.preview();
-    assert.match(el('run-message').textContent,/between 1 and 100/);
+    field('previewCount','1001'); await runs.preview();
+    assert.match(el('run-message').textContent,/between 1 and 1000/);
     field('previewCount','2'); field('previewShow','alts'); await runs.preview();
     assert.deepEqual(mock.records.get(docs.active('property').runIds[0]).request.mode,
       {kind:'preview',count:2,verdicts:false,alts:true}, 'alternates without verdicts');

@@ -45,7 +45,8 @@ nor property counters: their record's `seed` and `config` are absent.
 
 A `%preview` request is an ordinary queued job: it runs in slices, can be
 cancelled or interrupted, and ends with the outcome
-`[%preview rows candidates]`. It makes at most 100 samples, never shrinks,
+`[%preview rows candidates summary]`. It makes at most 1,000 samples, the
+first 100 as rows and all in the summary, never shrinks,
 and ignores `requested` and the attempt, drop and duplicate budgets. Its
 summary's kind is `%preview`. A suite cannot be previewed.
 

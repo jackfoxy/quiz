@@ -130,7 +130,7 @@ instead of a run:
 ```
 
 An absent or `null` `mode`, or `{"kind":"run"}`, runs the property. `count`
-is at most 100. A preview has no budgets: `requested` and the attempt, drop and
+is at most 1,000; the first 100 samples are returned as rows. A preview has no budgets: `requested` and the attempt, drop and
 duplicate budgets in `config` are ignored, while sizes, the duplicate policy
 and byte bounds apply. Suites cannot be previewed.
 
@@ -264,7 +264,11 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
   `scry`, `bad-product`) or `null` without `verdicts`, and its labels. A
   candidate is `{"sample","weight","lighter"}`; `weight` is a decimal string,
   or `null` with `lighter` false when the candidate could not be shown.
-  `candidates` is empty without `alts`.
+  `candidates` is empty without `alts`. `summary` covers every sample:
+  `{"samples","repeats","sizes","bytes","verdicts","labels"}`, where `sizes`
+  and `bytes` list each sample's size and jammed byte length in order,
+  `verdicts` maps each verdict kind to its count (empty without `verdicts`)
+  and `labels` maps each label to the number of samples carrying it.
 
 Evidence samples have rendered `text` and `noun-jam` (a jammed noun as `@uv`).
 `why` has `kind` (`false`, `timeout`, `crash`, `scry`, `bad-product`) and

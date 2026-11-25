@@ -55,11 +55,12 @@ history is retained on the disposable ship for inspection.
 Run/replay HTTP replies now carry their correlated decimal `id`; configuration
 inspection uses `document-conf`. See `desk/doc/http-api.md` for both contracts.
 
-`examples.spec.js` runs all thirty-five property documents and the three existing
+`examples.spec.js` runs all thirty-seven property documents and the three existing
 suites through the real UI, checks their expected outcomes and readonly roots,
 and repeats the seeded threshold with exact replay. It also previews
 `08-seeded-threshold` (five rows, verdicts, shrink candidates, replay
-disabled). Each case writes a
+disabled), and previews 200 samples of `36-weak-generator` and
+`37-insert-generated` to compare their generator summaries. Each case writes a
 `run.json` artifact under its test-results directory. No teaching failure is
 included as a failing `-test` regression arm.
 

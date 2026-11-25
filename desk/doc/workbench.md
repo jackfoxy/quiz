@@ -74,9 +74,13 @@ fill the others; the other fields need no build. Suite execution has no
 controlled seed or property sample counters; those controls are disabled.
 
 **Preview samples** shows what the generator makes before a run, as
-QuickCheck's `sample` does. It makes up to **Preview samples** (1–100, blank
-= 20) samples with the run's seed, sizes and generator, so each row is the
-sample a run would make at that position. **Preview shows** chooses how much
+QuickCheck's `sample` does. It makes up to **Preview samples** (1–1000,
+blank = 20) samples with the run's seed, sizes and generator, so each row is
+the sample a run would make at that position; the first 100 are listed. A
+**Generator summary** above the rows covers every sample: size and jammed
+byte length (minimum, median, maximum, and bytes in power-of-two buckets),
+repeats a run would skip, and, with verdicts, each verdict's and label's
+share. It notes when half or more of the samples were discarded or repeat. **Preview shows** chooses how much
 else to show: the default, *Samples, verdicts and shrink candidates*, also
 runs the fate on each sample and shows its verdict and labels, then the first
 sample's shrink candidates, each marked lighter or not; *Samples and

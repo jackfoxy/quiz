@@ -842,7 +842,7 @@
   =/  cfg  (config 5 20 5 5)
   =/  s  (init:engine 0v1 cfg parts)
   =.  s  (previewing:engine s count verdicts alts)
-  =/  left  200
+  =/  left  400
   |-
   ?:  !=(~ result.s)  s
   ?>  (gth left 0)
@@ -869,11 +869,22 @@
     (expect-eq !>(`(list (list @t))`~[odd even odd even]) !>(labels))
     (expect-eq !>(~) !>(candidates.result))
     (expect-eq !>(`@ud`0) !>(accepted.counts.done))
+    ::  The summary counts each label once per sample.
+    =/  sum  summary.result
+    =/  bytes  (turn `(list @)`~[1 2 3 4] |=(n=@ (met 3 (jam n))))
+    ;:  weld
+      (expect-eq !>([4 0]) !>([samples repeats]:sum))
+      (expect-eq !>(sizes) !>(sizes.sum))
+      (expect-eq !>(bytes) !>(bytes.sum))
+      (expect-eq !>((malt ~[[%pass 4]])) !>(verdicts.sum))
+      (expect-eq !>((malt ~[['odd' 2] ['even' 2]])) !>(labels.sum))
+    ==
   ==
 ::
 ++  test-preview-repeats-and-cap
   ::  Repeats are flagged, not skipped; verdicts are left out unless asked;
-  ::  a preview makes at most preview-max samples.
+  ::  a preview makes at most preview-max samples and shows the first
+  ::  row-max as rows, while its summary covers them all.
   ^-  tang
   =/  seven  !>(|=([@ud _og] ^-(@ud 7)))
   =/  fate  !>(|=(a=@ud |))
@@ -882,8 +893,15 @@
   ?>  ?=(%preview -.result)
   =/  cfg  (config 5 20 5 5)
   =/  fresh  (init:engine 0v1 cfg [fate `seven ~ ~ %pass])
-  =/  big  (previewing:engine fresh 500 | |)
+  =/  big  (previewing:engine fresh 5.000 | |)
+  =/  many  (previewed [fate `seven ~ ~ %pass] 150 | |)
+  =/  most  (need result.many)
+  ?>  ?=(%preview -.most)
   ;:  weld
+    (expect-eq !>(row-max:engine) !>((lent rows.most)))
+    (expect-eq !>([150 149]) !>([samples repeats]:summary.most))
+    (expect-eq !>(150) !>((lent bytes.summary.most)))
+    (expect-eq !>(~) !>(verdicts.summary.most))
     %+  expect-eq  !>(`(list ?)`~[| & &])
     !>((turn rows.result |=(r=preview-row:engine repeat.r)))
     %+  expect-eq  !>(`(list (unit @tas))`~[~ ~ ~])

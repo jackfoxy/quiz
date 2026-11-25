@@ -89,6 +89,7 @@
       $:  %preview
           rows=(list preview-row:engine)
           candidates=(list candidate-row:engine)
+          =summary:engine
       ==
   ==
 ::

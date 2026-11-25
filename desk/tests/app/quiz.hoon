@@ -538,6 +538,7 @@
   ;:  weld
     (expect-eq !>(%done) !>(status.out))
     (expect-eq !>(`@ud`3) !>((lent rows.result)))
+    (expect-eq !>(`@ud`3) !>(samples.summary.result))
     (expect !>((levy rows.result |=(r=preview-row:engine =(`%pass verdict.r)))))
     (expect-eq !>(%preview) !>(kind:(summarize:job out)))
   ==
