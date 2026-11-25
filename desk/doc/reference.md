@@ -1,6 +1,6 @@
 # Quiz reference
 
-This desk targets `%zuse 408`. The application engine is `%quiz-engine-13`.
+This desk targets `%zuse 408`. The application engine is `%quiz-engine-1`.
 The `lib/quiz.hoon` library and `gen/quiz.hoon` generator check properties
 inside ordinary code and `-test` suites. Application property documents use
 `lib/quiz-engine.hoon` through `%quiz`; they do not call the library's check
@@ -1083,8 +1083,9 @@ Each request is pinned; stale job wires are ignored. App-only `%quiz-submit`
 and `%quiz-admitted` marks correlate HTTP tickets to allocated IDs without
 changing the `%quiz-action` interface or durable schema.
 
-For maintainers, changes to deterministic generation/evaluation/shrinking or
-default semantics require an engine-version bump. Keep the `quiz` library,
-its generator and copied urui files unchanged. The [example catalog](examples.md) records
+For maintainers, after release, changes to deterministic
+generation/evaluation/shrinking or default semantics require an
+engine-version bump; before release the version stays `%quiz-engine-1`.
+Keep the `quiz` library, its generator and copied urui files unchanged. The [example catalog](examples.md) records
 verified outcomes; regression and browser checks live under `desk/tests/` and
 `tests/browser/` in the repository.

@@ -18,12 +18,12 @@ a bowl.
 
 | Change | Edit | Tests |
 | --- | --- | --- |
-| Generation, classification, counters, shrinking, limits | `lib/quiz-engine.hoon` (bump `++version`) | `tests/lib/quiz-engine.hoon`, `tests/lib/quiz-shrink.hoon` |
+| Generation, classification, counters, shrinking, limits | `lib/quiz-engine.hoon` (`++version` stays `%quiz-engine-1` until release) | `tests/lib/quiz-engine.hoon`, `tests/lib/quiz-shrink.hoon` |
 | Report combinators (`quiz-prop`): notes, expected/actual, labels | `lib/quiz-prop.hoon` (report type lives in the engine) | `tests/lib/quiz-prop.hoon`, `tests/lib/quiz-engine.hoon` |
-| Default generation and shrinking from the sample type (`quiz-auto`) | `lib/quiz-auto.hoon`; engine semantics, so bump `++version`; keep `lib/quiz` parity for plain types | `tests/lib/quiz-auto.hoon`, `tests/lib/quiz-examples.hoon` |
-| Generators and shrinkers (`quiz-gen`) | `lib/quiz-gen.hoon`; no engine change, no version bump | `tests/lib/quiz-gen.hoon`, `tests/lib/quiz-examples.hoon` |
+| Default generation and shrinking from the sample type (`quiz-auto`) | `lib/quiz-auto.hoon`; engine semantics; keep `lib/quiz` parity for plain types | `tests/lib/quiz-auto.hoon`, `tests/lib/quiz-examples.hoon` |
+| Generators and shrinkers (`quiz-gen`) | `lib/quiz-gen.hoon`; no engine change | `tests/lib/quiz-gen.hoon`, `tests/lib/quiz-examples.hoon` |
 | Agent harness (`quiz-harness`) | `lib/quiz-harness.hoon`, `fixtures/quiz-harness/`; no engine change | `tests/lib/quiz-harness.hoon`, `tests/lib/quiz-examples.hoon` |
-| Generated functions (`quiz-fun`) | `lib/quiz-fun.hoon`; no engine change, no version bump | `tests/lib/quiz-fun.hoon`, `tests/lib/quiz-examples.hoon` |
+| Generated functions (`quiz-fun`) | `lib/quiz-fun.hoon`; no engine change | `tests/lib/quiz-fun.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generator and default-shrinker characterization (frozen `lib/quiz.hoon`) | none: record surprises in the docs | `tests/lib/quiz-norns.hoon`, `tests/lib/quiz-sink.hoon` |
 | Bundled property examples | `examples/props/`, `examples/failing/` | `tests/lib/quiz-examples.hoon` (queue models), browser `examples.spec.js`; re-measure `doc/examples.md` |
 | Document format, prelude, arm type checks, context pinning | `lib/quiz-build.hoon` | `tests/lib/quiz-build.hoon` (fixtures in `fixtures/quiz-build/`) |
@@ -170,7 +170,8 @@ Preview logic is `preview-step`/`preview-end` in the engine, started by
 `previewing` from `quiz-agent` when the request's `mode` is `%preview`.
 
 **Replay refused.** `%engine-version` means `++version` changed since the
-record was made. This is intentional. `%source-hash` means the stored text
+record was made. This is intentional (post-release only; the version is
+held until release). `%source-hash` means the stored text
 was altered. `%revision-unavailable` or `%desk-unavailable` means the pinned
 context has gone. Replay never substitutes another context.
 
@@ -205,7 +206,7 @@ want, re-copy it and update the pin in AGENTS.md.
   you touched the client, HTTP or help.
 - The frozen files and urui copies are unchanged: `git diff --stat` and the
   drift check.
-- Any semantic change to the engine bumps `++version`. Recorded counters in
+- `++version` stays `%quiz-engine-1` until release. Recorded counters in
   `doc/examples.md` and the user's guide are re-measured.
 - New Hoon follows `hoon-style-guide` and stays within 80 columns.
 - `git diff --check` is clean.

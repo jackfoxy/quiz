@@ -12,7 +12,7 @@ them. You will grow a collection under `guide/` in **My documents**. Later
 chapters use the bundled examples to test collections, dependent inputs,
 generated functions and Gall agent doors.
 
-The guide describes Quiz at commit `7210f00`, engine `%quiz-engine-13`,
+The guide describes Quiz at commit `7210f00`, engine `%quiz-engine-1`,
 targeting `%zuse 408`. It assumes you can read simple Hoon gates. The
 [reference][reference] supplies exact library signatures.
 

@@ -12,8 +12,8 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 
 | Path | Contents | Owner |
 | --- | --- | --- |
-| `desk/lib/quiz.hoon`, `desk/gen/quiz.hoon` | `quiz` library and `%say` generator | **Frozen** |
-| `desk/tests/lib/quiz.hoon`, `desk/tests/lib/quiz-check.hoon` | Library behaviour pins | **Frozen** |
+| `desk/lib/quiz.hoon`, `desk/gen/quiz.hoon` | `quiz` library and `%say` generator | **Stable** |
+| `desk/tests/lib/quiz.hoon`, `desk/tests/lib/quiz-check.hoon` | Library behaviour pins | **Stable** |
 | `desk/lib/quiz-engine.hoon` | Resumable stepper, classification, bounded shrinking, limits | quiz |
 | `desk/lib/quiz-build.hoon` | Property document prelude, pinned Clay context, type checks | quiz |
 | `desk/lib/quiz-prop.hoon` | Report combinators for fates: notes, expected/actual, labels, coverage | quiz |
@@ -45,12 +45,15 @@ lists each module's entry points.
   of at most 80 columns; an empty `::` line before each `++` arm; arm and core
   header comments indented one gap inside the arm; `^-` casts on gate
   products; wide form only when the whole expression fits on one line.
-- **Frozen library.** Never change the frozen files above. App semantics belong
-  in `quiz-engine`; [library and app semantics](desk/doc/reference.md#library-and-app-semantics-compared)
-  differ on purpose.
-- **Engine version.** Any change to deterministic generation, evaluation,
-  shrinking or defaults must bump `++version` in `desk/lib/quiz-engine.hoon`.
-  Replay refuses records from another version.
+- **Stable library.** Do not change the stable files above except to fix a
+  defect. App semantics belong in `quiz-engine`, which differs from the
+  library by design; see [library and app semantics](desk/doc/reference.md#library-and-app-semantics-compared).
+- **Engine version.** `++version` in `desk/lib/quiz-engine.hoon` stays
+  `%quiz-engine-1` until release; do not bump it during development. After
+  release, any change to deterministic generation, evaluation, shrinking or
+  defaults must bump it. Replay refuses records from another version; until
+  release, a record made before a semantic change replays under the new
+  semantics instead.
 - **Durable state.** `state-0` in `desk/sur/quiz-app.hoon` holds nouns and
   text only, never vases, compiled gates or RNG cores. Migrations will be
   supported later. For now `state-0` changes in place. Its records include

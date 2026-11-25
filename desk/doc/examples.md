@@ -12,7 +12,7 @@ the duplicate example requests two and intentionally reaches its small budget,
 and the queue models, coverage, generator-library, size and function
 examples request 100.
 The results below were checked through the browser/Gall application on
-`%zuse 408`, engine `%quiz-engine-13`. They describe these exact sources and
+`%zuse 408`, engine `%quiz-engine-1`. They describe these exact sources and
 settings, not universal outcomes of similar-looking properties.
 
 | Document | Expected outcome | What it demonstrates |

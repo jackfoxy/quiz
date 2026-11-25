@@ -98,7 +98,7 @@ Scries return `%noun` cages:
 | `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
 | `/x/summaries` | Newest-first `(list summary)`: id, source kind (`%preview` for a preview), status and outcome tag per run |
 | `/x/limits` | `defaults:quiz-engine`, including bounds |
-| `/x/version` | Engine semantics version (`%quiz-engine-13`) |
+| `/x/version` | Engine semantics version (`%quiz-engine-1`) |
 | `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |
 
 The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:

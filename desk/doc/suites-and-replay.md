@@ -74,7 +74,7 @@ Its `record` contains:
 | `source`, `source-hash` | Exact text and its `shax` digest |
 | `seed` | Resolved `@uv` seed, including an explicit zero |
 | `config` | Effective engine config after all overrides |
-| `engine-version` | `version:quiz-engine`, currently `%quiz-engine-13` |
+| `engine-version` | `version:quiz-engine`, currently `%quiz-engine-1` |
 
 `capture:replay [doc seed config]` validates and creates a record. Call it with
 the source and effective settings used by the original run. It stores no vases,
@@ -105,9 +105,11 @@ text whose digest was not updated. Invalid configuration, size, source, or
 failed imports retain the builder's specific diagnostic. Source hashing detects
 accidental source changes; it is not authentication of the whole record.
 
-Engine maintainers must bump `version:quiz-engine` whenever deterministic
-sampling, evaluation, shrinking, or default semantics change. Older versions
-are rejected rather than silently replayed with new semantics. Pinning imports
+After release, engine maintainers must bump `version:quiz-engine` whenever
+deterministic sampling, evaluation, shrinking, or default semantics change.
+Older versions are then rejected rather than silently replayed with new
+semantics. Before release the version stays `%quiz-engine-1`, and a record
+made before a semantic change can replay with different results. Pinning imports
 does not by itself freeze a future kernel/compiler; cross-Kelvin replay is not
 claimed. This desk currently targets `%zuse 408`.
 

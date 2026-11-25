@@ -228,9 +228,10 @@
   ==
 ::
 ++  version
-  ::  Bump when deterministic generation/evaluation/shrinking semantics change.
+  ::  Held at 1 until release. After release, bump when deterministic
+  ::  generation/evaluation/shrinking semantics change.
   ^-  @tas
-  %quiz-engine-13
+  %quiz-engine-1
 ::
 ++  defaults
   ::  100 passes within 10.000 attempts, 1.000 drops and duplicates; size

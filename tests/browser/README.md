@@ -1,5 +1,8 @@
 # Quiz browser checks
 
+See the [workbench access audit](workbench-access-audit.md) for the public
+capability inventory, validation results, and confirmed gaps in UI access.
+
 Install with `npm ci` and `npx playwright install chromium`. Boot a disposable
 fake ship, install the packaged `%quiz` and `%quiz-web`, and commit `desk/`
 to its `%quiz` desk. Never run mutation checks on a production ship.
