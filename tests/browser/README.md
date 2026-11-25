@@ -41,12 +41,15 @@ cancellation/replay/rerun, delete and clear with in-page confirmation,
 unavailable suite
 metrics, empty history, rejection, reload cancellation, interrupted runs,
 generator previews (the request's mode, the rows and candidates, the count
-bound, no replay, alternates without verdicts), More limits overrides (a bound
+bound, no replay, alternates without verdicts), an error cause beside retained
+evidence with the record view, More limits overrides (a bound
 completed from the document conf with one build), date and label revisions,
 and network failures.
 The Playwright run suite exercises document configuration, real draft failure
 and shrinking, replay, rerun, session restoration, saved Clay suites,
-cancellation, compilation diagnostics and disconnected progress. Server run
+cancellation, compilation diagnostics, disconnected progress, and a shrinker
+error shown with its cause beside the evidence, whose record downloads as
+the `status` reply and whose shrunk noun copies. Server run
 history is retained on the disposable ship for inspection.
 
 Run/replay HTTP replies now carry their correlated decimal `id`; configuration

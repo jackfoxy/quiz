@@ -646,6 +646,11 @@
       if (outcome?.diagnostic) block(detail, 'run-diagnostic', 'Diagnostic', JSON.stringify(outcome.diagnostic, null, 2));
       if (outcome?.stage) line(detail, 'Error stage', outcome.stage);
       const proof = outcome?.evidence;
+      // An error after a counterexample (a crashing shrinker, say) has its own
+      // cause, shown before the retained evidence and its failure.
+      if (proof && outcome.why) {
+        block(detail, 'run-error-cause', 'Error cause', JSON.stringify(outcome.why, null, 2));
+      }
       if (proof) {
         block(detail, 'run-original', 'Original counterexample', proof.original.text);
         block(detail, 'run-shrunk', 'Shrunk counterexample', proof.shrunk.text);
@@ -675,7 +680,38 @@
         source.append(node('summary', '', 'Exact source snapshot'), node('pre', '', snapshot.source));
         detail.append(source);
       }
+      detail.append(recordView(rec, proof));
       updateButtons();
+    }
+    // The whole server record: request, times and jammed sample nouns, with
+    // a JSON download and a copy of the shrunk sample's jam.
+    function recordView(rec, proof) {
+      const view = node('details', 'run-record');
+      view.append(node('summary', '', 'Record'));
+      line(view, 'Created', rec.created);
+      line(view, 'Updated', rec.updated);
+      line(view, 'Finished', rec.finished);
+      block(view, 'run-request', 'Submitted request', JSON.stringify(rec.request, null, 2));
+      if (proof) {
+        line(view, 'Original sample noun (jam, @uv)', proof.original['noun-jam']);
+        line(view, 'Shrunk sample noun (jam, @uv)', proof.shrunk['noun-jam']);
+      }
+      const save = button('run-download', 'Download record', async () => {
+        const blob = new Blob([JSON.stringify(rec, null, 2)], {type: 'application/json'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob); link.download = `quiz-run-${rec.id}.json`;
+        document.body.append(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 0);
+      });
+      const copy = button('run-copy-noun', 'Copy sample noun', async () => {
+        try {
+          await navigator.clipboard.writeText(proof.shrunk['noun-jam']);
+          tell(`Copied the shrunk sample noun of run ${rec.id}.`);
+        } catch (error) { tell(`Copy failed: ${error.message || error}`); }
+      });
+      copy.disabled = !proof?.shrunk?.['noun-jam'];
+      view.append(save, copy);
+      return view;
     }
     function render() {
       const key = JSON.stringify([selection(), ids.map((id) => {

@@ -158,6 +158,22 @@ async function scenario(env, mock, name) {
     assert.match(interrupted, /shrinking/);
     assert.match(interrupted, /CPU time limit/);
     assert.equal(el('run-shrunk').textContent,'n=5');
+    // A shrinker error after a counterexample shows its own cause too.
+    await runs.run();
+    const broken = tab.runIds[0];
+    mock.records.get(broken).status='done';
+    mock.records.get(broken).outcome={kind:'error',stage:'alts',
+      why:{kind:'crash',trace:['alts-broken']},
+      evidence:{why:{kind:'false'},original:{text:'9','noun-jam':'0v9'},
+        shrunk:{text:'7','noun-jam':'0v7'},trace:[]}};
+    await runs.refresh();
+    const errored = env.descendants(el('run-detail')).map(n=>n.textContent).join(' ');
+    assert.match(el('run-error-cause').textContent, /alts-broken/);
+    assert.equal(el('run-shrunk').textContent,'7');
+    assert.match(el('run-failure').textContent, /false/);
+    assert.match(errored, /Shrunk sample noun \(jam, @uv\):\s+0v7/);
+    assert.match(el('run-request').textContent, /"draft"/);
+    assert.equal(el('run-copy-noun').disabled, false);
   } else {
     docs.editor('property').setSource('changed', {history:'reset'});
     assert.match(el('run-stale').textContent, /Stale:/);

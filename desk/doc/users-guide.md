@@ -1087,8 +1087,8 @@ implementation interfaces, not additional workbench operations.
 | General Clay-file chooser, including unindexed external suites | Open → clay | Available at the context browsed in Clay source |
 | Date/label revision selection | Pinned revision | Available; Clay source browsing stays numeric |
 | Delete one completed run or clear completed history | Delete record; Clear completed history | Available; queued and active runs are kept |
-| Full machine-readable record and sample noun export | No result-download control | HTTP status or Gall reads; Copy copies the document only |
-| Secondary shrinker error alongside retained failure | Result shows stage and retained evidence | Separate error cause is omitted when evidence is present; full record retains it |
+| Full machine-readable record and sample noun export | Record: Download record, Copy sample noun | Available |
+| Secondary shrinker error alongside retained failure | Error cause above the retained evidence | Available |
 | Live Gall subscriptions | Browser polls history | Programmatic interface only |
 | Install/update desk, agent lifecycle and recursive `-test` | No workbench control | Operator/Dojo workflow |
 | Rendered Help | Help, with `%docs` installed | Available conditionally; fallback summary otherwise |

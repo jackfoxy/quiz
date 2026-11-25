@@ -100,6 +100,12 @@ entry to inspect it. **Cancel selected run** requests cancellation at the next
 server boundary. **Rerun request** submits the original request again (including
 its pinned revision and any explicit seed); **Replay exact property** reuses
 the captured source, effective configuration and seed. Suites cannot replay.
+An error after a counterexample, such as a crashing shrinker, shows its
+**Error cause** above the retained counterexamples and their failure. The
+**Record** disclosure shows the submitted request, created, updated and
+finished times, and each counterexample's jammed noun (`@uv`); **Download
+record** saves the whole record as JSON (the HTTP `status` reply) and **Copy
+sample noun** copies the shrunk sample's jam.
 **Delete record** removes the selected completed run and **Clear completed
 history** removes every completed run; both ask for confirmation in the page.
 Queued and active runs are never deleted. Tabs forget deleted runs, and a

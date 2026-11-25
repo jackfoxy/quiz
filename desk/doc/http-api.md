@@ -193,7 +193,8 @@ with 400 `invalid-command`. The workbench's **Settings** dialog uses both.
 or `preview` for a preview,
 `outcome` the result's kind (a suite's `passed`/`failed`) or `null` while
 unfinished. Rows label history; fetch a whole record with `status`. `status` returns 200
-with one record, or 404 `{"error":"run-not-found"}`. `cancel` returns 202
+with one complete record (the workbench's **Download record** saves this
+reply), or 404 `{"error":"run-not-found"}`. `cancel` returns 202
 `{"accepted":true}` after acknowledgement. As in the typed API, cancelling an
 unknown or completed ID is an idempotent no-op. Poll a known run to observe
 its terminal outcome.

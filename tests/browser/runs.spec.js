@@ -166,3 +166,29 @@ test('cancellation, compile diagnostic and disconnected progress', async ({page}
   await page.locator('#runs-refresh').click();
   await expect(page.locator('#runs-connection')).toContainText('Connected');
 });
+test('a shrinker error shows its cause beside the evidence; the record downloads', async ({page, context}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'],
+    {origin: new URL(page.url()).origin});
+  await setSource(page, '|%\n++  fate  |=(n=@ud (lth n 5))\n'
+    + '++  alts  |=(v=vase ^-((list vase) ~|(%alts-broken !!)))\n--\n');
+  await page.locator('#run-start').click();
+  const record = await done(page);
+  expect(record.outcome.kind).toBe('error');
+  expect(record.outcome.stage).toBe('alts');
+  await expect(page.locator('#run-error-cause')).toContainText('alts-broken');
+  await expect(page.locator('#run-failure')).toContainText('false');
+  await page.locator('#run-record summary').click();
+  await expect(page.locator('#run-request')).toContainText('"draft"');
+  await expect(page.locator('#run-record'))
+    .toContainText(record.outcome.evidence.shrunk['noun-jam']);
+  const [download] = await Promise.all([page.waitForEvent('download'),
+    page.locator('#run-download').click()]);
+  expect(download.suggestedFilename()).toBe(`quiz-run-${record.id}.json`);
+  const saved = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  const status = await (await page.request.post('/apps/quiz/api',
+    {data: {op: 'status', id: record.id}})).json();
+  expect(saved).toEqual(status);
+  await page.locator('#run-copy-noun').click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(record.outcome.evidence.shrunk['noun-jam']);
+});
