@@ -252,6 +252,8 @@
         /(scot %p our.bowl)/quiz/(scot %da now.bowl)/run/(scot %ud id.cmd)/noun
       [(reply id 200 (record-out:codec .^(record:app %gx path))) this]
     %cancel  (submit id [%cancel id.cmd])
+    %delete  (submit id [%delete id.cmd])
+    %clear   (submit id [%clear ~])
     %timeouts
       [(reply id 200 (timeouts-out:codec limits.state)) this]
     %set-timeouts  (submit id [%timeouts +.cmd])
@@ -368,6 +370,13 @@
   =/  response=(list card)
     ?~  p.sign
       (reply id.pending 202 (pairs:enjs:format ~[['accepted' b+&]]))
+    ::  %quiz names a refused delete in the nack's trace.
+    =/  says
+      |=  code=@tas
+      ^-  ?
+      (lien u.p.sign (cury test [%leaf (trip code)]))
+    ?:  (says %run-not-found)  (refuse id.pending 404 'run-not-found')
+    ?:  (says %run-unfinished)  (refuse id.pending 409 'run-unfinished')
     (refuse id.pending 422 'action-rejected')
   :_  this(api.state ~)
   :-  [%pass wire %arvo %b %rest until.pending]

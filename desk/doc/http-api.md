@@ -178,12 +178,14 @@ Blank controls leave the engine to resolve document settings.
 Each value must be a whole number from 1 to 3600, or the request is refused
 with 400 `invalid-command`. The workbench's **Settings** dialog uses both.
 
-### History, status and cancellation
+### History, status, cancellation and deletion
 
 ```json
 {"op":"runs"}
 {"op":"status","id":"42"}
 {"op":"cancel","id":"42"}
+{"op":"delete","id":"42"}
+{"op":"clear"}
 ```
 
 `runs` returns 200 `{"ids":["42","41"],"runs":[...]}` newest first. Each
@@ -195,6 +197,13 @@ with one record, or 404 `{"error":"run-not-found"}`. `cancel` returns 202
 `{"accepted":true}` after acknowledgement. As in the typed API, cancelling an
 unknown or completed ID is an idempotent no-op. Poll a known run to observe
 its terminal outcome.
+
+`delete` removes one completed record: 202 `{"accepted":true}`, 404
+`{"error":"run-not-found"}` for an unknown ID, or 409
+`{"error":"run-unfinished"}` for a queued or active run. `clear` removes every
+completed record and keeps queued and active work: 202 `{"accepted":true}`.
+Neither resets IDs. Both are mutations: like `cancel` they hold the API slot
+until `%quiz` acknowledges them, and they are never retried automatically.
 
 A record contains:
 

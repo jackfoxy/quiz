@@ -919,11 +919,13 @@ numeric revisions. Suites can rerun, but cannot use property replay.
 
 `%quiz-web` serves public shell/assets at `/apps/quiz/`; `POST /api` and
 `POST /files` require an authenticated local session. API operations are
-`contexts`, `run`, `replay`, `cancel`, `runs`, `status`, `suite-arms`,
-`document-conf`, `timeouts`, `set-timeouts`. Run/replay return 202 with the allocated decimal ID after
+`contexts`, `run`, `replay`, `cancel`, `delete`, `clear`, `runs`, `status`,
+`suite-arms`, `document-conf`, `timeouts`, `set-timeouts`. Run/replay return 202 with the allocated decimal ID after
 correlated admission; completion requires polling that record. Cancellation
 returns admission acknowledgement, not immediate confirmation of termination.
-There is no HTTP delete/clear operation or automatic mutation retry.
+`delete` removes one completed record and `clear` every completed record;
+queued and active work is never deleted. Mutations are never retried
+automatically.
 [HTTP fields/routes/errors](http-api.md) are the wire-format authority.
 
 One job runs at a time with a FIFO queue. Property slices execute bounded

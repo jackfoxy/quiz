@@ -97,7 +97,28 @@
     const cancelButton = button('run-cancel', 'Cancel selected run', cancel);
     const rerunButton = button('run-rerun', 'Rerun request', rerun);
     const replayButton = button('run-replay', 'Replay exact property', replay);
-    actions.append(refreshButton, cancelButton, rerunButton, replayButton);
+    const deleteButton = button('run-delete', 'Delete record', () => confirmThen(
+      `Delete run ${selection()}? Its record cannot be recovered.`, remove));
+    const clearButton = button('runs-clear', 'Clear completed history', () => confirmThen(
+      'Delete every completed run? Queued and active runs are kept.', clear));
+    actions.append(refreshButton, cancelButton, rerunButton, replayButton,
+      deleteButton, clearButton);
+    // Deletion is confirmed in the page; browser dialogs are not used.
+    const confirmBar = node('div', 'run-confirm'); confirmBar.hidden = true;
+    confirmBar.setAttribute('role', 'alertdialog');
+    const confirmText = node('p', 'run-confirm-text');
+    const confirmYes = button('run-confirm-yes', 'Delete', () => {
+      const work = confirmed; closeConfirm(); return work ? work() : undefined;
+    });
+    const confirmNo = button('run-confirm-no', 'Keep', () => closeConfirm());
+    confirmBar.append(confirmText, confirmYes, confirmNo);
+    actions.append(confirmBar);
+    let confirmed = null;
+    function confirmThen(text, work) {
+      confirmed = work; confirmText.textContent = text; confirmBar.hidden = false;
+      confirmNo.focus?.();
+    }
+    function closeConfirm() { confirmed = null; confirmBar.hidden = true; }
     const connection = node('p', 'runs-connection'); connection.setAttribute('role', 'status');
     const history = node('div', 'run-history'); history.setAttribute('aria-label', 'Run history');
     const detail = node('article', 'run-detail');
@@ -199,6 +220,9 @@
       const done = rec?.status === 'done';
       cancelButton.disabled = busy || !online || !rec || done || rec.status === 'cancelling';
       rerunButton.disabled = busy || !online || !rec || !done;
+      deleteButton.disabled = busy || !online || !done;
+      clearButton.disabled = busy || !online
+        || !ids.some((id) => summaries.get(id)?.status === 'done');
       replayButton.disabled = busy || !online || !done || rec?.kind === 'suite'
         || rec?.request?.mode?.kind === 'preview'
         || !rec?.snapshot || !rec?.config || !rec?.seed;
@@ -373,6 +397,30 @@
       const owner = linked(rec.id);
       await action(() => mutate({op: 'replay', id: rec.id}, owner?.id));
     }
+    async function remove() {
+      const id = selection(); const rec = records.get(id);
+      if (!rec || rec.status !== 'done') return;
+      await action(async () => {
+        await post('/apps/quiz/api', {op: 'delete', id});
+        await forget(); tell(`Run ${id} deleted.`);
+      });
+    }
+    async function clear() {
+      await action(async () => {
+        await post('/apps/quiz/api', {op: 'clear'});
+        await forget(); tell('Completed history cleared; queued and active runs are kept.');
+      });
+    }
+    // After a deletion, tabs drop ids the server no longer holds and the
+    // selection moves to the active tab's newest remaining run.
+    async function forget() {
+      await refresh();
+      for (const tab of docs.list('property')) {
+        if (tab.runIds) tab.runIds = tab.runIds.filter((id) => ids.includes(id));
+      }
+      if (!ids.includes(selection())) select(active()?.runIds?.[0] ?? null);
+      runtime.session.save(); render();
+    }
     const line = (parent, label, value) => {
       const row = node('p'); const title = node('strong', '', `${label}: `);
       row.append(title, node('span', '', value == null ? 'Unavailable' : String(value))); parent.append(row);
@@ -463,7 +511,9 @@
         line(detail, 'Source path', snapshot.path.join('/'));
       }
       line(detail, 'Engine version', rec['engine-version']);
-      line(detail, 'Replay of', rec['replay-of'] || 'None');
+      const origin = rec['replay-of'];
+      line(detail, 'Replay of', !origin ? 'None' : ids.includes(origin) ? origin
+        : `${origin} (record deleted or no longer retained)`);
       line(detail, 'Seed', rec.kind === 'suite' ? 'Unavailable for suites' : rec.seed);
       if (rec['call-ms'] != null) line(detail, 'Call limit', `${rec['call-ms']} ms per call`);
       if (rec.config) block(detail, 'run-config', 'Effective configuration', JSON.stringify(rec.config, null, 2));
@@ -614,7 +664,7 @@
       if (inspected !== null && requestKey(active()) !== inspected) clearInspection();
       renderDetail();
     }
-    return {activate, changed, refresh, run, cancel, rerun, replay,
+    return {activate, changed, refresh, run, cancel, rerun, replay, remove, clear,
       latest, inspect, discover, preview, pathFor, requestFor, records,
       start: async () => { activate(active()); await refresh(); },
       stop: () => { stopped = true; clearTimeout(timer); }};

@@ -566,6 +566,25 @@
     (expect !>(=(~ timer.state:+.got)))
   ==
 ::
+++  test-delete-refuses-by-name
+  ::  A missing or unfinished run is refused with a named trace, which
+  ::  %quiz-web maps to 404 and 409.
+  ^-  tang
+  =/  a  ~(. agent bol)
+  =.  a  a(state (running 2 0))
+  =/  says
+    |=  [id=run-id:app code=@tas]
+    ^-  ?
+    =/  got  (mule |.((on-poke.a %quiz-action !>([%delete id]))))
+    ?:  ?=(%.y -.got)  |
+    (lien p.got (cury test [%leaf (trip code)]))
+  ;:  weld
+    (expect !>((says 1 %run-unfinished)))
+    (expect !>((says 2 %run-unfinished)))
+    (expect !>((says 9 %run-not-found)))
+    (expect !>(!(says 9 %run-unfinished)))
+  ==
+::
 ++  test-watch-unknown-path-and-id
   ^-  tang
   ;:  weld

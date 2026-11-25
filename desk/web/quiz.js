@@ -147,7 +147,7 @@
   async function post(url, body) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 35000);
-    const mutation = ['run', 'replay', 'cancel'].includes(body.op);
+    const mutation = ['run', 'replay', 'cancel', 'delete', 'clear'].includes(body.op);
     try {
       const response = await fetch(url, {
         method: 'POST', credentials: 'same-origin', signal: controller.signal,

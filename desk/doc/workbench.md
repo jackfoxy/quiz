@@ -88,6 +88,10 @@ entry to inspect it. **Cancel selected run** requests cancellation at the next
 server boundary. **Rerun request** submits the original request again (including
 its pinned revision and any explicit seed); **Replay exact property** reuses
 the captured source, effective configuration and seed. Suites cannot replay.
+**Delete record** removes the selected completed run and **Clear completed
+history** removes every completed run; both ask for confirmation in the page.
+Queued and active runs are never deleted. Tabs forget deleted runs, and a
+replay whose original is gone says so.
 
 Each result includes its immutable source hash, context and expandable exact
 source. **Source tab** returns to the associated document; edits mark its

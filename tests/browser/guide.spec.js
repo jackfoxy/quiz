@@ -2,7 +2,8 @@
 // Validates the workbench paths that ai-ug.md teaches and that no other
 // browser spec reaches: help and settings shortcuts, copy and open shortcuts,
 // a reference panel, the run shortcut, Clay source browsing, Use latest
-// revision (also straight after Save As), and the Vim keybinding setting. Other guide steps are covered by
+// revision (also straight after Save As), run-history deletion, and the Vim
+// keybinding setting. Other guide steps are covered by
 // examples.spec.js, runs.spec.js, workbench.spec.js and scenario doubles.
 const {test, expect} = require('@playwright/test');
 
@@ -55,7 +56,7 @@ test('New document, Copy (Alt-C) and Open (Alt-O) work from outside the editor',
   await page.locator('#urui-file-dialog-cancel').click();
 });
 
-test('Ctrl-Shift-S saves as, Ctrl-S saves, and the API has no run-history delete', async ({page}) => {
+test('Ctrl-Shift-S saves as and Ctrl-S saves', async ({page}) => {
   await open(page);
   const name = `guide-${Date.now()}`;
   await page.locator('button:has-text("+")').first().click();
@@ -81,12 +82,46 @@ test('Ctrl-Shift-S saves as, Ctrl-S saves, and the API has no run-history delete
   await expect.poll(() => page.evaluate(() => window.quiz.documents.dirty('property',
     window.quiz.documents.active('property').id))).toBe(false);
   await page.request.post('/apps/quiz/files', {data: {op: 'delete', path: ['work', name, 'hoon']}});
-  // Run history has no delete or clear over HTTP; the agent keeps its own
-  // retention bound. Both operations must be refused.
-  for (const op of ['delete', 'clear']) {
-    const reply = await page.request.post('/apps/quiz/api', {data: {op, id: 1}});
-    expect(reply.ok()).toBeFalsy();
-  }
+});
+
+test('Delete record and Clear completed history keep unfinished runs', async ({page}) => {
+  test.setTimeout(180000);
+  await open(page);
+  const api = (data) => page.request.post('/apps/quiz/api', {data});
+  const json = async (data) => (await api(data)).json();
+  expect((await api({op: 'delete', id: '999999999'})).status()).toBe(404);
+  const {revision} = (await json({op: 'contexts'})).contexts
+    .find((item) => item.desk === 'quiz');
+  const run = async (text, config) => (await json({op: 'run',
+    source: {kind: 'draft', text}, desk: 'quiz',
+    revision: {kind: 'ud', value: revision}, seed: null,
+    ...(config ? {config} : {})})).id;
+  const done = (id) => expect.poll(async () => (await json({op: 'status', id})).status,
+    {timeout: 60000}).toBe('done');
+  const quick = '|%\n++  fate\n  |=  n=@ud\n  =(n n)\n--';
+  const first = await run(quick); const second = await run(quick);
+  await done(first); await done(second);
+  // One run at a time: the slow run stays unfinished while the others go.
+  const slow = await run('|%\n++  fate\n  |=  n=@ud\n'
+    + '  =((lent (gulf 0 200.000)) 200.001)\n--', {requested: 2000});
+  expect((await api({op: 'delete', id: slow})).status()).toBe(409);
+  await open(page);
+  await page.locator(`#run-history [data-run-id="${first}"]`).click();
+  await expect(page.locator('#run-delete')).toBeEnabled();
+  await page.locator('#run-delete').click();
+  await expect(page.locator('#run-confirm')).toBeVisible();
+  await page.locator('#run-confirm-yes').click();
+  await expect(page.locator('#run-message')).toHaveText(`Run ${first} deleted.`);
+  await expect(page.locator(`#run-history [data-run-id="${first}"]`)).toHaveCount(0);
+  await page.locator('#runs-clear').click();
+  await page.locator('#run-confirm-yes').click();
+  await expect(page.locator('#run-message')).toHaveText(/Completed history cleared/);
+  const ids = (await json({op: 'runs'})).ids;
+  expect(ids).toContain(slow);
+  expect(ids).not.toContain(second);
+  await api({op: 'cancel', id: slow}); await done(slow);
+  expect((await api({op: 'clear'})).status()).toBe(202);
+  expect((await json({op: 'runs'})).ids).not.toContain(slow);
 });
 
 test('the run panel has no budget or timeout override fields', async ({page}) => {

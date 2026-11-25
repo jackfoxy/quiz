@@ -32,6 +32,16 @@ function mockApi() {
         'build-time': Number(req['build-time']), 'arm-time': Number(req['arm-time'])};
       return {accepted: true};
     }
+    if (req.op === 'delete') {
+      const rec = records.get(req.id);
+      if (!rec) return {error: 'run-not-found', _status: 404};
+      if (rec.status !== 'done') return {error: 'run-unfinished', _status: 409};
+      records.delete(req.id); return {accepted: true};
+    }
+    if (req.op === 'clear') {
+      for (const [id, rec] of [...records]) if (rec.status === 'done') records.delete(id);
+      return {accepted: true};
+    }
     if (req.op === 'cancel') {
       const rec = records.get(req.id); rec.status = 'done';
       rec.outcome = {kind: 'cancelled', reason: 'request'};
@@ -199,10 +209,41 @@ async function scenario(env, mock, name) {
     assert.equal(el('run-replay').disabled,true,'a preview is not replayed');
     field('previewCount','101'); await runs.preview();
     assert.match(el('run-message').textContent,/between 1 and 100/);
+    // Delete asks in the page first; Keep leaves the record.
+    const settle = async () => { for (let i = 0; i < 20; i++) await env.tick(); };
+    const pick = async (runId) => {
+      const row = env.descendants(el('run-history')).find(n => n.dataset?.runId === runId);
+      row.listeners.click(); await settle();
+    };
+    docs.select('property', tab.id); await pick(id);
+    assert.equal(el('run-delete').disabled, false);
+    el('run-delete').listeners.click();
+    assert.equal(el('run-confirm').hidden, false);
+    assert.match(el('run-confirm-text').textContent, new RegExp(`Delete run ${id}`));
+    el('run-confirm-no').listeners.click();
+    assert.equal(el('run-confirm').hidden, true);
+    assert(mock.records.has(id));
+    el('run-delete').listeners.click(); el('run-confirm-yes').listeners.click();
+    await settle();
+    assert(!mock.records.has(id));
+    assert.match(el('run-message').textContent, new RegExp(`Run ${id} deleted`));
+    assert(!tab.runIds.includes(id), 'tabs forget a deleted run');
+    await pick(replayId);
+    assert.match(env.descendants(el('run-detail')).map(n=>n.textContent).join(' '),
+      /record deleted or no longer retained/);
+    // Clear keeps unfinished runs.
+    mock.records.get(original).status = 'running';
+    await runs.refresh();
+    el('runs-clear').listeners.click(); el('run-confirm-yes').listeners.click();
+    await settle();
+    assert(mock.records.has(original));
+    assert([...mock.records.values()].every(rec => rec.status !== 'done'));
+    assert.match(el('run-message').textContent, /Completed history cleared/);
   }
   runtime.session.save();
   const saved = JSON.parse(env.saved.get('quiz.session'));
-  assert(saved.propertyTabs.some(t=>t.runIds?.includes(id)));
+  // The runs scenario deleted `id`; a deleted run is not restored.
+  assert.equal(saved.propertyTabs.some(t=>t.runIds?.includes(id)), name === 'run-errors');
   const cleaned = env.window.quizRunFields({runSettings:{desk:'../bad',revision:'0',seed:'<script>',requested:'NaN',sizeStart:'0',sizeMax:'-1',duplicates:'never',arms:'<script>'},runIds:['1',1,'../2','1']});
   assert.deepEqual(cleaned.runIds,['1']);
   assert.equal(cleaned.runSettings.desk,'');

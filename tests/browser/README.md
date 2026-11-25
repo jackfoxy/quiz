@@ -35,7 +35,8 @@ Quiz execution doubles also cover correlated IDs beyond JavaScript's exact
 integer range, a concurrent producer, per-tab settings, full configuration
 preservation, stale snapshots, replies to Use latest revision, configuration
 inspection and suite discovery that arrive after an explorer change,
-cancellation/replay/rerun, unavailable suite
+cancellation/replay/rerun, delete and clear with in-page confirmation,
+unavailable suite
 metrics, empty history, rejection, reload cancellation, interrupted runs,
 generator previews (the request's mode, the rows and candidates, the count
 bound, no replay) and network failures.
@@ -65,8 +66,9 @@ to check fallback help. The workbench suite's fallback scenario also expects
 `guide.spec.js` checks the workbench paths the users guide teaches and no
 other spec reaches: F1 and F2, Alt-C (copies to the clipboard), Alt-O, Ctrl-S
 and Ctrl-Shift-S, F5, Add Ref, Use latest revision with Clay source browsing,
-the Vim setting, and the two gaps (no run-history delete over HTTP, no budget
-fields in the run panel).
+the Vim setting, run-history deletion (Delete record, Clear completed history,
+404/409 refusals, an unfinished run surviving Clear), and the remaining gap
+(no budget fields in the run panel).
 
 When switching an existing disposable ship from installed to absent, `%docs`
 can leave its landing page in Eyre's response cache after uninstall. Clear

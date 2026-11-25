@@ -10,6 +10,8 @@
       [%document-conf request:app]
       [%status id=@ud]
       [%cancel id=@ud]
+      [%delete id=@ud]
+      [%clear ~]
       [%replay id=@ud]
       [%runs ~]
       [%contexts ~]
@@ -136,6 +138,8 @@
     %contexts  [%contexts ~]
     %status    [%status (natural (field fields 'id'))]
     %cancel    [%cancel (natural (field fields 'id'))]
+    %delete    [%delete (natural (field fields 'id'))]
+    %clear     [%clear ~]
     %replay    [%replay (natural (field fields 'id'))]
     %timeouts  [%timeouts ~]
     %set-timeouts

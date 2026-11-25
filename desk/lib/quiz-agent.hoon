@@ -201,7 +201,12 @@
         ?>  ?=(%.y -.admitted)
         p.admitted
       %cancel  (cancel:job state id.command now.bowl)
-      %delete  (delete:job state id.command)
+      %delete
+        ::  Refused by name, so %quiz-web can tell missing from unfinished.
+        =/  rec  (~(get by records.saved.state) id.command)
+        ?~  rec  ~|(%run-not-found !!)
+        ?.  =(%done status.u.rec)  ~|(%run-unfinished !!)
+        (delete:job state id.command)
       %clear
         =/  ids  order.saved.state
         =/  s  state

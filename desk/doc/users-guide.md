@@ -794,9 +794,11 @@ automatically retry mutations. Active history polls about every second,
 idle history every 30 seconds; a hidden page refreshes when visible again.
 
 History normally retains the newest 100 completed records. Lowering a
-property's `retained-runs` affects shared history when it finishes. There
-is no workbench button to delete or clear completed runs. Deleting a work
-file does not delete its run records, and closing a tab does neither.
+property's `retained-runs` affects shared history when it finishes.
+**Delete record** removes the selected completed run, and **Clear completed
+history** removes every completed run; each asks you to confirm, and neither
+touches queued or active work. Deleting a work file does not delete its run
+records, and closing a tab does neither.
 
 ## 17. Run saved suites
 
@@ -1080,10 +1082,10 @@ implementation interfaces, not additional workbench operations.
 | CPU limits and document call limit | Settings and `++within` | Available |
 | Queue observation, cancellation and history refresh | Result controls | Available; cancellation waits for a scheduling boundary |
 | Browse indexed properties at numeric revisions | Clay source | Available |
-| Advance a saved tab's revision | Use latest revision | Available after the explorer settles; refresh events can invalidate an in-flight response |
+| Advance a saved tab's revision | Use latest revision | Available |
 | General Clay-file chooser, including unindexed external suites | Open → clay | Broken context propagation; API can address explicit paths |
 | Date/label revision selection | No selector in the panel | API/Gall only; UI uses immutable numeric revisions |
-| Delete one completed run or clear completed history | No button or HTTP command | Gall `%delete` / `%clear` only |
+| Delete one completed run or clear completed history | Delete record; Clear completed history | Available; queued and active runs are kept |
 | Full machine-readable record and sample noun export | No result-download control | HTTP status or Gall reads; Copy copies the document only |
 | Secondary shrinker error alongside retained failure | Result shows stage and retained evidence | Separate error cause is omitted when evidence is present; full record retains it |
 | Live Gall subscriptions | Browser polls history | Programmatic interface only |

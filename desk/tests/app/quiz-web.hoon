@@ -217,6 +217,35 @@
     (expect-eq !>('{"accepted":true}') !>((response-body -.success)))
   ==
 ::
+++  test-delete-and-clear
+  ::  Both poke %quiz; a named refusal becomes 404 or 409.
+  ^-  tang
+  =/  delete  (api '{"op":"delete","id":"3"}')
+  =/  clear  (api '{"op":"clear"}')
+  =/  a  +.delete
+  =/  nack
+    |=  code=tape
+    ^-  @ud
+    =/  got  (on-agent.a /quiz-http/request [%poke-ack `~[leaf+code]])
+    (status -.got)
+  =/  pokes
+    |=  cards=(list card:agent:gall)
+    ^-  (list action:app)
+    %+  murn  cards
+    |=  c=card:agent:gall
+    ^-  (unit action:app)
+    ?.  ?=([%pass * %agent * %poke %quiz-action *] c)  ~
+    `!<(action:app q.cage.task.q.c)
+  ;:  weld
+    (expect-eq !>(~[[%delete 3]]) !>((pokes -.delete)))
+    (expect-eq !>(~[[%clear ~]]) !>((pokes -.clear)))
+    (expect-eq !>(404) !>((nack "run-not-found")))
+    (expect-eq !>(409) !>((nack "run-unfinished")))
+    (expect-eq !>(422) !>((nack "other")))
+    %+  expect-eq  !>(202)
+    !>((status -:(on-agent.+.clear /quiz-http/request [%poke-ack ~])))
+  ==
+::
 ++  test-busy-timeout-and-stale-reply
   ^-  tang
   =/  started  (api '{"op":"cancel","id":"3"}')

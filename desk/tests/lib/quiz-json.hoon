@@ -129,6 +129,8 @@
         ['{"op":"status","id":"123"}' [%status 123]]
         ['{"op":"cancel","id":123}' [%cancel 123]]
         ['{"op":"replay","id":"123"}' [%replay 123]]
+        ['{"op":"delete","id":"123"}' [%delete 123]]
+        ['{"op":"clear"}' [%clear ~]]
         :-  '{"op":"properties","desk":"quiz","revision":"1000"}'
         [%properties %quiz 1.000]
     ==

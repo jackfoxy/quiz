@@ -15,8 +15,8 @@ Poke `%quiz-action` with one of:
 - `[%run request]`: enqueue, allocating the next positive `@ud` ID.
 - `[%cancel id]`: cancel a queued job immediately, or request cancellation of
   active work at its next Behn boundary, including a pending Clay build.
-- `[%delete id]`: delete a completed record. Missing and unfinished IDs are
-  no-ops.
+- `[%delete id]`: delete a completed record. A missing ID is nacked with the
+  trace `run-not-found`, an unfinished one with `run-unfinished`.
 - `[%clear ~]`: delete completed records; preserve queued and active work.
 - `[%timeouts call=@dr build=@dr arm=@dr]`: set the ship-wide CPU time limits.
   Each must be from `~s1` to `~h1`, or the poke is nacked. Defaults are
