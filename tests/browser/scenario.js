@@ -43,6 +43,7 @@ global.fetch = async (url, options = {}) => {
   const req = options.body ? JSON.parse(options.body) : {};
   requests.push({url, ...req});
   let body = {ok: true}; let status = 200;
+  if (req.op === 'contexts') await mock.gate('contexts');
   if (url.endsWith('/api') && !['contexts', 'properties'].includes(req.op)) {
     body = await mock.api(req); status = body?._status || 200;
   }

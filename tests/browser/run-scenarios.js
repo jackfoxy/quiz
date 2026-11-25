@@ -6,11 +6,14 @@ function mockApi() {
   const records = new Map();
   let next = 9007199254740993n;
   let offline = false, reject = false, uncertain = false;
-  let holdConf = false, releaseConf;
+  // Held ops wait for release, to deliver a reply after other events.
+  const gates = new Map();
+  const gate = async (op) => { await gates.get(op)?.promise; };
   let limits = {'call-time': 10, 'build-time': 30, 'arm-time': 60};
   const calls = [];
   const api = async (req) => {
     calls.push(req);
+    await gate(req.op);
     if (offline) throw new Error('offline');
     if (req.op === 'runs') {
       const ids = [...records.keys()].reverse();
@@ -21,10 +24,7 @@ function mockApi() {
       })};
     }
     if (req.op === 'status') return structuredClone(records.get(req.id));
-    if (req.op === 'document-conf') {
-      if (holdConf) await new Promise(resolve => { releaseConf = resolve; });
-      return {config, seed: '0v123'};
-    }
+    if (req.op === 'document-conf') return {config, seed: '0v123'};
     if (req.op === 'suite-arms') return {arms: ['test-one', 'test-two']};
     if (req.op === 'timeouts') return {...limits};
     if (req.op === 'set-timeouts') {
@@ -62,9 +62,12 @@ function mockApi() {
     }
     return null;
   };
-  return {api, records, calls, config, setOffline: value => {offline=value;},
-    holdConf: () => {holdConf=true;},
-    releaseConf: () => {holdConf=false; releaseConf();},
+  return {api, records, calls, config, gate, setOffline: value => {offline=value;},
+    hold: (op) => {
+      let release; const promise = new Promise((resolve) => { release = resolve; });
+      gates.set(op, {promise, release});
+    },
+    release: (op) => { gates.get(op).release(); gates.delete(op); },
     setReject: value => {reject=value;}, setUncertain: value => {uncertain=value;}};
 }
 async function scenario(env, mock, name) {
@@ -73,12 +76,30 @@ async function scenario(env, mock, name) {
   const field = (key, value) => { el(`run-${key}`).value=value; el(`run-${key}`).listeners.input?.(); el(`run-${key}`).listeners.change?.(); };
   assert.equal(el('history-empty').textContent, 'History is empty.');
   const tab = docs.active('property');
-  mock.holdConf();
+  mock.hold('document-conf');
   const inspection = runs.inspect();
   docs.editor('property').setSource(':: edited during inspection\n' + tab.text,
     {history:'reset'});
-  mock.releaseConf(); await inspection;
+  mock.release('document-conf'); await inspection;
   assert.equal(el('run-settings-note').textContent, '', 'discard obsolete inspection');
+  // An explorer change (Save, Save As, refresh) between a request and its
+  // reply keeps the reply while its request is unchanged.
+  field('revision', '3');
+  mock.hold('contexts');
+  const latest = runs.latest();
+  runs.changed(); mock.release('contexts'); await latest;
+  assert.match(el('run-message').textContent, /Selected %quiz revision 20/);
+  assert.equal(el('run-revision').value, '20');
+  mock.hold('document-conf');
+  const kept = runs.inspect();
+  runs.changed(); mock.release('document-conf'); await kept;
+  assert.match(el('run-settings-note').textContent, /Document conf/);
+  runs.changed();
+  assert.match(el('run-settings-note').textContent, /Document conf/,
+    'an unrelated change keeps the inspection');
+  field('revision', '19');
+  assert.equal(el('run-settings-note').textContent, '', 'a new revision clears it');
+  field('revision', '20');
   field('requested', '5'); field('seed', '0v123');
   field('sizeMax', '8'); field('duplicates', 'allow');
   const confCalls = () => mock.calls.filter(c => c.op === 'document-conf').length;
@@ -149,7 +170,10 @@ async function scenario(env, mock, name) {
     docs.select('property',tab.id);
     await docs.open('property',['examples','example','hoon']);
     field('mode','suite'); field('requested','invalid ignored for suites');
-    field('arms','test-one'); await runs.discover();
+    field('arms','test-one');
+    mock.hold('suite-arms');
+    const discovery = runs.discover();
+    runs.changed(); mock.release('suite-arms'); await discovery;
     assert.match(el('run-settings-note').textContent,/test-one, test-two/);
     await runs.run();
     const suite = mock.records.get(docs.active('property').runIds[0]);

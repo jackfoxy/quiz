@@ -112,7 +112,11 @@
     let timer;
     let stopped = false;
     let currentTab = null;
-    let inspecting = 0;
+    // Latest, inspect and discover each keep their own sequence: a reply
+    // applies only while it is the newest of its kind, its tab is active and
+    // its inputs still match. Explorer and editor changes do not void it.
+    const asked = {latest: 0, inspect: 0, discover: 0};
+    let inspected = null;
     let shown = {};
     let staleNote = null;
     let historyKey = '';
@@ -120,7 +124,7 @@
     const tell = (text) => { message.textContent = text; };
     const linked = (id) => docs.list('property').find((tab) => tab.runIds?.includes(id));
     function clearInspection() {
-      ++inspecting; settingsNote.textContent = '';
+      inspected = null; settingsNote.textContent = '';
       fields.requested.placeholder = 'Document conf';
       fields.sizeStart.placeholder = 'Document conf';
       fields.sizeMax.placeholder = 'Document conf';
@@ -224,43 +228,56 @@
     async function latest() {
       const tab = active(); if (!tab) return;
       const desk = settings(tab).desk;
-      const generation = ++inspecting;
+      const n = ++asked.latest;
+      const current = () => n === asked.latest && active()?.id === tab.id
+        && settings(tab).desk === desk;
       try {
         const result = await post('/apps/quiz/api', {op: 'contexts'});
-        if (generation !== inspecting || active()?.id !== tab.id) return;
+        if (!current()) return;
         const value = settings(tab);
         const ctx = result.contexts.find((item) => item.desk === desk);
         if (!ctx) throw new Error('That desk is unavailable.');
         value.revision = ctx.revision; activate(tab); runtime.session.queue();
         tell(`Selected %${ctx.desk} revision ${ctx.revision}.`);
-      } catch (error) { if (generation === inspecting) tell(error.message); }
+      } catch (error) { if (current()) tell(error.message); }
     }
     async function inspect() {
       const tab = active(); if (!tab) return;
-      const generation = ++inspecting;
+      const n = ++asked.inspect;
+      let key = null;
+      const current = () => n === asked.inspect && active()?.id === tab.id
+        && requestKey(tab) === key;
       try {
-        const request = requestFor(tab);
+        const request = requestFor(tab); key = JSON.stringify(request);
         const result = await post('/apps/quiz/api', {...request, op: 'document-conf'});
-        if (generation !== inspecting || active()?.id !== tab.id) return;
+        if (!current()) return;
+        inspected = key;
         const conf = result.config;
         fields.requested.placeholder = String(conf.requested);
         fields.seed.placeholder = result.seed || 'New recorded seed';
         fields.sizeStart.placeholder = String(conf['size-start']);
         fields.sizeMax.placeholder = String(conf['size-max']);
         settingsNote.textContent = `Document conf: ${conf.requested} checks; sizes from ${conf['size-start']}${conf['size-max'] ? ` up to ${conf['size-max']}` : ', uncapped'}; repeats ${conf.duplicates}; seed ${result.seed || 'chosen for each run'}. Other budgets are preserved when overriding these fields.`;
-      } catch (error) { if (generation === inspecting) tell(errorText(error)); }
+      } catch (error) { if (key === null || current()) tell(errorText(error)); }
     }
     async function discover() {
       const tab = active(); if (!tab) return;
-      const generation = ++inspecting;
+      const n = ++asked.discover;
+      let key = null;
+      const current = () => n === asked.discover && active()?.id === tab.id
+        && requestKey(tab) === key;
       try {
-        const req = requestFor(tab);
+        const req = requestFor(tab); key = JSON.stringify(req);
         const result = await post('/apps/quiz/api', {op: 'suite-arms',
           desk: req.desk, revision: req.revision, path: req.source.path});
-        if (generation !== inspecting || active()?.id !== tab.id) return;
+        if (!current()) return;
+        inspected = key;
         settingsNote.textContent = result.arms.length
           ? `Available arms: ${result.arms.join(', ')}` : 'No test arms found.';
-      } catch (error) { if (generation === inspecting) tell(errorText(error)); }
+      } catch (error) { if (key === null || current()) tell(errorText(error)); }
+    }
+    function requestKey(tab) {
+      try { return JSON.stringify(requestFor(tab)); } catch { return null; }
     }
     function errorText(error) {
       const d = error.diagnostic;
@@ -593,11 +610,12 @@
       if (document.hidden) clearTimeout(timer); else if (!stopped) void refresh();
     });
     function changed() {
-      clearInspection();
+      // Keep an inspection while the request it describes is unchanged.
+      if (inspected !== null && requestKey(active()) !== inspected) clearInspection();
       renderDetail();
     }
     return {activate, changed, refresh, run, cancel, rerun, replay,
-      inspect, discover, preview, pathFor, requestFor, records,
+      latest, inspect, discover, preview, pathFor, requestFor, records,
       start: async () => { activate(active()); await refresh(); },
       stop: () => { stopped = true; clearTimeout(timer); }};
   };

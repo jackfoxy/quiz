@@ -2,7 +2,7 @@
 // Validates the workbench paths that ai-ug.md teaches and that no other
 // browser spec reaches: help and settings shortcuts, copy and open shortcuts,
 // a reference panel, the run shortcut, Clay source browsing, Use latest
-// revision, and the Vim keybinding setting. Other guide steps are covered by
+// revision (also straight after Save As), and the Vim keybinding setting. Other guide steps are covered by
 // examples.spec.js, runs.spec.js, workbench.spec.js and scenario doubles.
 const {test, expect} = require('@playwright/test');
 
@@ -66,6 +66,14 @@ test('Ctrl-Shift-S saves as, Ctrl-S saves, and the API has no run-history delete
   await page.locator('#urui-file-dialog-path').fill(name);
   await page.locator('#urui-file-dialog-confirm').click();
   await expect(page.locator('#document-location')).toHaveText(`work/${name}/hoon`);
+  // Use latest revision at once, while the explorer still refreshes after
+  // the save: its reply must not be discarded.
+  await page.getByRole('button', {name: 'Use latest revision'}).click();
+  await expect(page.locator('#run-message')).toHaveText(/Selected %quiz revision \d+/);
+  const contexts = await (await page.request.post('/apps/quiz/api',
+    {data: {op: 'contexts'}})).json();
+  const newest = contexts.contexts.find((item) => item.desk === 'quiz').revision;
+  await expect(page.locator('#run-revision')).toHaveValue(String(newest));
   await page.locator('#quiz-editor .ace_text-input').focus();
   await page.keyboard.press('ControlOrMeta+End');
   await page.keyboard.insertText('\n:: edited\n');

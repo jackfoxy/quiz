@@ -33,7 +33,9 @@ Traces/screenshots are under ignored `test-results/`.
 
 Quiz execution doubles also cover correlated IDs beyond JavaScript's exact
 integer range, a concurrent producer, per-tab settings, full configuration
-preservation, stale snapshots, cancellation/replay/rerun, unavailable suite
+preservation, stale snapshots, replies to Use latest revision, configuration
+inspection and suite discovery that arrive after an explorer change,
+cancellation/replay/rerun, unavailable suite
 metrics, empty history, rejection, reload cancellation, interrupted runs,
 generator previews (the request's mode, the rows and candidates, the count
 bound, no replay) and network failures.

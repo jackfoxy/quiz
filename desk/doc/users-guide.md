@@ -138,13 +138,9 @@ to `add 1` without saving:
 2. Run as a **Saved property**: the pinned version still passes.
 3. **Save**, then **Use latest revision**, then run saved: it now fails.
 
-Let the explorer finish refreshing after Save, then wait for the “Selected”
-confirmation after **Use latest revision** before discovering arms or running
-saved source. If that confirmation does not appear, click **Use latest
-revision** again once the explorer has settled: a current UI race can discard
-its reply during a tree refresh. Saving does not advance the selected
-revision. This protects reproducibility
-but also explains why a saved run can seem to ignore your fix.
+**Use latest revision** confirms with “Selected %quiz revision N”. Saving
+does not advance the selected revision. This protects reproducibility but
+also explains why a saved run can seem to ignore your fix.
 
 Restore `add 0`, save, and advance the revision again. Keep this document for
 later experiments. To keep a bundled example, use **Open editable copy** and
@@ -421,9 +417,8 @@ Create a new document containing this complete suite:
 --
 ```
 
-Save as `guide/regression` and let the explorer finish refreshing. Select
-**Saved suite**, choose **Use latest revision** and wait for “Selected”,
-click **Discover suite arms**, leave **Suite arms** blank, and
+Save as `guide/regression`. Select **Saved suite**, choose **Use latest
+revision**, click **Discover suite arms**, leave **Suite arms** blank, and
 **Run saved suite**. Both arms should pass. Chapter 17 explains suite results
 and adds the bundled example suites to this workflow.
 
