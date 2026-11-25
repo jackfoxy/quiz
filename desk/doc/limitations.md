@@ -64,11 +64,11 @@ authoritative behavior and recovery guidance.
   limited to property records with captured source, context, seed and
   configuration. See
   [Clay context, seed and replay](reference.md#clay-context-seed-and-replay).
-- **The legacy generators are narrow and partial.** The legacy `list` norn
+- **The `quiz` library's generators are narrow and partial.** Its `list` norn
   yields at most `xeb(size)-1` elements, usually close to that, so short
   lists are rare late in a run. `atom`, `list` and `noun` crash at size 0,
-  and `freq` or `pick` crash on an empty or all-zero list. The legacy
-  library's `sink` offers nothing for lists or unions, and it treats a float
+  and `freq` or `pick` crash on an empty or all-zero list. The library's
+  `sink` offers nothing for lists or unions, and it treats a float
   as a raw atom, so a negative double can shrink to NaN. The app's defaults
   come from `quiz-auto` instead, which shrinks containers, unions and floats
   by type. Prefer the

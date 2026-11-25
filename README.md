@@ -7,7 +7,7 @@ existing Clay test suites. Generate inputs, inspect failures and smaller
 counterexamples, then replay a property with its recorded seed and source.
 
 - [User's guide: seven steps](desk/doc/users-guide.md)
-- [Reference: contracts, limits and legacy differences](desk/doc/reference.md)
+- [Reference: contracts, limits and library/app differences](desk/doc/reference.md)
 - [Examples and recorded results](desk/doc/examples.md)
 - [Keyboard shortcuts](desk/doc/keyboard-shortcuts.md)
 
@@ -65,8 +65,8 @@ ship for experiments. See [limitations](desk/doc/limitations.md).
 ## Library-only use
 
 Copy `desk/lib/quiz.hoon` to your development desk's `lib/quiz.hoon` and optionally
-`desk/gen/quiz.hoon` to `gen/quiz.hoon`; commit that desk. These frozen legacy
-entry points do not need either agent or the browser workbench.
+`desk/gen/quiz.hoon` to `gen/quiz.hoon`; commit that desk. These entry
+points do not need either agent or the browser workbench.
 
 If those files are on `%quiz`, this Dojo generator checks increment/decrement:
 
@@ -77,11 +77,12 @@ If those files are on `%quiz`, this Dojo generator checks increment/decrement:
 Recorded output: `[[%success-runs 20] %drops 0]`, `%.y`.
 For explicit deterministic seeds or custom norns/alts, import `quiz` and use
 its `check`/`check-verbose` arms; see the
-[exact signatures](desk/doc/reference.md#legacy-library-signatures) and
+[exact signatures](desk/doc/reference.md#library-signatures) and
 [tutorial suite](desk/tests/examples/01-quiz-tutorial.hoon).
-Legacy drops consume its run target, and duplicate exhaustion can return true.
-The application's `lib/quiz-engine.hoon` has separate counters, limits and
-structured outcomes. Do not interpret legacy success as an app run record.
+The library's drops consume its run target, and duplicate exhaustion can
+return true. The application's `lib/quiz-engine.hoon` has separate counters,
+limits and structured outcomes. Do not interpret library success as an app
+run record.
 
 ## Development and verification
 
@@ -93,13 +94,13 @@ mounted development desk and `|commit %quiz`. Run the packaged regressions:
 ```
 
 Intentional teaching failures are under `desk/examples/failing/`, outside the
-passing tests. The original suites also run through the UI. Browser checks use
+passing tests. The example suites also run through the UI. Browser checks use
 its real compiled page on a disposable ship; setup and commands are in
 [tests/browser/README.md](tests/browser/README.md).
 
 Shared urui files are pinned copies; keep framework changes in urui, not these
-copies. Preserve the frozen legacy library/generator. Deterministic app engine
-changes require replay-version review. See the
+copies. Keep `lib/quiz.hoon` and `gen/quiz.hoon` unchanged. Deterministic
+app engine changes require replay-version review. See the
 [internal module map](desk/doc/reference.md#internal-implementation-map),
 [Gall API](desk/doc/agent-api.md) and [HTTP API](desk/doc/http-api.md).
 
@@ -109,5 +110,3 @@ Version 0.1.0. [MIT+n license](LICENSE); third-party components retain their
 own licenses. [About Quiz and Ace](desk/doc/about.md).
 [Source](https://github.com/jackfoxy/quiz) and
 [issues](https://github.com/jackfoxy/quiz/issues).
-The unchanged [original blog](blogpost.md) is historical; the guide and
-reference correct its outdated output and behavior claims.

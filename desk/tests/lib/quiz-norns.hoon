@@ -1,8 +1,8 @@
 /+  quiz, engine=quiz-engine, *test
 |%
-  ::  Characterization of the frozen generators and the default fill.
+  ::  Characterization of lib/quiz's generators and the default fill.
   ::
-  ::  These arms pin what the legacy norns actually produce: domain,
+  ::  These arms pin what lib/quiz's norns actually produce: domain,
   ::  reachable boundaries, distribution, determinism and RNG splitting,
   ::  plus the engine's size progression. Distribution checks use fixed
   ::  seeds and wide tolerances. They are deterministic snapshots, not

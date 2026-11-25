@@ -1,7 +1,7 @@
 # Quiz
 
-> Property-based testing for Hoon. A frozen legacy library (`lib/quiz.hoon`)
-> and generator, plus an Urbit Gall application: `%quiz` runs property
+> Property-based testing for Hoon. A library (`lib/quiz.hoon`) and
+> generator, plus an Urbit Gall application: `%quiz` runs property
 > documents and existing Clay `test-*` suites as bounded, replayable jobs, and
 > `%quiz-web` serves a browser workbench at `/apps/quiz/`. Targets
 > `[%zuse 408]`. Random checks are evidence, not proof. Each user call has a
@@ -10,7 +10,7 @@
 ## Start here
 
 - [README](README.md): installation, quick start, library-only use
-- [User's guide](desk/doc/users-guide.md): seven-step tutorial, property-design advice, blog corrections
+- [User's guide](desk/doc/users-guide.md): seven-step tutorial, property-design advice
 - [Reference](desk/doc/reference.md): public contracts, limits, outcomes, troubleshooting
 - [Limitations](desk/doc/limitations.md): safety boundaries, unsupported behavior, operational caveats
 - [Examples catalog](desk/doc/examples.md): bundled examples with recorded results
@@ -27,7 +27,7 @@
 
 ## Source
 
-- [Legacy library](desk/lib/quiz.hoon) and [generator](desk/gen/quiz.hoon): frozen
+- [Quiz library](desk/lib/quiz.hoon) and [generator](desk/gen/quiz.hoon): `check` inside ordinary code and suites
 - [App engine](desk/lib/quiz-engine.hoon): stepper, shrinking, limits
 - [Document builder](desk/lib/quiz-build.hoon)
 - [Property combinators](desk/lib/quiz-prop.hoon): reports, labels, coverage
@@ -43,7 +43,7 @@
 
 - [Passing property documents](desk/examples/props/)
 - [Intentional failures](desk/examples/failing/)
-- [Original suites](desk/tests/examples/): tutorial, boxcar, Euler
+- [Example suites](desk/tests/examples/): tutorial, boxcar, Euler
 
 ## Contributing
 
@@ -54,5 +54,4 @@
 
 ## Optional
 
-- [About](desk/doc/about.md): history, license, Ace
-- [Original blog post](blogpost.md): historical; the guide corrects its outdated claims
+- [About](desk/doc/about.md): license, Ace

@@ -156,7 +156,7 @@ shrinker error cause can be missing. Both remain in the full record.
 This finding is from renderer/codec inspection, not a newly induced crash.
 
 Gall subscriptions are likewise a programmatic interface; the browser polls
-history. Installation, agent lifecycle, standalone legacy `+quiz` and
+history. Installation, agent lifecycle, standalone `+quiz` and
 recursive Dojo `-test` are operator/programming entry points, not UI features.
 
 ### 5. Explorer refresh can invalidate revision selection after saving

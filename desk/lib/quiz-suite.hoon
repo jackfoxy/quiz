@@ -1,7 +1,7 @@
 /+  build=quiz-build, engine=quiz-engine
 |%
   ::  Clay test cores, using -test's test-* discovery and tang contract.
-  ::  One step runs one arm. Sample-level legacy metrics are unavailable.
+  ::  One step runs one arm. Sample-level metrics are unavailable.
   ::  The job applies its %jinx CPU limit around each step, one arm.
   ::
 +$  document

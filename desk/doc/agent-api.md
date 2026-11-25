@@ -1,7 +1,7 @@
 # Quiz agent API
 
 `%quiz` accepts local-ship clients only. Pokes and watches from another ship
-are rejected. The engine and legacy library contracts are separate; see
+are rejected. The engine and `quiz` library contracts are separate; see
 [source format](source-format.md) and [suites and replay](suites-and-replay.md).
 
 The authoritative types are in `sur/quiz-app.hoon`. `app/quiz.hoon` exports the

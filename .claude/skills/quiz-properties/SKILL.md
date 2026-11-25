@@ -1,6 +1,6 @@
 ---
 name: quiz-properties
-description: Write, review, run and interpret Quiz property tests for Hoon. Covers app property documents (++fate, ++norn, ++alts, ++conf), norn composition, domain-preserving shrinkers, %drop, choosing seeds and budgets, reading outcomes (passed, failed, exhausted, limited, error, invalid), replay, turning a counterexample into a regression test, and the frozen legacy check/check-verbose library. Use whenever someone wants to property-test Hoon code, write or debug a quiz fate or norn, explain a quiz result or counter, or choose between a property document, a test suite and the legacy library, even if they do not say "quiz".
+description: Write, review, run and interpret Quiz property tests for Hoon. Covers app property documents (++fate, ++norn, ++alts, ++conf), norn composition, domain-preserving shrinkers, %drop, choosing seeds and budgets, reading outcomes (passed, failed, exhausted, limited, error, invalid), replay, turning a counterexample into a regression test, and the `quiz` check/check-verbose library. Use whenever someone wants to property-test Hoon code, write or debug a quiz fate or norn, explain a quiz result or counter, or choose between a property document, a test suite and the `quiz` library, even if they do not say "quiz".
 ---
 
 # Quiz property authoring
@@ -12,13 +12,13 @@ semantics. Pick the right one first:
 | Goal | Use | Semantics |
 | --- | --- | --- |
 | Run in the workbench or `%quiz` agent with recorded seed, counters and replay | Property document (below) | App engine, `lib/quiz-engine.hoon` |
-| Assert a property inside an ordinary `-test` suite | `~(check quiz seed runs)` from `/+ quiz` | Frozen legacy library |
+| Assert a property inside an ordinary `-test` suite | `~(check quiz seed runs)` from `/+ quiz` | `quiz` library |
 | Run existing `test-*` arms through the app | Saved suite | Arm-level results only |
 
-The legacy library counts drops toward `runs` and can return `%.y` after
+The `quiz` library counts drops toward `runs` and can return `%.y` after
 duplicate exhaustion (`%tired`). The app never counts drops or duplicates
 as accepted checks. Do not mix their numbers. See
-[app vs legacy semantics](../../../desk/doc/reference.md#app-and-legacy-semantics-compared).
+[library and app semantics](../../../desk/doc/reference.md#library-and-app-semantics-compared).
 
 ## Property document template
 
@@ -172,7 +172,7 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
 - `real` and `real-single` are sized (small whole numbers and fractions
   first); `real-bits` draws any finite double. Shrink floats with
   `shrink-real`/`shrink-real-single`; the app's default `sink` does too, but
-  the legacy library's halves a float's bit pattern and can reach NaN
+  the `quiz` library's halves a float's bit pattern and can reach NaN
   ([31-float-associativity](../../../desk/examples/failing/31-float-associativity.hoon)).
 - Spell sample types out (`ship=@p`, not `=ship`): a zuse mold carries its
   subject into the sample vase and hits `%sample-bytes`.
@@ -202,7 +202,7 @@ the vase's type takes minutes. Models:
 [26-counter-agent-bug](../../../desk/examples/failing/26-counter-agent-bug.hoon),
 [33-expiry-agent-bug](../../../desk/examples/failing/33-expiry-agent-bug.hoon).
 
-The legacy combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`,
+The `quiz` library's combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`,
 `const`, `cell`, `freq`, `pick`, `list`. Signatures:
 [norns and composition](../../../desk/doc/reference.md#norns-and-composition).
 Things that go wrong:
@@ -237,7 +237,7 @@ Without `++norn` or `++alts` the app uses `quiz-auto`'s type-directed
 defaults: valid values for meaningful auras (`@t`, `@ta`, `@tas`, `@p`, `@da`,
 `@dr`, `@sd`, `@rd`), and lists, units, sets and maps built and shrunk as
 containers, up to 20 elements; plain atoms and cells behave exactly as in the
-legacy library. Write a norn and alts when the domain is narrower than the
+`quiz` library. Write a norn and alts when the domain is narrower than the
 type ([34-typed-defaults](../../../desk/examples/failing/34-typed-defaults.hoon),
 [reference](../../../desk/doc/reference.md#type-directed-defaults-quiz-auto)).
 
@@ -304,7 +304,7 @@ shrink together ([29-bst-coordinated](../../../desk/examples/failing/29-bst-coor
   `/x/run/<id>`. Exact nouns and examples:
   [agent-api.md](../../../desk/doc/agent-api.md).
 - **HTTP:** [http-api.md](../../../desk/doc/http-api.md).
-- **Inside a `-test` suite:** use the legacy library.
+- **Inside a `-test` suite:** use the `quiz` library.
   `(expect !>((~(check quiz 0v123 20) !>(fate) ~ ~)))` passes custom norns or
   alts as `[~ gate]`.
 
@@ -334,7 +334,7 @@ Symptom table: [troubleshooting](../../../desk/doc/reference.md#troubleshooting)
    those changed. **Rerun request** may choose new entropy.
 2. Decide what the correct behaviour is.
 3. Write the counterexample as an ordinary `test-*` arm with `expect-eq`.
-   Keep the property beside it as a legacy `check` arm.
+   Keep the property beside it as a `quiz` library `check` arm.
    Worked example: [user's guide step 6](../../../desk/doc/users-guide.md#6-replay-and-turn-evidence-into-a-regression).
 
 Do not add intentionally failing examples under `desk/tests/`, because that

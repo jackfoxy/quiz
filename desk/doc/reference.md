@@ -1,9 +1,10 @@
 # Quiz reference
 
 This desk targets `%zuse 408`. The application engine is `%quiz-engine-13`.
-The frozen `lib/quiz.hoon` library and `gen/quiz.hoon` generator retain their
-legacy behavior. Application property documents use `lib/quiz-engine.hoon`
-through `%quiz`; they do not call the legacy check loop.
+The `lib/quiz.hoon` library and `gen/quiz.hoon` generator check properties
+inside ordinary code and `-test` suites. Application property documents use
+`lib/quiz-engine.hoon` through `%quiz`; they do not call the library's check
+loop.
 
 ## Public contracts
 
@@ -36,7 +37,7 @@ property. Other arms may contain helpers. Missing `conf` means
 and shrinking. Start from the complete defaults when changing a setting, as
 in [the success document](../examples/props/01-success.hoon).
 
-A standalone gate is accepted by the legacy library, but is not an app
+A standalone gate is accepted by the `quiz` library, but is not an app
 document. Existing `test-*` cores use the saved-suite workflow instead.
 
 The [source-format contract](source-format.md) specifies the restricted Ford
@@ -46,7 +47,7 @@ prelude runes are refused in the property document. Built dependencies use
 ordinary Ford. Paths are 1–32 segments of 1–64 lowercase letters, digits or
 hyphens, ending in `hoon`; desk names are Hoon symbols of at most 64 bytes.
 
-### Legacy library signatures
+### Library signatures
 
 Import `quiz` from `/lib/quiz/hoon`. Its door sample is
 `[eny=@uv runs=@ud]`. Bunting the door supplies seed zero and runs zero;
@@ -73,7 +74,7 @@ The following types describe the exported arms, including the helper arms.
 Pass a fate vase with `!>(fate-gate)`; pass `~` for an absent custom generator
 or shrinker, and `[~ gate]` for a supplied one. Configure the library door
 using `~(check quiz seed requested-runs)` or the corresponding
-`check-verbose` arm. The [original tutorial](../tests/examples/01-quiz-tutorial.hoon)
+`check-verbose` arm. The [tutorial suite](../tests/examples/01-quiz-tutorial.hoon)
 contains executable calls with custom norns and alts.
 
 `check` prints `[success-runs+N drops+M]` and, on failure, the resulting vase.
@@ -86,13 +87,13 @@ even though the requested number was not reached.
 
 The `%say` generator has sample
 `[[now=@da eny=@uvJ bec=beak] [vax=vase ~] [runs=@ud ~]]` and returns
-`[%noun result=?]`. It forwards the generator environment's entropy to legacy
-`check`, with no custom norn/alts. Its positional argument is the fate vase;
-`runs` is an optional named argument. Omitting it uses the legacy 100-run
-fallback. It is not the application's recorded-seed replay interface.
+`[%noun result=?]`. It forwards the generator environment's entropy to the
+library's `check`, with no custom norn/alts. Its positional argument is the
+fate vase; `runs` is an optional named argument. Omitting it uses the
+library's 100-run fallback. It is not the application's recorded-seed replay interface.
 
-Source authority: [legacy library](../lib/quiz.hoon),
-[generator](../gen/quiz.hoon), [compatibility tests](../tests/lib/quiz-legacy.hoon).
+Source authority: [quiz library](../lib/quiz.hoon),
+[generator](../gen/quiz.hoon), [behaviour tests](../tests/lib/quiz-check.hoon).
 
 ### Norns and composition
 
@@ -104,8 +105,8 @@ appropriate generation and, where necessary, validation.
 
 For new documents, prefer the [app generator library](#app-generator-library-quiz-gen),
 whose generators are total and whose shrinkers fit the engine's rules. The
-constructors below are under `norns:quiz` in the frozen legacy library and
-can also be used by app documents:
+constructors below are under `norns:quiz` in the `quiz` library and can
+also be used by app documents:
 
 | Arm | Construction and resulting type |
 | --- | --- |
@@ -147,23 +148,23 @@ these examples.
 
 Without `++norn` the app fills the sample with
 [`quiz-auto`](#type-directed-defaults-quiz-auto)'s `fill`; without `++alts`
-it shrinks with `quiz-auto`'s `sink`. Both follow the frozen library's rules
+it shrinks with `quiz-auto`'s `sink`. Both follow the `quiz` library's rules
 and add type-directed cases. `fill` handles `%noun`, atoms, cells, faces,
-forks, hints and holds, and draws from the RNG exactly as the frozen `fill`
+forks, hints and holds, and draws from the RNG exactly as the library's `fill`
 does. Singleton atoms retain their value. A non-singleton atom gets a valid
-value for an aura with a meaning, and otherwise legacy's uniform draw below
+value for an aura with a meaning, and otherwise the library's uniform draw below
 size. Fork alternatives are chosen from the type's set. Holds are expanded
 through type operations, and lists, units, sets and maps are recognized and
 built as containers. Other type forms, such as cores, return the supplied
 vase unchanged. This is heuristic generation, not a promise that arbitrary
-gates, cores or semantic domains can be randomized. The legacy runner keeps
-the frozen `fill` and `sink`.
+gates, cores or semantic domains can be randomized. The library's runner
+uses its own `fill` and `sink`.
 
 Both runners grow size after each generated sample:
 
 `next-size = size + 1 + floor(2 * size / 21)`
 
-The legacy runner starts at 1 with no ceiling. The app starts at the conf's
+The library's runner starts at 1 with no ceiling. The app starts at the conf's
 `size-start` (default 1) and, when `size-max` is nonzero, holds size at
 `size-max` from then on: `size = min(size-max, next-size)`. Under the
 defaults size passes 50,000 by the 100th sample, so a cap mainly keeps
@@ -174,7 +175,7 @@ Duplicate samples also grow size and advance the engine RNG. Attempt and
 post-generation byte limits constrain the app run. They cannot prevent a
 single large allocation or looping generator.
 
-**Duplicates.** The legacy runner, and the app under its default policy
+**Duplicates.** The library's runner, and the app under its default policy
 `%mug`, identify samples by `mug` of the sample **noun**, ignoring the vase's
 type. A repeated mug is skipped without calling the fate. Distinct nouns can
 collide, so `%mug` deduplication is approximate. The app's `duplicates` conf
@@ -198,7 +199,7 @@ policy; decreasing weight alone guarantees termination.
 
 [`tests/lib/quiz-norns.hoon`](../tests/lib/quiz-norns.hoon) and
 [`tests/lib/quiz-sink.hoon`](../tests/lib/quiz-sink.hoon) pin these facts
-with fixed seeds. They describe the frozen library; they are not guarantees
+with fixed seeds. They describe the `quiz` library; they are not guarantees
 beyond it. The app's default differs for meaningful auras, containers and
 unions: see [type-directed defaults](#type-directed-defaults-quiz-auto).
 
@@ -213,11 +214,11 @@ unions: see [type-directed defaults](#type-directed-defaults-quiz-auto).
 | `fill` on a union | Each branch is equally likely; `(unit a)` yields both `~` and values |
 | Small domains | A `?` sample yields at most two accepted checks before duplicates exhaust the run, unless the app conf sets `duplicates %allow` |
 | Default `sink` | An atom `n` gives `n/2` and `n-1`; a cell shrinks its children; a noun cell gives its two subtrees; every candidate weighs less than its parent |
-| `sink` on lists and unions | Nothing: a list's type is a fork. The app's `quiz-auto` default shrinks both; with the legacy library, write `alts` for lists, as in [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) |
+| `sink` on lists and unions | Nothing: a list's type is a fork. The app's `quiz-auto` default shrinks both; with the `quiz` library, write `alts` for lists, as in [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) |
 
-### App and legacy semantics compared
+### Library and app semantics compared
 
-| Behavior | Legacy library/generator | Application |
+| Behavior | `quiz` library/generator | Application |
 | --- | --- | --- |
 | Target | `runs`: passes plus drops | `requested`: accepted `%.y` only |
 | Zero target | Becomes 100 | Passes immediately with zero counters |
@@ -226,16 +227,15 @@ unions: see [type-directed defaults](#type-directed-defaults-quiz-auto).
 | Size | Starts at 1, uncapped | `size-start`, optional `size-max` |
 | All evaluated inputs dropped | May report success | Never counts them as accepted; exhaustion flags `all-dropped` |
 | Fate false/crash/scry | All become failure with no structured distinction | `%false`, `%crash`, `%scry` remain distinct |
-| Unexpected fate product | Assertion failure in the legacy check loop | `%bad-product` classification; document builder normally rejects its type earlier |
+| Unexpected fate product | Assertion failure in the library's check loop | `%bad-product` classification; document builder normally rejects its type earlier |
 | Generator/shrinker error | May escape the check loop | `%error` with stage and reason, or a diagnostic byte limit |
-| Default generation | Frozen `fill`: auras ignored, containers filled as plain unions | `quiz-auto`'s `fill`: the same draws for plain types; valid values for meaningful auras; lists, units, sets and maps as containers |
-| Default shrinking | Frozen `sink`: atoms and cells only; nothing for lists, unions or holds; floats as raw atoms | `quiz-auto`'s `sink`: the same for plain atoms and cells; text, ships, signed numbers and floats by meaning; containers, unions and holds by type |
+| Default generation | Library `fill`: auras ignored, containers filled as plain unions | `quiz-auto`'s `fill`: the same draws for plain types; valid values for meaningful auras; lists, units, sets and maps as containers |
+| Default shrinking | Library `sink`: atoms and cells only; nothing for lists, unions or holds; floats as raw atoms | `quiz-auto`'s `sink`: the same for plain atoms and cells; text, ships, signed numbers and floats by meaning; containers, unions and holds by type |
 | Shrinking | Unbounded; false/crash categories interchangeable | Bounded, decreasing weight, same failure category |
 | Failure evidence | Final shrunk vase only | Original and best shrunk sample, source/config/seed |
 | Persistence | Caller-owned | Recorded history and exact property replay |
 
-The frozen library has no application limits or cooperative cancellation.
-Library users needing legacy behavior may continue to import it unchanged.
+The `quiz` library has no application limits or cooperative cancellation.
 Do not interpret its `runs` field as the app's `accepted` or `attempted` count.
 
 ### App generator library (`quiz-gen`)
@@ -369,10 +369,9 @@ Executable model:
 
 **Plain types are unchanged.** For `@ud` and other atoms without a meaningful
 aura, loobeans, cells, faces, hints, plain unions and `*`, `fill` draws from
-the RNG exactly as the frozen `fill` does (a `*` sample is filled by the
-frozen `fill` itself), and `sink` offers the frozen `sink`'s candidates.
+the RNG exactly as the `quiz` library's `fill` does (a `*` sample is filled
+by that `fill` itself), and `sink` offers the library `sink`'s candidates.
 [`tests/lib/quiz-auto.hoon`](../tests/lib/quiz-auto.hoon) pins this parity.
-Example counters recorded before the change are unchanged.
 
 **Auras with a meaning** get valid values from `quiz-gen` and shrink by that
 meaning:
@@ -382,7 +381,7 @@ meaning:
 | `@t`, `@ta`, `@tas` | `cord`, `knot`, `term` | Delete characters, then turn a character above `a` into `a`; `@ta` and `@tas` stay valid, `@tas` nonempty |
 | `@tD` | A printable character | Toward `a` |
 | `@p` | `ship` | `shrink-atom`, toward `~zod` |
-| `@da`, `@dr` | `date`, `span` | As legacy: `n/2`, `n-1` |
+| `@da`, `@dr` | `date`, `span` | As the library: `n/2`, `n-1` |
 | `@s`, `@sd` | `signed` | Smaller magnitudes with the same sign |
 | `@rd`, `@rs` | Sized `real`, `real-single` | `shrink-real`, `shrink-real-single`; never NaN |
 
@@ -402,8 +401,9 @@ a valid set.
 **Unions** shrink within the branch the value is in. The branch is found by
 checking atoms, constants and cell heads a few levels deep; deeper parts are
 assumed to fit. A hold is expanded and shrunk as its expansion. A `*` sample
-shrinks to its subtrees and smaller atoms; the frozen `sink` gave it nothing,
-because frozen `fill` types its noun so that `sink` does not match it.
+shrinks to its subtrees and smaller atoms; the library's `sink` gives it
+nothing, because the library's `fill` types its noun so that `sink` does not
+match it.
 
 Every candidate keeps the sample's type, and the engine's usual rules apply:
 only a lighter candidate with the same failure category is accepted.
@@ -528,14 +528,14 @@ returns; that call hits the property call limit and the run ends
 
 The app's default is `quiz-auto`'s `sink`
 ([type-directed defaults](#type-directed-defaults-quiz-auto)). For plain
-atoms and cells it matches the frozen `sink`: halving and decrementing
+atoms and cells it matches the library's `sink`: halving and decrementing
 nonzero atoms, subtrees for noun cells, and combinations of cell component
 candidates, preserving faces and hints. Singleton atoms do not shrink. It
 also shrinks text, ships, signed numbers and floats by their meaning, lists,
 units, sets and maps as containers, a union within the branch its value is
 in, and holds by expanding them.
 
-The frozen library's `sink`, used by the legacy runner, produces no
+The `quiz` library's `sink`, used by its runner, produces no
 candidates for forks and holds, so it does not shrink lists or unions. It
 treats a float as an atom, halving and decrementing the bit pattern: a
 negative double can reach NaN (`-0` minus one is all ones) or a huge positive
@@ -869,12 +869,12 @@ if all selected arms passed. Counters are `total`, `completed`, `passed`,
 
 Only arm-level metrics are available. A suite has no controlled property seed,
 accepted/dropped sample counts or structured property counterexamples. Console
-output from a legacy check inside a test is not converted into sample metrics.
+output from a library check inside a test is not converted into sample metrics.
 The app refuses scries during arms, whereas stock `-test` forwards them; not
 every state-dependent suite is compatible. See [suite details](suites-and-replay.md).
 
-The three existing example suites remain under `tests/examples`. Intentional
-new teaching failures live under `examples/failing`, outside the regression
+The three example suites live under `tests/examples`. Intentional
+teaching failures live under `examples/failing`, outside the regression
 runner's default test directory. Run passing regression tests in Dojo with:
 
 ```hoon
@@ -1063,7 +1063,7 @@ already checked parts/configuration and own scheduling and persistence.
 | [quiz-harness](../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
 | [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |
 | [quiz-gen](../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
-| [quiz-auto](../lib/quiz-auto.hoon) | Type-directed default `fill` and `sink` used by the engine without `++norn`/`++alts`; `smaller`, `shape-of`, `expand`; legacy RNG use for plain types |
+| [quiz-auto](../lib/quiz-auto.hoon) | Type-directed default `fill` and `sink` used by the engine without `++norn`/`++alts`; `smaller`, `shape-of`, `expand`; the library's RNG use for plain types |
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
 | [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `refuse` checks a record without parsing; `resolve` checks context before rebuilding |
@@ -1081,10 +1081,10 @@ Dependency builds use asynchronous Clay `%warp` requests (`%a` for builds, `%x`
 for raw reads), because a failed build scry can escape Gall virtualization.
 Each request is pinned; stale job wires are ignored. App-only `%quiz-submit`
 and `%quiz-admitted` marks correlate HTTP tickets to allocated IDs without
-changing the legacy action interface or durable schema.
+changing the `%quiz-action` interface or durable schema.
 
 For maintainers, changes to deterministic generation/evaluation/shrinking or
-default semantics require an engine-version bump. Keep frozen legacy sources
-and copied urui files unchanged. The [example catalog](examples.md) records
+default semantics require an engine-version bump. Keep the `quiz` library,
+its generator and copied urui files unchanged. The [example catalog](examples.md) records
 verified outcomes; regression and browser checks live under `desk/tests/` and
 `tests/browser/` in the repository.

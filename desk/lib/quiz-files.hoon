@@ -106,7 +106,7 @@
   ^-  (each location:ufiles failure:ufiles)
   =/  here=beak  [our.bol q.byk.bol [%da now.bol]]
   ?+  rel
-    ::  Keep the Unit 8 relative Hoon wire as a writable alias.
+    ::  A bare relative path is a writable work path.
     [%.y [here (weld /data/quiz rel) &]]
     [%work *]      [%.y [here (weld /data/quiz t.rel) &]]
     [%examples *]  [%.y [here (weld /tests/examples t.rel) |]]

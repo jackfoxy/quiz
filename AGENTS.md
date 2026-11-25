@@ -12,8 +12,8 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 
 | Path | Contents | Owner |
 | --- | --- | --- |
-| `desk/lib/quiz.hoon`, `desk/gen/quiz.hoon` | Legacy library and `%say` generator | **Frozen** |
-| `desk/tests/lib/quiz.hoon`, `desk/tests/lib/quiz-legacy.hoon` | Legacy behaviour pins | **Frozen** |
+| `desk/lib/quiz.hoon`, `desk/gen/quiz.hoon` | `quiz` library and `%say` generator | **Frozen** |
+| `desk/tests/lib/quiz.hoon`, `desk/tests/lib/quiz-check.hoon` | Library behaviour pins | **Frozen** |
 | `desk/lib/quiz-engine.hoon` | Resumable stepper, classification, bounded shrinking, limits | quiz |
 | `desk/lib/quiz-build.hoon` | Property document prelude, pinned Clay context, type checks | quiz |
 | `desk/lib/quiz-prop.hoon` | Report combinators for fates: notes, expected/actual, labels, coverage | quiz |
@@ -30,11 +30,10 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 | `desk/sur/urui.hoon`, `desk/lib/urui-*.hoon`, `desk/tests/lib/urui-*.hoon`, `desk/doc/keyboard/{ace-keys,modal-keys,key-policy}.md`, `desk/web/ace/` (except `mode-hoon.js`), `tests/browser/doubles/`, `tests/browser/{chords.js,shortcut-conflicts.test.js,vim-chords.json,ace-win-linux-shortcuts.json}` | urui framework copies | **urui** |
 | `desk/lib/{default-agent,skeleton,dbug,server,docket,test}.hoon`, `desk/sur/docket.hoon`, most of `desk/mar/` | Vendored `%base`/neighbour support | vendored |
 | `desk/examples/props/`, `desk/examples/failing/` | Passing and intentionally failing property documents | quiz |
-| `desk/tests/examples/` | Original tutorial, boxcar and Euler suites (all pass) | quiz |
+| `desk/tests/examples/` | Tutorial, boxcar and Euler suites (all pass) | quiz |
 | `desk/fixtures/` | Inputs used by builder and replay tests | quiz |
 | `desk/doc/*.md`, `desk/doc.toc` | User and contract documentation, served as Help | quiz |
 | `tests/browser/` | Doubles scenarios and Playwright specs | quiz (except copies) |
-| `blogpost.md` | Original blog post; historical source material | **Frozen** |
 
 The [internal implementation map](desk/doc/reference.md#internal-implementation-map)
 lists each module's entry points.
@@ -46,8 +45,8 @@ lists each module's entry points.
   of at most 80 columns; an empty `::` line before each `++` arm; arm and core
   header comments indented one gap inside the arm; `^-` casts on gate
   products; wide form only when the whole expression fits on one line.
-- **Frozen legacy.** Never change the frozen files above. App semantics belong
-  in `quiz-engine`; [legacy and app semantics](desk/doc/reference.md#app-and-legacy-semantics-compared)
+- **Frozen library.** Never change the frozen files above. App semantics belong
+  in `quiz-engine`; [library and app semantics](desk/doc/reference.md#library-and-app-semantics-compared)
   differ on purpose.
 - **Engine version.** Any change to deterministic generation, evaluation,
   shrinking or defaults must bump `++version` in `desk/lib/quiz-engine.hoon`.

@@ -28,11 +28,11 @@
     (expect !>(!write.p.docs))
   ==
 ::
-++  test-legacy-alias
+++  test-bare-path-alias
   ^-  tang
   %+  expect-eq
-  !>((locate:files bol /work/legacy/hoon))
-  !>((locate:files bol /legacy/hoon))
+  !>((locate:files bol /work/draft/hoon))
+  !>((locate:files bol /draft/hoon))
 ::
 ++  test-property-example-roots
   ^-  tang

@@ -38,9 +38,9 @@ test('rendered help routes, repository links and restored tabs', async ({page}, 
     .toHaveAttribute('href','/docs/d/quiz/reference');
   await guide.getByRole('link',{name:'reference',exact:true}).first().click();
   await expect(guide.locator('main h1')).toHaveText('Quiz reference');
-  await expect(guide.getByRole('link',{name:'legacy library',exact:true}))
+  await expect(guide.getByRole('link',{name:'quiz library',exact:true}))
     .toHaveAttribute('href','https://github.com/jackfoxy/quiz/blob/dev/desk/lib/quiz.hoon');
-  await expect(guide.getByRole('link',{name:'legacy library',exact:true}))
+  await expect(guide.getByRole('link',{name:'quiz library',exact:true}))
     .toHaveAttribute('target','_blank');
   await page.locator('#help').click();
   await page.locator('#docs-help-nav').getByText("User's Guide",{exact:true}).click();

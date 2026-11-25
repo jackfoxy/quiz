@@ -15,6 +15,6 @@ Dojo:
 -test /=quiz=/tests/examples ~
 ```
 
-All three suites pass. Legacy tutorial arms assert expected failures as
-successful test assertions. New teaching failures stay outside `desk/tests/`
+All three suites pass. Tutorial arms assert expected failures as
+successful test assertions. Teaching failures stay outside `desk/tests/`
 and do not make the default passing regression suite fail.

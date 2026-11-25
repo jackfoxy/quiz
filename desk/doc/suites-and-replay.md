@@ -39,10 +39,10 @@ ordered `arms`, and `sample-metrics=%unavailable`. Each arm contains
 `[name status trace clipped]`; traces above the engine's default diagnostic byte
 cap are omitted with `clipped=%.y`, without changing the arm's status.
 
-Only arm counts are measured. Legacy sample attempts, accepted checks, drops,
+Only arm counts are measured. Sample attempts, accepted checks, drops,
 duplicates, shrink counts, seeds, and counterexamples are unavailable through
 this interface. Printed `~&` output is not parsed into invented metrics. A test
-may perform many legacy property checks inside one arm.
+may perform many `quiz` library property checks inside one arm.
 
 The app runner refuses scries during arm execution. The stock `-test` runner
 forwards them; tests that require live scries are therefore not compatible with
@@ -113,5 +113,5 @@ claimed. This desk currently targets `%zuse 408`.
 
 The [replay fixture](../fixtures/quiz-replay/property.hoon) intentionally fails
 against its imported threshold and is kept outside the passing test directory.
-Opaque legacy suites can be rerun at their saved Clay context, but this property
+Suites can be rerun at their saved Clay context, but this property
 replay API does not invent seed control or sample-level replay for suite arms.

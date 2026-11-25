@@ -178,7 +178,7 @@ differently in the two orders. `shrink-real` moves each value toward zero, a
 whole number and fewer decimal places, and the run ends at
 `[a=.~-1.2 b=.~-1 c=.~1]`. The default shrinker
 `quiz-auto`, the app's default without `++alts`, also uses `shrink-real`;
-the legacy library's shrinker would treat each double as a raw atom; see
+the `quiz` library's shrinker would treat each double as a raw atom; see
 [limitations](limitations.md).
 
 `21-small-domain-allow` checks De Morgan's law for a `[? ?]` sample. Under
@@ -277,17 +277,17 @@ queue, report, coverage, generator-library, size and function rows in
 | 34-typed-defaults | 3 | 2 | 0 | 0 | 44 | 8 | `[name='-]' tags=~[%vby %m0g6 %q7qa]]` → `[name='' tags=~[%a %a %a]]` |
 | 35-cover-table | 164 | 100 | 0 | 64 | 0 | 0 | — |
 
-## Existing suites
+## Example suites
 
 | Suite | Recorded arm result | Notes |
 | --- | --- | --- |
-| [Quiz tutorial](../tests/examples/01-quiz-tutorial.hoon) | 12/12 passed | Legacy fates, norns, drops, shrinking and round trips |
+| [Quiz tutorial](../tests/examples/01-quiz-tutorial.hoon) | 12/12 passed | Library fates, norns, drops, shrinking and round trips |
 | [Boxcar](../tests/examples/02-boxcar.hoon) | 3/3 passed | Property/unit checks for a small range predicate |
 | [Euler](../tests/examples/03-euler.hoon) | 4/4 passed | Prime-number examples and ordinary assertions |
 
 Across these three files, all 19 test arms pass in the app and under `-test`.
 They report arm counters, not property sample metrics; seeds, drops and
-structured counterexamples inside their legacy checks are unavailable to the
+structured counterexamples inside their library checks are unavailable to the
 suite UI. The tutorial's deliberate counterexamples are asserted as expected
 failures inside passing test arms.
 
@@ -295,9 +295,9 @@ failures inside passing test arms.
 -test /=quiz=/tests/examples ~
 ```
 
-The new intentional failures are outside `desk/tests/`. Running the complete
+The intentional failures are outside `desk/tests/`. Running the complete
 regression suite therefore remains a passing check. The executable browser
 matrix is `tests/browser/examples.spec.js`; its `run.json` artifacts retain
 full source hashes, effective configurations, counters and outcomes for each
 example and the threshold replay. See the [reference](reference.md) for exact
-contracts, limits and legacy/app differences.
+contracts, limits and library/app differences.

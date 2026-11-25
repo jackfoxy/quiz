@@ -1,10 +1,10 @@
-/+  legacy=quiz, gen=quiz-gen
+/+  quiz, gen=quiz-gen
 |%
   ::  Type-directed defaults for documents with no ++norn or no ++alts.
   ::
   ::  ++fill makes a sample from the fate's sample type and ++sink shrinks
-  ::  one. Both follow the frozen library's rules, and ++fill draws from
-  ::  the RNG exactly as legacy fill does, so a sample of @ud, loobeans,
+  ::  one. Both follow lib/quiz's rules, and ++fill draws from the RNG
+  ::  exactly as lib/quiz's fill does, so a sample of @ud, loobeans,
   ::  cells, faces and plain unions is unchanged. They differ in three
   ::  places:
   ::
@@ -13,7 +13,7 @@
   ::  - a list, unit, set or map is recognized from its type and built and
   ::    shrunk as one, with quiz-gen's container generators and shrinkers;
   ::  - ++sink shrinks a union through the branch its value is in, and a
-  ::    float or text through quiz-gen's shrinkers, where legacy offers
+  ::    float or text through quiz-gen's shrinkers, where lib/quiz offers
   ::    nothing or a raw atom.
   ::
   ::  Recognition reads the type only: a hold is expanded, never molded,
@@ -34,17 +34,17 @@
   20
 ::
 ++  fill
-  ::  A sample of the vase's type. Legacy rules and RNG use, except for
-  ::  meaningful auras and recognized containers. A type it cannot fill,
-  ::  such as a core, is returned unchanged, as legacy does.
+  ::  A sample of the vase's type. lib/quiz's rules and RNG use, except
+  ::  for meaningful auras and recognized containers. A type it cannot
+  ::  fill, such as a core, is returned unchanged, as lib/quiz does.
   |=  [size=@ud rng=_og sax=vase]
   ^-  vase
   =/  new-rng  +:(rads:rng 1)
   =/  t  p.sax
   ?@  t
-    ::  Legacy's own fill, so the sample keeps legacy's type for `*`.
+    ::  lib/quiz's own fill, so the sample keeps its type for `*`.
     ?.  ?=(%noun t)  sax
-    (~(fill quiz:legacy [size rng]) sax)
+    (~(fill quiz:quiz [size rng]) sax)
   ?-    -.t
       %atom
     ?^  q.t  sax(q u.q.t)
@@ -52,7 +52,7 @@
     sax(q ?^(special u.special (rad:new-rng size)))
   ::
       %cell
-    =/  [one=_og two=_og]  (split-rng:legacy rng)
+    =/  [one=_og two=_og]  (split-rng:quiz rng)
     =/  head=vase  $(rng one, sax [p.t ~])
     =/  tail=vase  $(rng two, sax [q.t ~])
     (slop head tail)
@@ -96,7 +96,7 @@
   ::
       %cell
     ?@  n  ~
-    ::  Legacy order: each left candidate with each right one, then the
+    ::  lib/quiz order: each left candidate with each right one, then the
     ::  left value with each right one; the left alone only when the right
     ::  has none.
     =/  lefts=(list *)  $(t p.t, n -.n)
@@ -132,7 +132,7 @@
 ::  +|  Shapes
 ::
 ++  expand
-  ::  One hold, expanded as legacy fill expands it.
+  ::  One hold, expanded as lib/quiz's fill expands it.
   |=  t=type
   ^-  type
   ?.  ?=([%hold *] t)  t
@@ -259,7 +259,7 @@
 ::  +|  Atoms
 ::
 ++  atom-by-aura
-  ::  A valid value for an aura with a meaning; ~ keeps legacy's draw.
+  ::  A valid value for an aura with a meaning; ~ keeps lib/quiz's draw.
   |=  [aura=@tas size=@ud rng=_og]
   ^-  (unit @)
   ?:  =('tD' aura)  `(add 32 (rad:rng 95))
@@ -277,7 +277,7 @@
   ==
 ::
 ++  atom-smaller
-  ::  Smaller atoms that keep the aura's meaning; others as legacy.
+  ::  Smaller atoms that keep the aura's meaning; others as lib/quiz.
   |=  [aura=@tas n=@]
   ^-  (list @)
   ?:  =('tD' aura)  ?:((gth n 'a') ~['a'] ~)

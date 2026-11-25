@@ -21,7 +21,7 @@ and shrunk counterexamples. Avoid posting private source from run snapshots.
 
 ## Prior work and interface
 
-The frozen Quiz library is inspired by QuickCheck. The user's guide draws
+Quiz is inspired by QuickCheck. The user's guide draws
 practical testing ideas from [FsCheck](https://fscheck.github.io/FsCheck/),
 with page-specific citations and an explicit list of unsupported facilities.
 Quiz has its own Hoon contracts and run semantics.

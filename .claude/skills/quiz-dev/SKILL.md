@@ -20,7 +20,7 @@ a bowl.
 | --- | --- | --- |
 | Generation, classification, counters, shrinking, limits | `lib/quiz-engine.hoon` (bump `++version`) | `tests/lib/quiz-engine.hoon`, `tests/lib/quiz-shrink.hoon` |
 | Report combinators (`quiz-prop`): notes, expected/actual, labels | `lib/quiz-prop.hoon` (report type lives in the engine) | `tests/lib/quiz-prop.hoon`, `tests/lib/quiz-engine.hoon` |
-| Default generation and shrinking from the sample type (`quiz-auto`) | `lib/quiz-auto.hoon`; engine semantics, so bump `++version`; keep legacy parity for plain types | `tests/lib/quiz-auto.hoon`, `tests/lib/quiz-examples.hoon` |
+| Default generation and shrinking from the sample type (`quiz-auto`) | `lib/quiz-auto.hoon`; engine semantics, so bump `++version`; keep `lib/quiz` parity for plain types | `tests/lib/quiz-auto.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generators and shrinkers (`quiz-gen`) | `lib/quiz-gen.hoon`; no engine change, no version bump | `tests/lib/quiz-gen.hoon`, `tests/lib/quiz-examples.hoon` |
 | Agent harness (`quiz-harness`) | `lib/quiz-harness.hoon`, `fixtures/quiz-harness/`; no engine change | `tests/lib/quiz-harness.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generated functions (`quiz-fun`) | `lib/quiz-fun.hoon`; no engine change, no version bump | `tests/lib/quiz-fun.hoon`, `tests/lib/quiz-examples.hoon` |
@@ -41,7 +41,7 @@ Paths are under `desk/` unless they start with `tests/browser/`.
 
 Do not edit these:
 
-- **Frozen:** `lib/quiz.hoon`, `gen/quiz.hoon`, and the legacy tests. If the app
+- **Frozen:** `lib/quiz.hoon`, `gen/quiz.hoon`, and their pin tests. If the app
   needs different behaviour, implement it in the engine.
 - **urui copies:** fix the problem upstream in urui and re-copy. A fix that is
   specific to quiz belongs in a quiz-owned file. For example, `quiz-files`

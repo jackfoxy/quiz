@@ -1,6 +1,6 @@
 /+  quiz, *test
 /=  quiz-gen  /gen/quiz
-::  Pins legacy behavior, including successful exhaustion and lost categories.
+::  Pins library behavior, including successful exhaustion and lost categories.
 |%
 ::
 ++  sized
@@ -89,7 +89,7 @@
 ::
 ++  test-scry-is-false
   ^-  tang
-  =/  fate  !>(|=(@ud .^(? %cz /quiz-legacy-missing)))
+  =/  fate  !>(|=(@ud .^(? %cz /quiz-check-missing)))
   =/  sam  (slot 6 fate)
   =/  give  ((const:norns:quiz @ud) 7)
   =/  got  (~(check-verbose quiz 0v1 1) fate `give `no-alts)

@@ -45,7 +45,6 @@ records those boundaries rather than promising a button that does not exist.
 19. [Arrange the workbench and find help](#19-arrange-the-workbench-and-find-help)
 
 - [Choosing useful properties](#choosing-useful-properties)
-- [Corrections to the original blog](#corrections-to-the-original-blog)
 
 ## 1. Open the workbench
 
@@ -426,7 +425,7 @@ Save as `guide/regression` and let the explorer finish refreshing. Select
 **Saved suite**, choose **Use latest revision** and wait for “Selected”,
 click **Discover suite arms**, leave **Suite arms** blank, and
 **Run saved suite**. Both arms should pass. Chapter 17 explains suite results
-and adds the existing Quiz suites to this workflow.
+and adds the bundled example suites to this workflow.
 
 ### Mark an intentionally false property
 
@@ -559,7 +558,7 @@ would count as a counterexample? Then read the norn: can it generate one?
 
 | Example | Exercise |
 | --- | --- |
-| `props/06-composed` | Follow a list and offset through two equivalent sum computations. Its legacy list/cell norns illustrate composition. |
+| `props/06-composed` | Follow a list and offset through two equivalent sum computations. Its `quiz` library list/cell norns illustrate composition. |
 | `props/16-sorted-insert` | Inspect the sorted-list generator and insertion-position labels. Check that empty, front, middle and end cases all meet coverage. |
 | `props/18-parse-print` | Follow decimal, ship and knot values through print/parse round trips. Inspect the aura-specific generators. |
 | `failing/34-typed-defaults` | Find the missing norn and alts: defaults use the sample type. Read the shrunk `[name='' tags=~[%a %a %a]]`. |
@@ -817,9 +816,9 @@ without executing them.
    uses descending name order, regardless of selection order.
 
 Run `examples/01-quiz-tutorial` (12 passing arms) and `examples/03-euler`
-(four passing arms). Together with boxcar these are the 19 bundled legacy
-example arms. Inspect the tutorial source for legacy `check`, custom norns
-and alts embedded in ordinary test arms.
+(four passing arms). Together with boxcar these are the 19 bundled example
+arms. Inspect the tutorial source for the `quiz` library's `check`, custom
+norns and alts embedded in ordinary test arms.
 
 A suite is a saved Hoon core whose `test-*` arms produce `tang`:
 
@@ -835,7 +834,7 @@ passes only if every selected arm passes. A runtime abort interrupts the
 suite and identifies the active arm when available.
 
 The workbench reports suite arm counts, not property sample counts hidden
-inside legacy calls. Seed and exact property replay are unavailable for
+inside library calls. Seed and exact property replay are unavailable for
 suites; use **Rerun request**. A suite requiring live scries can work with
 Dojo's `-test` yet fail under the app runner's refusing scry gate.
 
@@ -953,12 +952,12 @@ Use this table when deciding what to test. Open the named documents under
 | Data structures | `17-bst-delete-bug` checks a binary search tree against a sorted-set model and shrinks a failing deletion to three keys. |
 | Filtering | Compare `04-discards` with `07-positive`: construct the domain directly when most inputs would be dropped. |
 | Generator preview | **Preview samples** on `08-seeded-threshold` lists its first samples, sizes and verdicts, and the default shrinker's candidates for the first one. Preview creates its own history record without running the normal accepted-check loop. |
-| Distribution | `12-labels-coverage` labels each list by length and requires short and long lists with `++cover`; `14-coverage-shortfall` shows a requirement the generator misses; `35-cover-table` requires shares of a tabulated value with `++cover-table`. Know the generator's shape: the legacy `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics][generator-characteristics]. |
+| Distribution | `12-labels-coverage` labels each list by length and requires short and long lists with `++cover`; `14-coverage-shortfall` shows a requirement the generator misses; `35-cover-table` requires shares of a tabulated value with `++cover-table`. Know the generator's shape: the library's `list` norn has at most `xeb(size)-1` elements. See [measured generator characteristics][generator-characteristics]. |
 | Readable failures | `13-expected-actual` uses `same` and `note`, so the run shows the expected and actual values, not just `false`. |
 | Repeatability | Threshold replay records effective inputs and both counterexamples. Preserve the Clay revision too. |
 | Domain-preserving shrink | `09-custom-alts` keeps positive even values and terminates; `11-queue-model-bug` keeps a pop precondition while shrinking a command list; `19-queue-gen-lib` does the same with `quiz-gen`'s `shrink-keep` and `shrink-list`. |
 | Dependent inputs | `20-dependent` regenerates an index from a seed as its list shrinks, so no candidate indexes past the end. `30-dependent-inner` also shrinks the dependent value itself, pinned in the sample, and builds its arms with the `dependent` helper. |
-| Floats | `31-float-associativity` shows that float addition is not associative. The sized `real` starts with exact small values; `shrink-real` keeps every candidate finite and ends at short decimals. The app's default shrinker uses `shrink-real` too; only the legacy library treats a float as a raw atom ([limitations][limitations]). |
+| Floats | `31-float-associativity` shows that float addition is not associative. The sized `real` starts with exact small values; `shrink-real` keeps every candidate finite and ends at short decimals. The app's default shrinker uses `shrink-real` too; only the `quiz` library treats a float as a raw atom ([limitations][limitations]). |
 | Defaults from types | `34-typed-defaults` has no norn or alts: its text, list of terms and their shrinking come from the sample's type through `quiz-auto`. |
 | Related values | `29-bst-coordinated` shrinks equal keys together with `shrink-equal`, so a key that must stay in the tree shrinks with its copy. |
 | Small domains | `21-small-domain-allow` checks De Morgan's law over two loobeans. Only four samples exist; `duplicates %allow` evaluates repeats, so 100 checks pass and the labels show every case. |
@@ -975,25 +974,6 @@ These are design suggestions, informed by FsCheck's
 
 These cross-references explain general techniques. Use the Quiz
 [reference][reference] for Hoon contracts; FsCheck APIs are not Quiz APIs.
-
-## Corrections to the original blog
-
-The [original blog][original-blog] remains historical source material. Read
-its examples with these differences in mind:
-
-- **Output:** current legacy output uses `success-runs`/`drops` and a vase,
-  rather than the blog's illustrated tags.
-- **Counting:** legacy runs include drops and may return success after
-  duplicate exhaustion. The application's accepted count excludes drops,
-  and duplicate-budget exhaustion is an explicit outcome.
-- **Seeds:** the bunted legacy library has deterministic seed zero. The app
-  chooses and records entropy unless a request or document supplies a seed.
-- **List lengths:** the legacy list norn does not follow the blog's claimed
-  fixed geometric distribution. Its behavior depends on size; see
-  [measured generator characteristics][generator-characteristics].
-- **Shrinking:** reaching 501 is an observed threshold example, not a general
-  guarantee of minimality. Semantic domains need deliberate norns and alts;
-  the positive-even example instead reaches 502.
 
 ## Appendix A. Every bundled example
 
@@ -1074,13 +1054,13 @@ full contracts are in the [reference][reference].
 | `quiz-auto` | Implicit type-directed generation/shrinking; `fill`, `sink`, `smaller` when extending defaults; chapter 11 |
 | `quiz-fun` | `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; chapter 14 |
 | `quiz-harness` | Events, `bowl-at`, `run`, `run-clock`, `cards-of`, `facts-on`, `pokes-to`, `watches-to`; chapter 15 |
-| Legacy `quiz` | `check`, `check-verbose`, norns and vase-based alts inside saved suites; chapter 17 and the tutorial suite |
+| `quiz` library | `check`, `check-verbose`, norns and vase-based alts inside saved suites; chapter 17 and the tutorial suite |
 
-The frozen legacy library has different counting and stopping semantics.
+The `quiz` library has different counting and stopping semantics.
 Drops count toward its run target, zero requests mean 100, and duplicate
 exhaustion can return success. The application uses accepted checks and
 explicit exhaustion. Prefer app property documents for the workbench's
-structured evidence; retain legacy suites for compatibility. The standalone
+structured evidence; use the library inside `-test` suites. The standalone
 Dojo `+quiz` generator and recursive `-test` command are native entry points,
 not commands available from the workbench.
 
@@ -1127,18 +1107,16 @@ inspection and recorded evidence.
 
 ## Sources
 
-The current implementation and public contracts take precedence over older
-notes. This guide draws on the [existing Quiz guide][old-guide],
-[workbench documentation][workbench], [source format][source-format],
+The implementation and public contracts take precedence over this guide.
+It draws on the [workbench documentation][workbench], [source format][source-format],
 [reference][reference], [example catalog][examples], [suite/replay
 contract][suites], [HTTP API][http-api], [Gall API][agent-api],
-[limitations][limitations], local Unit 12 and Unit 21 verification records,
+[limitations][limitations], local verification records,
 and the examples themselves. It borrows its progressive teaching structure
 from [Obelisk's guide][obelisk-guide], not Obelisk's commands or UI behavior.
 
 [obelisk-guide]: ../../../../../../mnt/mars/gitrepos/obelisk/desk/doc/usr/users-guide.md
 [installation]: ../../../../../../mnt/mars/gitrepos/quiz/README.md#installation
-[old-guide]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/users-guide.md
 [reference]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md
 [configuration]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md#configuration-and-limits
 [workbench]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/workbench.md
@@ -1152,4 +1130,3 @@ from [Obelisk's guide][obelisk-guide], not Obelisk's commands or UI behavior.
 
 [generator-characteristics]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md#measured-generator-characteristics
 [timeout-policy]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md#timeout-policy-on-timeout
-[original-blog]: ../../../../../../mnt/mars/gitrepos/quiz/blogpost.md

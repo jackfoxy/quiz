@@ -317,9 +317,8 @@ A timeout is not a rollback of an admitted run. An engine rejection returns
 
 ## File wire
 
-The Unit 8 policy serves `.hoon` source as text under `/data/quiz` in the app's
-own desk. Paths in this protocol are relative to that root. The shared urui
-implementation is unchanged. Save/delete are verified asynchronously with a
+The file wire serves `.hoon` source as text under `/data/quiz` in the app's
+own desk. Paths in this protocol are relative to that root. Save/delete are verified asynchronously with a
 10-second timeout and one pending change at a time.
 
 ```json

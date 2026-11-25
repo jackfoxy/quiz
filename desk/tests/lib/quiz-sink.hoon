@@ -1,6 +1,6 @@
 /+  quiz, engine=quiz-engine, *test
 |%
-  ::  Characterization of the frozen default shrinker, used when a document
+  ::  Characterization of lib/quiz's default shrinker, used when a document
   ::  has no alts. Engine shrinking budgets are in quiz-shrink.
   ::
 ::

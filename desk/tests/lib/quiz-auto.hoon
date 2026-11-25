@@ -1,7 +1,7 @@
-/+  auto=quiz-auto, legacy=quiz, engine=quiz-engine, *test
+/+  auto=quiz-auto, quiz, engine=quiz-engine, *test
 |%
-  ::  Type-directed defaults. Parity arms pin that types legacy fill and
-  ::  sink already handled are unchanged, draw for draw.
+  ::  Type-directed defaults. Parity arms pin that, for types lib/quiz's
+  ::  fill and sink handle, quiz-auto matches them draw for draw.
   ::
 ::
 ++  fills
@@ -13,11 +13,11 @@
   =/  size  1
   |-
   ?:  =(0 n)  (flop out)
-  =/  [here=_og next=_og]  (split-rng:legacy rng)
+  =/  [here=_og next=_og]  (split-rng:quiz rng)
   =/  made  (fill:auto size here sax)
   $(n (dec n), rng next, size +(size), out [made out])
 ::
-++  legacy-fills
+++  library-fills
   |=  [n=@ud seed=@uv sax=vase]
   ^-  (list vase)
   =/  rng  ~(. og seed)
@@ -25,12 +25,12 @@
   =/  size  1
   |-
   ?:  =(0 n)  (flop out)
-  =/  [here=_og next=_og]  (split-rng:legacy rng)
-  =/  made  (~(fill quiz:legacy [size here]) sax)
+  =/  [here=_og next=_og]  (split-rng:quiz rng)
+  =/  made  (~(fill quiz:quiz [size here]) sax)
   $(n (dec n), rng next, size +(size), out [made out])
 ::
 ++  plain
-  ::  Types legacy fill and sink handle; quiz-auto must match them.
+  ::  Types lib/quiz's fill and sink handle; quiz-auto must match them.
   ^-  (list vase)
   :~  !>(*@ud)
       !>(*?)
@@ -42,23 +42,23 @@
   ==
 ::
 ++  test-fill-parity
-  ::  Same values and types as legacy fill, for 200 draws of each type.
+  ::  Same values and types as lib/quiz's fill, for 200 draws of each.
   ^-  tang
   %-  expect
   !>  %+  levy  plain
       |=  sax=vase
-      =((fills 200 0v7 sax) (legacy-fills 200 0v7 sax))
+      =((fills 200 0v7 sax) (library-fills 200 0v7 sax))
 ::
 ++  test-sink-parity
-  ::  Same candidates as legacy sink on the same samples. Not `*`: legacy
-  ::  fill types a noun sample so that legacy sink offers nothing, and
-  ::  quiz-auto shrinks it.
+  ::  Same candidates as lib/quiz's sink on the same samples. Not `*`:
+  ::  lib/quiz's fill types a noun sample so that its sink offers nothing,
+  ::  and quiz-auto shrinks it.
   ^-  tang
   %-  expect
   !>  %+  levy  (snip plain)
       |=  sax=vase
       %+  levy  (fills 50 0v3 sax)
-      |=(v=vase =((sink:auto v) (sink:legacy v)))
+      |=(v=vase =((sink:auto v) (sink:quiz v)))
 ::
 ++  test-auras
   ::  Meaningful auras get valid values.

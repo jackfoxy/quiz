@@ -1,6 +1,6 @@
-/+  legacy=quiz, auto=quiz-auto
+/+  quiz, auto=quiz-auto
 |%
-  ::  Resumable app engine. The legacy runner remains frozen.
+  ::  Resumable app engine.
   ::  One step generates at most one sample and evaluates at most one fate.
   ::  Virtualization catches crashes/scries. Each user call also runs under
   ::  a %jinx CPU limit, `time` in the state: a timeout bails the whole Gall
@@ -392,7 +392,7 @@
   =.  s  (finish s)
   ?:  !=(~ result.s)  s
   ?:  !=(~ shrink.s)  (shrink-step s)
-  =/  [fill-rng=_og next-rng=_og]  (split-rng:legacy rng.s)
+  =/  [fill-rng=_og next-rng=_og]  (split-rng:quiz rng.s)
   =/  time  time.s
   =/  made  (generate time size.s fill-rng sample.s norn.compiled.s)
   ?.  ?=(%0 -.made)
@@ -446,7 +446,7 @@
   ^-  state
   =/  p  (need preview.s)
   ?:  (gte (lent rows.p) count.p)  (preview-end s p)
-  =/  [fill-rng=_og next-rng=_og]  (split-rng:legacy rng.s)
+  =/  [fill-rng=_og next-rng=_og]  (split-rng:quiz rng.s)
   =/  made  (generate time.s size.s fill-rng sample.s norn.compiled.s)
   ?.  ?=(%0 -.made)
     =/  why  (classify made)
