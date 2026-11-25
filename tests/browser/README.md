@@ -57,6 +57,12 @@ and restored tabs. With `%docs` absent, run the same file without that variable
 to check fallback help. The workbench suite's fallback scenario also expects
 `%docs` absent. These two states are tested separately, without mocking `%docs`.
 
+`guide.spec.js` checks the workbench paths the users guide teaches and no
+other spec reaches: F1 and F2, Alt-C (copies to the clipboard), Alt-O, Ctrl-S
+and Ctrl-Shift-S, F5, Add Ref, Use latest revision with Clay source browsing,
+the Vim setting, and the two gaps (no run-history delete over HTTP, no budget
+fields in the run panel).
+
 When switching an existing disposable ship from installed to absent, `%docs`
 can leave its landing page in Eyre's response cache after uninstall. Clear
 that page and its binding before running the fallback checks:

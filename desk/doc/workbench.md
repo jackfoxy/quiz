@@ -7,7 +7,7 @@ undo and redo; Settings also offers Vim keys.
 **Settings** also holds **Quiz CPU time limits**, in seconds: **Property call**
 (default 10), **Draft build** (30) and **Suite arm** (60). They are ship-wide,
 stored by `%quiz`, and apply to every run from the next slice, build or arm.
-Choose **Save limits** to apply them. A call that exceeds its limit ends the
+They save when the Settings dialog closes. A call that exceeds its limit ends the
 run as **interrupted**. A property document's `++within` can lower its own
 property call limit below the Settings value, never raise it.
 
