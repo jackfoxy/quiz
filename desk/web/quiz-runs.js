@@ -139,12 +139,13 @@
     const cancelButton = button('run-cancel', 'Cancel selected run', cancel);
     const rerunButton = button('run-rerun', 'Rerun request', rerun);
     const replayButton = button('run-replay', 'Replay exact property', replay);
+    const regressionButton = button('run-save-regression', 'Save as regression', saveRegression);
     const deleteButton = button('run-delete', 'Delete record', () => confirmThen(
       `Delete run ${selection()}? Its record cannot be recovered.`, remove));
     const clearButton = button('runs-clear', 'Clear completed history', () => confirmThen(
       'Delete every completed run? Queued and active runs are kept.', clear));
     actions.append(refreshButton, cancelButton, rerunButton, replayButton,
-      deleteButton, clearButton);
+      regressionButton, deleteButton, clearButton);
     // Deletion is confirmed in the page; browser dialogs are not used.
     const confirmBar = node('div', 'run-confirm'); confirmBar.hidden = true;
     confirmBar.setAttribute('role', 'alertdialog');
@@ -280,6 +281,12 @@
       replayButton.disabled = busy || !online || !done || rec?.kind === 'suite'
         || ['preview', 'examples'].includes(rec?.request?.mode?.kind)
         || !rec?.snapshot || !rec?.config || !rec?.seed;
+      regressionButton.disabled = busy || !online || !regressionReady(rec);
+    }
+    // A property run's counterexample, unless the document expects the failure.
+    function regressionReady(rec) {
+      return rec?.status === 'done' && rec.kind !== 'suite'
+        && Boolean(rec.outcome?.evidence) && rec.outcome.kind !== 'failed-as-expected';
     }
     function requestFor(tab) {
       const value = {...settings(tab)};
@@ -483,6 +490,21 @@
       const rec = records.get(selection()); if (!rec || rec.kind === 'suite') return;
       const owner = linked(rec.id);
       await action(() => mutate({op: 'replay', id: rec.id}, owner?.id));
+    }
+    // The suite opens as an unsaved tab in Saved suite mode. Saving it
+    // commits a new revision, which the tab then selects (see saved).
+    async function saveRegression() {
+      const rec = records.get(selection()); if (!regressionReady(rec)) return;
+      await action(async () => {
+        const result = await post('/apps/quiz/api', {op: 'regression', id: rec.id});
+        const desk = rec.snapshot?.context?.desk || rec.request?.desk || '';
+        docs.create('property', {text: result.text, clean: '', label: result.name, focus: true,
+          fields: {...cleanFields({runSettings: {mode: 'suite', desk}}), regression: rec.id}});
+        tell(`Regression for run ${rec.id} opened as ${result.name}. Save it, then choose Run saved suite: it fails until the bug is fixed.`);
+      });
+    }
+    function saved(tab) {
+      if (tab?.regression && tab.path?.[0] === 'work' && active()?.id === tab.id) void latest();
     }
     async function remove() {
       const id = selection(); const rec = records.get(id);
@@ -1004,7 +1026,7 @@
       renderDetail();
     }
     return {activate, changed, refresh, run, cancel, rerun, replay, remove, clear,
-      latest, inspect, discover, preview, findExamples, pathFor, requestFor, records,
+      saveRegression, saved, latest, inspect, discover, preview, findExamples, pathFor, requestFor, records,
       start: async () => { activate(active()); await refresh(); },
       stop: () => { stopped = true; clearTimeout(timer); }};
   };

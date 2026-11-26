@@ -21,7 +21,7 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 | `desk/lib/quiz-auto.hoon` | Type-directed default fill and sink | quiz |
 | `desk/lib/quiz-fun.hoon` | Generated functions as shrinkable tables | quiz |
 | `desk/lib/quiz-harness.hoon`, `desk/fixtures/quiz-harness/` | Pure agent harness and simulated clock; counter and expiry agent doors and their drivers | quiz |
-| `desk/lib/quiz-suite.hoon`, `desk/lib/quiz-replay.hoon` | `test-*` suite runner; replay capture | quiz |
+| `desk/lib/quiz-suite.hoon`, `desk/lib/quiz-replay.hoon`, `desk/lib/quiz-regression.hoon` | `test-*` suite runner; replay capture; regression suite from a counterexample | quiz |
 | `desk/lib/quiz-job.hoon` | Pure FIFO queue, slices, cancellation, retention, reload | quiz |
 | `desk/lib/quiz-agent.hoon`, `desk/app/quiz.hoon` | `%quiz` Gall adapter and export | quiz |
 | `desk/lib/quiz-json.hoon`, `desk/lib/quiz-web-agent.hoon`, `desk/app/quiz-web.hoon` | HTTP codec and `%quiz-web` | quiz |

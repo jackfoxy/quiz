@@ -47,6 +47,12 @@ function mockApi() {
       rec.outcome = {kind: 'cancelled', reason: 'request'};
       return {accepted: true};
     }
+    if (req.op === 'regression') {
+      const rec = records.get(req.id);
+      if (!rec?.outcome?.evidence) return {error: 'no-counterexample', _status: 409};
+      return {id: req.id, name: `regression-${req.id}`,
+        text: `|%\n++  fate  |=(n=@ud =(n 0))\n--\n|%\n++  test-counterexample  ~\n--\n`};
+    }
     if (req.op === 'run' || req.op === 'replay') {
       if (reject) return {error: 'action-rejected', _status: 422};
       if (uncertain) throw new Error('connection closed after submit');
@@ -188,6 +194,35 @@ async function scenario(env, mock, name) {
     await runs.refresh();
     assert.equal(el('run-original').textContent,'541');
     assert.equal(el('run-shrunk').textContent,'501');
+    // Save as regression opens the suite as an unsaved tab in Saved suite
+    // mode; once saved under work it selects the new revision.
+    assert.equal(el('run-save-regression').disabled, false);
+    await runs.saveRegression();
+    const regression = docs.active('property');
+    assert.notEqual(regression.id, tab.id);
+    assert.equal(regression.path, null);
+    assert.match(regression.text, /\+\+  test-counterexample/);
+    assert.equal(regression.runSettings.mode, 'suite');
+    assert.equal(regression.runSettings.desk, 'quiz');
+    assert.equal(docs.dirty('property', regression.id), true);
+    assert.match(el('run-message').textContent, new RegExp(`opened as regression-${replayId}`));
+    assert.equal(el('run-start').textContent, 'Run saved suite');
+    assert.equal(el('run-start').disabled, true, 'an unsaved suite cannot run');
+    field('revision', '3');
+    regression.path = ['work', `regression-${replayId}`, 'hoon'];
+    runs.saved(regression);
+    for (let i = 0; i < 20; i++) await env.tick();
+    assert.equal(el('run-revision').value, '20');
+    assert.equal(el('run-start').disabled, false);
+    docs.close('property', regression.id);
+    docs.select('property', tab.id);
+    await runs.run();
+    const expected = mock.records.get(tab.runIds[0]);
+    expected.status = 'done';
+    expected.outcome = {kind:'failed-as-expected', evidence:{why:{kind:'false'},
+      original:{text:'5'}, shrunk:{text:'5'}}};
+    await runs.refresh();
+    assert.equal(el('run-save-regression').disabled, true, 'an expected failure is no regression');
     // Example 11's whole shrink, as recorded: 21 alts calls in 89 rows.
     // A finished record is fetched once, so each trace gets its own run.
     const traced = async (trace) => {

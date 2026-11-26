@@ -41,7 +41,9 @@ cancellation/replay/rerun, delete and clear with in-page confirmation,
 unavailable suite
 metrics, empty history, rejection, reload cancellation, interrupted runs,
 generator previews (the request's mode, the rows and candidates, the count
-bound, no replay, alternates without verdicts), an error cause beside retained
+bound, no replay, alternates without verdicts), **Save as regression** (an
+unsaved Saved suite tab, the revision selected once saved, disabled for an
+expected failure), an error cause beside retained
 evidence with the record view, More limits overrides (a bound
 completed from the document conf with one build), date and label revisions,
 and network failures.
@@ -49,7 +51,9 @@ The Playwright run suite exercises document configuration, real draft failure
 and shrinking, replay, rerun, session restoration, saved Clay suites,
 cancellation, compilation diagnostics, disconnected progress, and a shrinker
 error shown with its cause beside the evidence, whose record downloads as
-the `status` reply and whose shrunk noun copies. Server run
+the `status` reply and whose shrunk noun copies. It saves example 11's
+counterexample as a regression, runs the saved suite (one failing arm), then
+fixes the copy and runs it again (passed). Server run
 history is retained on the disposable ship for inspection.
 
 Run/replay HTTP replies now carry their correlated decimal `id`; configuration

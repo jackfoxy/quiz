@@ -1042,6 +1042,25 @@ choose new entropy unless the document fixes a seed. A date/label context can
 resolve differently on a later rerun. The browser ordinarily submits explicit
 numeric revisions. Suites can rerun, but cannot use property replay.
 
+A **regression suite** keeps the requirement instead of the experiment. It
+is built from a finished property record with a counterexample: `failed`, or
+`error`, `limited`, `interrupted` or `examples` carrying evidence. A
+`failed-as-expected` record, a record without evidence and a suite are
+refused. The text is the document's prelude and core, unchanged, after
+`=>`, then a core with `++counterexample`, the shrunk sample as
+`(cue 0v…)` of its recorded jam, and `++test-counterexample`. That arm calls
+the fate on the sample with `slum` under `mule`. It passes only when the fate
+returns `%.y` or a passing report. A crash, `%drop` or false verdict fails
+it, and a false report adds its notes and compared values. The rendered
+sample is a comment, because rendered text does not parse back to the same
+noun in general. Nothing is generated, so engine, generator and seed
+changes cannot lose the case. The copied core does not follow later edits to
+the document; imported code is not copied, so a fix in an imported library
+makes it pass. The text is checked to parse at the record's context; the
+real build is the saved suite's. See
+[`regression`](http-api.md#regression-suite) and
+[chapter 8](users-guide.md#save-a-counterexample-as-a-regression).
+
 ### Gall, HTTP and persistence
 
 `%quiz` accepts local-ship `%quiz-action` pokes: `%run`, `%cancel`, `%delete`,
@@ -1097,7 +1116,9 @@ marks its earlier result stale; its snapshot remains unchanged. History retains
 source association and the selected result across browser reload.
 
 **Run**, **Rerun request**, **Replay exact property** and **Cancel selected run**
-follow server state. Network failure preserves last confirmed counters and
+follow server state. **Save as regression** opens a run's regression suite
+as an unsaved tab in **Saved suite** mode; once it is saved under
+**My documents**, the tab selects the new revision. Network failure preserves last confirmed counters and
 disables mutations until reconnection. A lost admission reply may still have
 created a run: inspect history before retrying. The UI does not invent progress.
 
@@ -1203,6 +1224,7 @@ already checked parts/configuration and own scheduling and persistence.
 | [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
 | [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
 | [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `refuse` checks a record without parsing; `resolve` checks context before rebuilding |
+| [quiz-regression](../lib/quiz-regression.hoon) | `proof` picks a record's counterexample or names why it has none; `make` builds and parses the regression suite text |
 | [quiz-job](../lib/quiz-job.hoon) | Pure admission, queue, slices, retention, save/load transformations |
 | [quiz-agent](../lib/quiz-agent.hoon) | Gall bowl, Clay requests, Behn scheduling, facts/scries and local admission callbacks |
 | [quiz-json](../lib/quiz-json.hoon) | JSON codecs; decimal string IDs; no vases on HTTP |

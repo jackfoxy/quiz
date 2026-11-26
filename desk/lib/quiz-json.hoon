@@ -13,6 +13,7 @@
       [%delete id=@ud]
       [%clear ~]
       [%replay id=@ud]
+      [%regression id=@ud]
       [%runs ~]
       [%contexts ~]
       [%suite-arms desk=@tas revision=case path=path]
@@ -146,6 +147,7 @@
     %delete    [%delete (natural (field fields 'id'))]
     %clear     [%clear ~]
     %replay    [%replay (natural (field fields 'id'))]
+    %regression  [%regression (natural (field fields 'id'))]
     %timeouts  [%timeouts ~]
     %set-timeouts
       =/  seconds

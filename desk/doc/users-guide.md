@@ -495,12 +495,79 @@ request or document seed repeats; absent both, another seed can be chosen.
 To run the newest buffer, return with **Source tab** and use the tab's Run
 button. Previews and suites support rerun, not exact property replay.
 
-### Make a regression suite
+### Replay or regression
 
-A replay record is retained history. A saved regression states what the
-program should do after you decide the correct behavior. Suppose the crash
-at zero from chapter 4 led you to require a saturating predecessor: zero
-stays zero and positive inputs lose one.
+Replay reconstructs the experiment. Source, imports, revision, seed,
+configuration and engine version all come from the record, so it shows the
+same run again. It is refused once the engine version changes. A seed alone
+reproduces a sample only while generation is unchanged: a new norn, size
+schedule or engine draws different samples from the same seed. Rust's
+QuickCheck says the same of its seeds
+([compatibility](https://docs.rs/quickcheck/latest/quickcheck/#compatibility)).
+
+A regression keeps the requirement. The shrunk counterexample, stored as a
+noun, must pass the fate. Nothing is generated, so engine and generator
+changes cannot lose it.
+
+### Save a counterexample as a regression
+
+Run `failing/11-queue-model-bug` (chapter 12 explains the model). It fails
+and shrinks to `cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]`:
+push 0, push 1, pop. With the run selected, choose **Save as regression**.
+A new unsaved tab named `regression-<id>` opens, set to **Saved suite**. It
+holds:
+
+- the document's imports and core, copied unchanged;
+- a comment naming the run, its source and revision, and the rendered
+  counterexample;
+- `++counterexample`, the shrunk sample rebuilt with `cue` from the
+  record's jam. The rendered text cannot do this in general: faces, tags
+  shown as numbers, and sets and maps do not parse back to the same noun;
+- `++test-counterexample`, which calls the fate on that sample. It fails
+  unless the fate passes; a crash or `%drop` fails too, and a false report
+  adds its notes and expected/actual values.
+
+Save it as `guide/queue-regression`. Saving commits a new revision of the
+desk, and the tab selects it. **Run saved suite**. The one arm fails with
+"the fate failed the counterexample".
+
+Now fix the bug in the copy. In `++queue-step`, replace
+
+```hoon
+    ::  Bug: should take the head of (flop back.q).
+    [`i.back.q [t.back.q ~]]
+```
+
+with
+
+```hoon
+    =/  back  (flop back.q)
+    ?>  ?=(^ back)
+    [`i.back [t.back ~]]
+```
+
+Then **Save** and **Run saved suite** again. It passes.
+
+The copy freezes the property, so later edits to the original document
+cannot weaken it. Code the property imports is not copied. In a real
+project the fix lands in that library, and the saved regression passes
+unchanged. Here the bug lives in the document itself, so the copy needs the
+fix too.
+
+**Save as regression** is offered for a property run with a counterexample:
+a failure, or an error, limit, interruption or labelled-example search that
+kept one. It is not offered for **failed-as-expected**, runs without a
+counterexample or suites. The text is parsed before it opens, and the real
+build happens when the saved suite runs. The workbench saves into `%quiz`.
+For a property pinned to another desk, copy the text into that desk's tests.
+
+### Write a regression by hand
+
+Sometimes the fix changes the requirement itself. Suppose the crash at zero
+from chapter 4 led you to require a saturating predecessor: zero stays zero
+and positive inputs lose one. A saved copy of `failing/03-crash` would keep
+demanding `+((dec 0))` = 0, which no fix can meet. State the new
+requirement in a suite of your own.
 
 Create a new document containing this complete suite:
 
@@ -1246,6 +1313,7 @@ implementation interfaces, not additional workbench operations.
 | Sample/verdict/candidate previews | Four Preview presets | Available |
 | Diagnosis, counterexamples, coverage and shrink trace | Selected history result | Available with bounded retained evidence |
 | Exact property replay; request rerun | Result buttons | Available; suites/previews cannot exact-replay by design |
+| Counterexample as a regression suite | Save as regression | Available for property runs with a counterexample; saved and run as a suite |
 | Saved-suite discovery and named/all arms | Run controls | Available for openable saved suites |
 | CPU limits and document call limit | Settings and `++within` | Available |
 | Queue observation, cancellation and history refresh | Result controls | Available; cancellation waits for a scheduling boundary |

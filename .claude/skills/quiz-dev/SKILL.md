@@ -29,6 +29,7 @@ a bowl.
 | Document format, prelude, arm type checks, context pinning | `lib/quiz-build.hoon` | `tests/lib/quiz-build.hoon` (fixtures in `fixtures/quiz-build/`) |
 | `test-*` discovery and arm execution | `lib/quiz-suite.hoon` | `tests/lib/quiz-suite.hoon` |
 | Replay capture and validation | `lib/quiz-replay.hoon` | `tests/lib/quiz-replay.hoon` |
+| Regression suite text and eligibility | `lib/quiz-regression.hoon` | `tests/lib/quiz-regression.hoon`, browser `runs.spec.js` |
 | Queue, admission, slices, cancellation, retention, reload | `lib/quiz-job.hoon` | `tests/app/quiz.hoon` |
 | Clay requests, Behn ticks, facts, scries | `lib/quiz-agent.hoon` | `tests/app/quiz.hoon` |
 | Public types or marks | `sur/quiz-app.hoon`, `mar/quiz/` | `tests/app/quiz.hoon` (state change: see AGENTS.md) |

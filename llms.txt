@@ -18,7 +18,7 @@
 ## Contracts
 
 - [Property documents](desk/doc/source-format.md): `++fate`, `++norn`, `++alts`, `++conf`, restricted Ford prelude
-- [Suites and replay](desk/doc/suites-and-replay.md): `test-*` discovery, aggregation, replay inputs
+- [Suites and replay](desk/doc/suites-and-replay.md): `test-*` discovery, aggregation, replay inputs, regression suites
 - [Agent API](desk/doc/agent-api.md): `%quiz-action` pokes, `%quiz-update` facts, scries
 - [HTTP API](desk/doc/http-api.md): routes, authentication, JSON shapes
 - [Workbench](desk/doc/workbench.md): explorer, documents, run controls

@@ -120,7 +120,7 @@
       property: {
         fields: {defaults: window.quizRunFields, validate: window.quizRunFields},
         afterActivate: (tab) => showDocument(tab),
-        saved: (tab) => showDocument(tab)
+        saved: (tab) => { showDocument(tab); runner?.saved(tab); }
       }
     }
   });

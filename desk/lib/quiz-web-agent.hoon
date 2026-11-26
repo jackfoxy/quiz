@@ -1,6 +1,7 @@
 /-  app=quiz-app
 /+  default-agent, web=quiz-web, codec=quiz-json, build=quiz-build
 /+  suite=quiz-suite, engine=quiz-engine, job=quiz-job
+/+  regression=quiz-regression
 /+  uhttp=urui-http, ufiles=urui-files, qfiles=quiz-files
 /*  docs-toc  %toc  /doc/toc
 /*  favicon  %png  /favicon/png
@@ -251,6 +252,27 @@
       =/  path=path
         /(scot %p our.bowl)/quiz/(scot %da now.bowl)/run/(scot %ud id.cmd)/noun
       [(reply id 200 (record-out:codec .^(record:app %gx path))) this]
+    %regression
+      ::  A suite text for the client to open as an unsaved tab; nothing is
+      ::  written. The parse runs under the draft build's CPU limit.
+      ?.  (lien ids (cury test id.cmd))
+        [(refuse id 404 'run-not-found') this]
+      =/  path=path
+        /(scot %p our.bowl)/quiz/(scot %da now.bowl)/run/(scot %ud id.cmd)/noun
+      =/  rec  .^(record:app %gx path)
+      =/  limit  build.limits.state
+      =/  made  ~>(%jinx.limit (make:regression rec))
+      ?:  ?=(%refused -.made)  [(refuse id 409 code.made) this]
+      ?:  ?=(%invalid -.made)
+        [(reply id 422 (diagnostic-out:codec +.made)) this]
+      :_  this
+      %+  reply  id
+      :-  200
+      %-  pairs:enjs:format
+      :~  ['id' (decimal:codec id.cmd)]
+          ['name' s+name.made]
+          ['text' s+text.made]
+      ==
     %cancel  (submit id [%cancel id.cmd])
     %delete  (submit id [%delete id.cmd])
     %clear   (submit id [%clear ~])

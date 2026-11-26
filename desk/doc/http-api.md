@@ -158,6 +158,28 @@ original submitted inputs. No HTTP idempotency or automatic retry is provided.
 A timeout or lost connection may occur after admission; inspect history before
 retrying.
 
+### Regression suite
+
+```json
+{"op":"regression","id":"42"}
+```
+
+Builds the [regression suite](reference.md#clay-context-seed-and-replay) for
+a finished property run and returns it. Nothing is written, admitted or
+built:
+
+```json
+{"id":"42","name":"regression-42","text":"/+  engine=quiz-engine\n::  Regression from run 42 of\n…"}
+```
+
+The text is checked to parse, under the draft build's CPU limit, at the
+record's pinned context. A run that is not in history is 404
+`run-not-found`. A 409 names a record that has nothing to keep:
+`run-unfinished`, `failed-as-expected`, or `no-counterexample` for passes,
+previews, suites, invalid or cancelled runs and anything else without
+evidence. A 422 carries a parse diagnostic, for example `source-size` when
+the suite would exceed `source-bytes`.
+
 ### Inspect document configuration
 
 Send the same draft or file request as `run`, with `"op":"document-conf"`.

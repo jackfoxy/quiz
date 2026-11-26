@@ -359,9 +359,16 @@ Symptom table: [troubleshooting](../../../desk/doc/reference.md#troubleshooting)
    seed, config and engine version. A seed alone is not enough if any of
    those changed. **Rerun request** may choose new entropy.
 2. Decide what the correct behaviour is.
-3. Write the counterexample as an ordinary `test-*` arm with `expect-eq`.
-   Keep the property beside it as a `quiz` library `check` arm.
-   Worked example: [user's guide step 6](../../../desk/doc/users-guide.md#6-replay-and-turn-evidence-into-a-regression).
+3. If the fate already states it, choose **Save as regression** (HTTP op
+   `regression`): a suite that copies the document and requires the fate to
+   pass the shrunk counterexample, `cue`d from its jam. It fails until the
+   bug is fixed and survives engine and generator changes. Save it under
+   My documents and run it as a saved suite. Not offered for
+   `failed-as-expected`, runs without a counterexample, or suites.
+4. If the fix changes the requirement, write the counterexample as an
+   ordinary `test-*` arm with `expect-eq`. Keep the property beside it as a
+   `quiz` library `check` arm.
+   Worked examples: [user's guide chapter 8](../../../desk/doc/users-guide.md#8-replay-a-failure-and-keep-a-regression).
 
 Do not add intentionally failing examples under `desk/tests/`, because that
 suite must pass. Teaching failures go in `desk/examples/failing/`.

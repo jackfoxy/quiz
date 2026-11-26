@@ -99,6 +99,58 @@ test('saved Clay suite discovery and exact arm selection', async ({page}) => {
   await page.screenshot({path:'test-results/quiz-suite.png',fullPage:true});
 });
 
+test('save as regression, save it, and run the saved suite until the fix', async ({page}) => {
+  const stem = `regression-browser-${Date.now()}`;
+  const bug = '    ::  Bug: should take the head of (flop back.q).\n    [`i.back.q [t.back.q ~]]';
+  const fix = '    =/  back  (flop back.q)\n    ?>  ?=(^ back)\n    [`i.back [t.back ~]]';
+  const revision = () => page.locator('#run-revision').inputValue();
+  try {
+    await page.evaluate(() => window.quiz.documents.open('property',
+      ['failing', '11-queue-model-bug', 'hoon']));
+    await page.locator('#run-latest').click();
+    await expect(page.locator('#run-message')).toContainText('Selected');
+    await page.locator('#run-start').click();
+    const failed = await done(page);
+    expect(failed.outcome.kind).toBe('failed');
+    await page.locator('#run-save-regression').click();
+    await expect(page.locator('#run-message')).toContainText(`opened as regression-${failed.id}`);
+    await expect(page.locator('#document-location')).toHaveText('Unsaved document');
+    await expect(page.locator('#run-mode')).toHaveValue('suite');
+    await expect(page.locator('#run-start')).toHaveText('Run saved suite');
+    await expect(page.locator('#run-start')).toBeDisabled();
+    const text = await page.evaluate(() => window.quiz.documents.active('property').text);
+    expect(text).toContain(`::  Regression from run ${failed.id} of`);
+    expect(text).toContain(failed.outcome.evidence.shrunk.text);
+    expect(text).toContain(`(cue ${failed.outcome.evidence.shrunk['noun-jam']})`);
+    expect(text).toContain(bug);
+    const before = await revision();
+    await page.locator('#property-save').click();
+    await page.locator('#urui-file-dialog-path').fill(stem);
+    await page.locator('#urui-file-dialog-confirm').click();
+    await expect(page.locator('#document-location')).toHaveText(`work/${stem}/hoon`);
+    await expect.poll(revision).not.toBe(before);
+    await page.locator('#run-start').click();
+    await expect.poll(async () => (await selected(page))?.id).not.toBe(failed.id);
+    const broken = await done(page);
+    expect(broken.outcome.kind).toBe('suite');
+    expect(broken.outcome.status).toBe('failed');
+    expect(broken.outcome.arms.map(arm => arm.name)).toEqual(['test-counterexample']);
+    expect(broken.outcome.arms[0].trace).toEqual(['the fate failed the counterexample']);
+    // The fix, saved, selects the next revision; the suite then passes.
+    const saved = await revision();
+    await setSource(page, text.replace(bug, fix));
+    await page.locator('#property-save').click();
+    await expect.poll(revision).not.toBe(saved);
+    await page.locator('#run-start').click();
+    await expect.poll(async () => (await selected(page))?.id).not.toBe(broken.id);
+    const passed = await done(page);
+    expect(passed.outcome.status).toBe('passed');
+    await page.screenshot({path: 'test-results/quiz-regression.png', fullPage: true});
+  } finally {
+    await page.request.post('/apps/quiz/files', {data: {op: 'delete', path: ['work', stem, 'hoon']}});
+  }
+});
+
 test('deleted saved source reports a diagnostic while its pinned revision still runs', async ({page}) => {
   const path = ['work', `run-deleted-${Date.now()}`, 'hoon'];
   const source = '|%\n++  fate\n  |=  n=@ud\n  =(n n)\n--';

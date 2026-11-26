@@ -126,6 +126,12 @@ entry to inspect it. **Cancel selected run** requests cancellation at the next
 server boundary. **Rerun request** submits the original request again (including
 its pinned revision and any explicit seed); **Replay exact property** reuses
 the captured source, effective configuration and seed. Suites cannot replay.
+**Save as regression** turns a property run's shrunk counterexample into a
+suite that fails until the bug is fixed. It opens unsaved as
+`regression-<id>`, in **Saved suite** mode; save it under **My documents**,
+and the tab selects the new revision for **Run saved suite**. It is disabled
+for suites, expected failures and runs without a counterexample; see
+[chapter 8](users-guide.md#save-a-counterexample-as-a-regression).
 An error after a counterexample, such as a crashing shrinker, shows its
 **Error cause** above the retained counterexamples and their failure. The
 **Record** disclosure shows the submitted request, created, updated and
