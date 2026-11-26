@@ -175,6 +175,49 @@ Duplicate samples also grow size and advance the engine RNG. Attempt and
 post-generation byte limits constrain the app run. They cannot prevent a
 single large allocation or looping generator.
 
+**Size is a budget.** Size is a number each generator interprets, and what
+it buys differs. Hoon atoms are unbounded: in Rust's
+[`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html)
+a `u8` stays below 256 at any size, but here a magnitude of *s* is an atom
+of about log₂ *s* bits, so magnitude is cheap to make and to store, while
+products of large atoms grow and arithmetic on them is bignum work.
+Lengths, by contrast, multiply: a list of lists is up to size² atoms, and
+a recursive generator that hands each child the whole budget makes
+exponentially many nodes. Every generated sample is charged at its jammed
+bytes against `sample-bytes` (64 KiB by default).
+
+| Generator | What size controls | Cost as size grows |
+| --- | --- | --- |
+| `range`, `elements`, `ship`, `real-bits`, `real-single-bits`, `sublist`, `shuffle` | Nothing | Constant |
+| `upto`, `span` | Magnitude: uniform in [0, size] (seconds for `span`) | log₂ size bits |
+| `signed` | Magnitude in [0, size], either sign | log₂ size bits |
+| `date` | Within size seconds either side of ~2000.1.1 | Constant width |
+| `real`, `real-single` | Whole part and denominator at most size, capped at 2⁵³ and 2²⁴ | Constant width |
+| `chars`, `cord`, `knot`, `term` | Length up to size, capped at `text-max` (32) | At most 32 bytes |
+| `unit-of` | `~` with chance 1/(size+2); the value at the same size | The value's cost |
+| `list-of low high`, `nonempty`, `set-of`, `map-of`, `sorted` | Length up to `min(high, max(low, size))`; each element at the same size | Length × element cost |
+| `vector` | Nothing (fixed length); each element at the same size | Length × element cost |
+| `pair`, `trip`, `cook`, `bind`, `one-of`, `frequency` | Passed unchanged to the parts | Sum of the parts |
+| `such-that` | Passed through, growing on each retry | Retries × the part |
+| `sized`, `resize`, `scale`, `capped` | Read, fix, transform or cap the size | The tools for spending a budget |
+| `quiz-auto`, plain atom | Uniform below size | log₂ size bits |
+| `quiz-auto`, meaningful aura | As the `quiz-gen` generator for it | As above |
+| `quiz-auto`, list, set or map | Length up to size, at most `container-max` (20); elements at the same size | Up to 20 × element cost |
+| `quiz-auto` or library, `*` noun | Depth at most `xeb(size)-1`, leaves below size | Up to about size leaves |
+| Library `list` norn | Length at most `xeb(size)-1` | Logarithmic length |
+
+A recursive generator must divide its budget. Executable models:
+[40-tree-depth-budget](../examples/props/40-tree-depth-budget.hoon) gives
+each child `size - 1`, so size bounds depth and a tree can hold
+2^size - 1 nodes; [41-tree-divided-budget](../examples/props/41-tree-divided-budget.hoon)
+keeps one unit per node and splits the rest between the children, so a
+tree has at most size nodes. Passing size unchanged to both children would
+never terminate. Measured over 100 samples with each document's seed
+([examples](examples.md#size-as-a-budget)), 40's mean node count grows about
+five times for every 4 added to `size-max`, while 41's grows with
+`size-max` itself. Cap size with `size-max` or `capped`, and pass children a
+share with `scale` or a random split.
+
 **Duplicates.** The library's runner, and the app under its default policy
 `%mug`, identify samples by `mug` of the sample **noun**, ignoring the vase's
 type. A repeated mug is skipped without calling the fate. Distinct nouns can

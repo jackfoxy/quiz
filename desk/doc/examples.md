@@ -54,6 +54,8 @@ settings, not universal outcomes of similar-looking properties.
 | [37-insert-generated](../examples/props/37-insert-generated.hoon) | Passed, 100 accepted; 61 long | 36 repaired: `sorted:gen` makes sorted lists, nothing is dropped, and `++cover` requires half to be long. Preview 200: no drops, 119 long |
 | [38-shrink-order](../examples/failing/38-shrink-order.hoon) | Failed, false; 3 lines → `[[4 1] 0]` | Deliberate shrink order: `shrink-list` deletes lines first, then `shrink-pair` shrinks quantity and price one at a time |
 | [39-shrink-together](../examples/failing/39-shrink-together.hoon) | Failed, false; 3 lines → `[[4 13] 0]` | 38's bug with a pitfall: quantity and price only shrink together, so the price is never lowered alone |
+| [40-tree-depth-budget](../examples/props/40-tree-depth-budget.hoon) | Passed, 100 accepted; 30 duplicates | Size as depth: each child gets `size - 1`, so trees reach 2^size - 1 nodes; `depth` and `nodes` tables |
+| [41-tree-divided-budget](../examples/props/41-tree-divided-budget.hoon) | Passed, 100 accepted; 30 duplicates | Size as a budget: each node keeps one unit and splits the rest, so at most size nodes |
 | [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
 | [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
@@ -134,7 +136,7 @@ note and comparison follow the shrunk sample, not the original 3.
 
 ## Generator library examples
 
-Examples 16 to 20, 29 to 31, 38 and 39 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
+Examples 16 to 20, 29 to 31 and 38 to 41 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
 
 `16-sorted-insert` generates a sorted list and a value, inserts the value,
 and checks the result with `same` under `all`. It labels where the value
@@ -292,6 +294,37 @@ queue, report, coverage, generator-library, size and function rows in
 | 37-insert-generated | 101 | 100 | 0 | 1 | 0 | 0 | — |
 | 38-shrink-order | 1 | 0 | 0 | 0 | 35 | 6 | `[[4 13] [0 33] [0 18] 0]` → `[[4 1] 0]` |
 | 39-shrink-together | 1 | 0 | 0 | 0 | 9 | 2 | `[[4 13] [0 33] [0 18] 0]` → `[[4 13] 0]` |
+| 40-tree-depth-budget | 130 | 100 | 0 | 30 | 0 | 0 | — |
+| 41-tree-divided-budget | 130 | 100 | 0 | 30 | 0 | 0 | — |
+
+## Size as a budget
+
+`40-tree-depth-budget` and `41-tree-divided-budget` generate the same trees
+with two size policies. Each passes at its document's `size-max 12`, with
+`depth` and `nodes` tables (nodes rounded up to a power of two) pinned in
+`test-tree-budgets`. The duplicates are repeated empty trees.
+
+Generation alone: 100 samples on the engine's size schedule, seed 0v123,
+mean / max:
+
+| `size-max` | 40 depth | 40 nodes | 40 bytes | 41 depth | 41 nodes | 41 bytes |
+| ---: | --- | --- | --- | --- | --- | --- |
+| 4 | 2 / 4 | 6 / 14 | 18 / 41 | 1 / 4 | 2 / 4 | 5 / 12 |
+| 8 | 5 / 8 | 38 / 132 | 106 / 352 | 2 / 6 | 3 / 8 | 9 / 23 |
+| 12 | 8 / 12 | 198 / 738 | 515 / 1,864 | 3 / 9 | 4 / 12 | 13 / 35 |
+| 16 | 10 / 16 | 998 / 3,790 | 2,441 / 9,127 | 3 / 8 | 5 / 16 | 14 / 46 |
+| 20 | 13 / 20 | 5,022 / 19,379 | 11,947 / 45,744 | 3 / 8 | 6 / 17 | 16 / 44 |
+| 100 | — | — | — | 5 / 14 | 14 / 58 | 37 / 155 |
+
+Whole runs on the fake ship (`--loom 32`), from admission to finish,
+including slicing:
+
+| `size-max` | 4 | 8 | 12 | 16 | 20 | 100 | 0 (uncapped) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 40-tree-depth-budget | 0.8 s | 0.9 s | 1.7 s | 5.9 s | 26.1 s | — | — |
+| 41-tree-divided-budget | 0.8 s | — | 0.8 s | — | 0.8 s | 0.9 s | 1.9 s |
+
+At `size-max 22`, 40 ends `limited` `sample-bytes` at the 17th sample.
 
 ## Labelled examples
 

@@ -320,6 +320,36 @@ default schedule starts at 1 and repeatedly adds `1 + floor(2*size/21)`;
 duplicates and drops advance it too. It passes 50,000 by sample 100 when
 uncapped. A size cap makes expensive size-driven generators manageable.
 
+### Size is a budget
+
+Each generator decides what size buys: a magnitude, a length, a depth, or
+nothing. Magnitude is cheap in Hoon, because atoms are unbounded; unlike a
+fixed-width integer in Rust's
+[`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html),
+a value of a million is just 20 bits. Lengths and recursion are where size
+gets expensive, because they multiply. The
+[size table](reference.md#default-generation-size-and-duplicates) lists
+what size means for each generator.
+
+1. Run `props/40-tree-depth-budget`. Its tree norn gives each child the
+   whole budget less one, so size limits the depth but every level can
+   double the nodes. Under **Distribution**, the `depth` table shows 84 of
+   100 trees at the full depth of 12, and the `nodes` table shows trees of
+   up to 1,024 nodes.
+2. Run `props/41-tree-divided-budget`. Each node keeps one unit of size and
+   splits the rest between its children at random. No tree has more than
+   12 nodes, and depths spread from 0 to 9.
+3. In each, set **Largest sample size** to `16`, then `20`, and run again.
+   41 stays under a second. 40 slows sharply: these runs took 1.7 s at 12,
+   5.9 s at 16 and 26 s at 20, with a mean of 5,022 nodes per tree at 20.
+   At 22 the 17th sample's tree passes the 64 KiB `sample-bytes` limit and
+   the run ends **limited**.
+
+Passing size unchanged to both children would never stop: every node would
+almost always branch again. Give each child a share, with `scale` or a
+random split as in 41, and keep `size-max` at a size the property can
+afford. QuickCheck's `sized` generators follow the same rule.
+
 ### Set a budget in the document
 
 The panel overrides requested checks, seed, first/largest size and repeat
@@ -1151,6 +1181,8 @@ their settings. A file under `props` can deliberately produce a failure:
 | `props/37-insert-generated` | Passed, 100 accepted; 61 long | 5 |
 | `failing/38-shrink-order` | Failed, false; 3 lines → `[[4 1] 0]` | 7 |
 | `failing/39-shrink-together` | Failed, false; 3 lines → `[[4 13] 0]` | 7 |
+| `props/40-tree-depth-budget` | Passed, 100 accepted; 84 trees 12 deep | 6 |
+| `props/41-tree-divided-budget` | Passed, 100 accepted; at most 12 nodes | 6 |
 | `examples/01-quiz-tutorial` | Suite passes, 12 arms | 17 |
 | `examples/02-boxcar` | Suite passes, 3 arms | 17 |
 | `examples/03-euler` | Suite passes, 4 arms | 17 |

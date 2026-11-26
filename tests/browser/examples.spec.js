@@ -40,6 +40,8 @@ const examples = [
   ['props', '37-insert-generated', 'passed'],
   ['failing', '38-shrink-order', 'failed', 'false'],
   ['failing', '39-shrink-together', 'failed', 'false'],
+  ['props', '40-tree-depth-budget', 'passed'],
+  ['props', '41-tree-divided-budget', 'passed'],
   ['examples', '01-quiz-tutorial', 'suite'],
   ['examples', '02-boxcar', 'suite'],
   ['examples', '03-euler', 'suite']
@@ -86,7 +88,7 @@ for (const [root, name, outcome, why] of examples) {
       expect(got.counts.accepted).toBe(['10-queue-model', '12-labels-coverage', '16-sorted-insert', '18-parse-print',
         '21-small-domain-allow', '22-size-capped', '23-map-fusion',
         '25-counter-agent', '32-expiry-agent', '35-cover-table', '36-weak-generator',
-        '37-insert-generated'].includes(name) ? 100 : 20);
+        '37-insert-generated', '40-tree-depth-budget', '41-tree-divided-budget'].includes(name) ? 100 : 20);
     if (name === '04-discards') expect(got.counts.dropped).toBeGreaterThan(0);
     if (name === '07-positive') expect(got.counts.dropped).toBe(0);
     if (name === '10-queue-model') {
@@ -146,6 +148,14 @@ for (const [root, name, outcome, why] of examples) {
       // %confident runs past requested until the Wilson bound decides.
       expect(got.counts).toMatchObject({accepted:800, attempted:800});
       expect(got.distribution.labels).toEqual({heads:377});
+    }
+    if (name === '40-tree-depth-budget' || name === '41-tree-divided-budget') {
+      // Size as depth makes trees up to 2^12 - 1 nodes; a divided budget, at most 12.
+      const deep = name === '40-tree-depth-budget';
+      expect(got.counts).toMatchObject({attempted:130, accepted:100, duplicate:30});
+      expect(got.distribution.tables.depth[deep ? '12' : '9']).toBe(deep ? 84 : 1);
+      expect(got.distribution.tables.nodes['up to 1024']).toBe(deep ? 11 : undefined);
+      expect(got.distribution.tables.nodes['up to 16']).toBe(deep ? 1 : 30);
     }
     if (name === '12-labels-coverage') {
       expect(got.distribution.labels).toEqual({empty:1, short:15, long:84});

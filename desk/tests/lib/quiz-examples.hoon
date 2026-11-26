@@ -32,6 +32,8 @@
 /*  custom  %hoon  /examples/failing/09-custom-alts/hoon
 /*  order  %hoon  /examples/failing/38-shrink-order/hoon
 /*  together  %hoon  /examples/failing/39-shrink-together/hoon
+/*  deep  %hoon  /examples/props/40-tree-depth-budget/hoon
+/*  wide  %hoon  /examples/props/41-tree-divided-budget/hoon
 |%
   ::  Bundled model-based examples, built by the document builder and run
   ::  to completion by the engine. Pins the counters quoted in examples.md.
@@ -522,6 +524,50 @@
     (expect-eq !>(`*`~[[4 1]]) !>(q.shrunk.a))
     (expect-eq !>(`counters:engine`[1 0 0 0 9 2]) !>(counts.two))
     (expect-eq !>(`*`~[[4 13]]) !>(q.shrunk.b))
+  ==
+::
+++  test-tree-budgets
+  ::  At size-max 12, size as depth makes trees up to 12 deep and hundreds
+  ::  of nodes; a divided budget keeps every tree within 12 nodes.
+  ^-  tang
+  =/  imports  ~[!>(engine) !>(gen) !>(prop)]
+  =/  one  (run /examples/props/'40-tree-depth-budget'/hoon deep imports)
+  =/  two  (run /examples/props/'41-tree-divided-budget'/hoon wide imports)
+  =/  table
+    |=  [s=state:engine name=@t]
+    ^-  (list [@t @ud])
+    (sort ~(tap by (~(got by tables.seen-tags.s) name)) aor)
+  ;:  weld
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.one))
+    (expect-eq !>(`(unit outcome:engine)``[%passed ~]) !>(result.two))
+    (expect-eq !>(`counters:engine`[130 100 0 30 0 0]) !>(counts.one))
+    (expect-eq !>(`counters:engine`[130 100 0 30 0 0]) !>(counts.two))
+    %+  expect-eq
+      !>  ^-  (list [@t @ud])
+          :~  ['0' 1]  ['up to 1' 5]  ['up to 1024' 11]  ['up to 128' 16]
+              ['up to 16' 1]  ['up to 2' 3]  ['up to 256' 21]
+              ['up to 32' 3]  ['up to 4' 1]  ['up to 512' 35]
+              ['up to 64' 1]  ['up to 8' 2]
+          ==
+    !>((table one 'nodes'))
+    %+  expect-eq
+      !>  ^-  (list [@t @ud])
+          :~  ['0' 1]  ['up to 1' 9]  ['up to 16' 30]  ['up to 2' 7]
+              ['up to 4' 16]  ['up to 8' 37]
+          ==
+    !>((table two 'nodes'))
+    %+  expect-eq
+      !>  ^-  (list [@t @ud])
+          :~  ['0' 1]  ['1' 5]  ['10' 1]  ['12' 84]  ['2' 3]  ['3' 2]
+              ['4' 1]  ['5' 1]  ['6' 1]  ['8' 1]
+          ==
+    !>((table one 'depth'))
+    %+  expect-eq
+      !>  ^-  (list [@t @ud])
+          :~  ['0' 1]  ['1' 9]  ['2' 10]  ['3' 11]  ['4' 22]  ['5' 22]
+              ['6' 14]  ['7' 10]  ['9' 1]
+          ==
+    !>((table two 'depth'))
   ==
 ::
 ++  test-trace-invariant
