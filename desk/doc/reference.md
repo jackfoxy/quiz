@@ -919,7 +919,8 @@ candidates tried, and `end`: `%done` when no candidate kept the label,
 `%limited` at a limit, `%stopped` when a failure ended the search first.
 Rows are in label order. `unseen` lists `++cover` labels no passing sample
 carried; table values are not searched. Searches cannot be replayed; a
-replay of one runs the property.
+replay of one runs the property. The workbench's **Find examples for each
+label** button starts one.
 
 ### Suites
 

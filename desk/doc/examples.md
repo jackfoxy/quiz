@@ -26,13 +26,13 @@ settings, not universal outcomes of similar-looking properties.
 | [07-positive](../examples/props/07-positive.hoon) | Passed, 20 accepted, no drops | Generate positive values directly |
 | [08-seeded-threshold](../examples/failing/08-seeded-threshold.hoon) | Failed, false; 541 → 501 | Fixed-seed replay and default shrinking around 500 |
 | [09-custom-alts](../examples/failing/09-custom-alts.hoon) | Failed, false; best sample 502 | A terminating shrinker preserving positive even inputs |
-| [10-queue-model](../examples/props/10-queue-model.hoon) | Passed, 100 accepted | Model-based test: a two-list queue against a list model over generated command sequences |
+| [10-queue-model](../examples/props/10-queue-model.hoon) | Passed, 100 accepted | Model-based test: a two-list queue against a list model over generated command sequences; labels `empty-pop` and `refill` |
 | [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) | Failed, false; 12 commands → 3 | A pop precondition kept by both the norn and a sequence shrinker |
 | [12-labels-coverage](../examples/props/12-labels-coverage.hoon) | Passed, 100 accepted; coverage met | `classify`, `tabulate` and `++cover`; the run shows the label distribution |
 | [13-expected-actual](../examples/failing/13-expected-actual.hoon) | Failed, false; expected 1, actual 0 | `same` and `note`: a failure that explains itself |
 | [14-coverage-shortfall](../examples/failing/14-coverage-shortfall.hoon) | Uncovered; empty 1% of 10% | Every check passes, but the generator misses a required case |
 | [15-expect-failure](../examples/props/15-expect-failure.hoon) | Failed as expected; 11 → 10 | `++expect %fail` for a claim known to be false |
-| [16-sorted-insert](../examples/props/16-sorted-insert.hoon) | Passed, 100 accepted; every position covered | `sorted` and `pair` generators; labels where the value lands |
+| [16-sorted-insert](../examples/props/16-sorted-insert.hoon) | Passed, 100 accepted; every position covered | `sorted` and `pair` generators; labels where the value lands; `++alts` for label searches |
 | [17-bst-delete-bug](../examples/failing/17-bst-delete-bug.hoon) | Failed, false; 9 keys → 3 | A search tree against a sorted-set model; `shrink-pair` of `shrink-list` |
 | [18-parse-print](../examples/props/18-parse-print.hoon) | Passed, 100 accepted | Aura generators (`upto`, `ship`, `knot`) in `scot`/`slav` round trips |
 | [19-queue-gen-lib](../examples/failing/19-queue-gen-lib.hoon) | Failed, false; 4 commands → 3 | Example 11 rebuilt from `list-of`, `cook`, `shrink-keep` and `shrink-list` |
@@ -46,7 +46,7 @@ settings, not universal outcomes of similar-looking properties.
 | [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
 | [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `dependent`, which bundles `seeded` and `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
 | [31-float-associativity](../examples/failing/31-float-associativity.hoon) | Failed, false; `[a=.~-1.2 b=.~-1 c=.~1]` | Sized `real` and `shrink-real`: float addition is not associative; the shrunk triple has short decimals |
-| [32-expiry-agent](../examples/props/32-expiry-agent.hoon) | Passed, 100 accepted; 15 duplicates | Simulated behn clock: puts with a time to live and waits against an expiring key store |
+| [32-expiry-agent](../examples/props/32-expiry-agent.hoon) | Passed, 100 accepted; 15 duplicates | Simulated behn clock: puts with a time to live and waits against an expiring key store; labels `repeated-key` and `expired`, 33's shrinker |
 | [33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon) | Failed, false; two puts of `%a` and a wait | A re-put that does not `%rest` its old timer; the old wake deletes the new value early |
 | [34-typed-defaults](../examples/failing/34-typed-defaults.hoon) | Failed, false; `[name='' tags=~[%a %a %a]]` | No norn or alts: `quiz-auto` fills printable text and a list of terms from the sample's type and shrinks the list |
 | [35-cover-table](../examples/props/35-cover-table.hoon) | Passed, 100 accepted; 64 duplicates | `++cover-table`: each list's least element is tabulated, and three values must each be 5% of the table's entries |
@@ -292,6 +292,25 @@ queue, report, coverage, generator-library, size and function rows in
 | 37-insert-generated | 101 | 100 | 0 | 1 | 0 | 0 | — |
 | 38-shrink-order | 1 | 0 | 0 | 0 | 35 | 6 | `[[4 13] [0 33] [0 18] 0]` → `[[4 1] 0]` |
 | 39-shrink-together | 1 | 0 | 0 | 0 | 9 | 2 | `[[4 13] [0 33] [0 18] 0]` → `[[4 13] 0]` |
+
+## Labelled examples
+
+**Find examples for each label** over 100 passes, with each document's seed
+([labelled examples](reference.md#labelled-examples)). Tags and times render
+as numbers: `%pop` 7.368.560, `%push` 1.752.397.168, `%put` 7.632.240,
+`%wait` 1.953.063.287, `%a` 97, `~s1` 18.446.744.073.709.551.616. Pinned in
+`test-labelled-examples` and `examples.spec.js`.
+
+| Example | Label | Smallest example | Steps |
+| --- | --- | --- | --- |
+| 10-queue-model | `empty-pop` | `cmds=[[7.368.560 0] 0]` (pop) | 0 |
+| 10-queue-model | `refill` | `cmds=[[1.752.397.168 0] [7.368.560 0] 0]` (push 0, pop) | 2 |
+| 16-sorted-insert | `empty` | `[items=0 new=0]` | 1 |
+| 16-sorted-insert | `end` | `[items=[0 0] new=1]` | 6 |
+| 16-sorted-insert | `front` | `[items=[0 0] new=0]` | 4 |
+| 16-sorted-insert | `middle` | `[items=[0 1 0] new=1]` | 18 |
+| 32-expiry-agent | `expired` | put `%a` 0 for `~s1`, wait `~s1` | 5 |
+| 32-expiry-agent | `repeated-key` | put `%a` 0 for `~s1` twice | 4 |
 
 ## Example suites
 

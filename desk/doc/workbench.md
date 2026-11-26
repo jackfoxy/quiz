@@ -73,6 +73,16 @@ Blank keeps the document's value. A bounds override sends a complete
 fill the others; the other fields need no build. Suite execution has no
 controlled seed or property sample counters; those controls are disabled.
 
+**Find examples for each label**, beside **Preview samples**, runs a
+[labelled-example search](reference.md#labelled-examples) over **Find
+examples over passing samples** passes (blank means 100; at most the
+conf's `requested-max`). The result lists each label's smallest example,
+its weight, shrink steps, candidates tried and how its shrink ended
+(smallest found, shrink limit reached, or not shrunk because a failure ended
+the search). It also lists `++cover` labels no passing sample carried, and
+says which budget ended generation early. A failure that ended the search
+appears as an ordinary counterexample. Searches cannot be replayed.
+
 **Preview samples** shows what the generator makes before a run, as
 QuickCheck's `sample` does. It makes up to **Preview samples** (1–1000,
 blank = 20) samples with the run's seed, sizes and generator, so each row is

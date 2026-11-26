@@ -284,6 +284,30 @@ async function scenario(env, mock, name) {
     field('previewCount','2'); field('previewShow','alts'); await runs.preview();
     assert.deepEqual(mock.records.get(docs.active('property').runIds[0]).request.mode,
       {kind:'preview',count:2,verdicts:false,alts:true}, 'alternates without verdicts');
+    // Find examples for each label: a count of passes, never `requested`.
+    field('examplesCount','0'); await runs.findExamples();
+    assert.match(el('run-message').textContent,/between|1 to/);
+    field('requested','7'); field('examplesCount','50'); await runs.findExamples();
+    const searchId = docs.active('property').runIds[0];
+    const search = mock.records.get(searchId);
+    assert.deepEqual(search.request.mode, {kind:'examples',count:50});
+    assert.equal(search.request.config?.requested, undefined, 'a search ignores requested');
+    field('requested','');
+    search.status='done'; search.kind='examples';
+    search.outcome={kind:'examples',
+      found:[{label:'empty-pop',sample:{text:'cmds=[[7.368.560 0] 0]','noun-jam':'0v1'},weight:'7368563',steps:0,tried:3,end:'done'},
+        {label:'refill',sample:{text:'cmds=[[1.752.397.168 0] [7.368.560 0] 0]','noun-jam':'0v2'},weight:'1759765737',steps:2,tried:40,end:'limited'}],
+      unseen:['huge'], budget:'attempts', evidence:null};
+    await runs.refresh();
+    const found = env.descendants(el('run-found')).map(n=>n.textContent).join(' ');
+    assert.match(found, /Smallest example for each of 2 labels/);
+    assert.match(env.descendants(el('run-found-examples')).map(n=>n.textContent).join(' '),
+      /empty-pop cmds=\[\[7\.368\.560 0\] 0\] 7368563 0 3 smallest found/);
+    assert.match(found, /shrink limit reached/);
+    assert.match(el('run-found-unseen').textContent + env.descendants(el('run-found-unseen')).map(n=>n.textContent).join(' '), /huge/);
+    assert.match(found, /attempts budget ran out/);
+    assert.match(env.descendants(el('run-detail')).map(n=>n.textContent).join(' '), /Labelled-example search/);
+    assert.equal(el('run-replay').disabled,true,'a search is not replayed');
     // More limits: budgets and on-timeout go as single fields; a bound
     // sends the document's other bounds too, read with one conf build.
     field('requested','');

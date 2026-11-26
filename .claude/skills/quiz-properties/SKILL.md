@@ -305,6 +305,11 @@ shrink together ([29-bst-coordinated](../../../desk/examples/failing/29-bst-coor
   unsaved buffer) or **Saved property** (runs the file at the selected Clay
   revision). Saving does not move that revision; choose **Use latest
   revision**. Blank panel fields mean the document's `conf` is used.
+- **Find examples for each label** shows the smallest passing sample per
+  label (a QuickCheck `labelledExamples` analogue): use it to see what a
+  label's case actually looks like and to spot `++cover` labels never seen.
+  It needs an `++alts` that stays in the domain; failing candidates are
+  rejected, and a failing generated sample ends the search.
 - **Preview first** when writing a norn or alts: **Preview samples** (or a
   request `mode` of `[%preview count verdicts alts]`) makes up to 1,000
   samples with the run's seed and sizes and lists the first 100, each one's

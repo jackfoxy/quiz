@@ -622,6 +622,47 @@ the configured maximum or a budget after the requested target, ordinary
 percentage thresholds decide. Do not treat every `%confident` completion
 as a promise that its confidence test reached a decision.
 
+### Understand coverage through examples
+
+A label count says how often a case occurred, not what the case looked like.
+**Find examples for each label** answers the second question, as
+QuickCheck's
+[`labelledExamples`](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#v:labelledExamples)
+does. It generates and judges samples as a run does until the given number
+pass (blank means 100), then shrinks each label's first sample to the
+smallest one that still passes and still carries that label.
+
+1. Open `props/10-queue-model` and click **Find examples for each label**.
+   The queue labels a pop on an empty queue `empty-pop`, and a pop that has
+   to refill the front list from the back `refill`. The table shows the
+   smallest of each, with tags rendered as numbers (`%pop` is 7.368.560,
+   `%push` 1.752.397.168):
+
+   | Label | Smallest example | Reads as |
+   | --- | --- | --- |
+   | `empty-pop` | `cmds=[[7.368.560 0] 0]` | pop |
+   | `refill` | `cmds=[[1.752.397.168 0] [7.368.560 0] 0]` | push 0, pop |
+
+   `refill` is the case the two-list design exists for. A run that never
+   carried it would pass without testing the reversal.
+2. Open `props/16-sorted-insert` and search again. Each insert position
+   shrinks to its smallest witness: `empty` `[~ 0]`, `front`
+   `[~[0] 0]`, `end` `[~[0] 1]`, and `middle` `[~[0 1] 1]`, the shortest
+   list with a strictly inner position.
+3. Open `props/32-expiry-agent` and search again. `expired` shrinks to a put
+   of `%a` for one second followed by a one-second wait, and `repeated-key`
+   to two puts of `%a`. Those are the two stories example 33's bug needs, so
+   the passing run did exercise them.
+
+The search needs a shrinker that can move within the domain. These three
+documents have an `++alts`. A `*` sample with none, such as `12-labels-coverage`,
+barely shrinks: the default shrinker's candidates leave the list type, the
+fate crashes on them, and the search rejects them. A `++cover` label that no
+passing sample carried is listed under **++cover labels no passing sample
+carried**. A generated sample that fails ends the search; it appears as an
+ordinary counterexample below the labels found so far. Each label's shrink
+has its own shrink budgets; **shrink limit reached** marks one that ran out.
+
 ## 11. Generate structured data
 
 Open, preview, then run the following examples. Read the fate first: what

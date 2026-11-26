@@ -69,9 +69,71 @@
   ?>  (gth left 0)
   $(s (step:engine s), left (dec left))
 ::
+++  search
+  ::  Find each label's smallest example over `count` passes, to the end.
+  |=  [=path source=@t imports=(list vase) count=@ud]
+  ^-  (list [@t @t @ud])
+  =/  parsed  (prepare:build [~zod %quiz 1] path source)
+  ?>  ?=(%.y -.parsed)
+  =/  built  (compile:build p.parsed imports)
+  ?>  ?=(%ready -.built)
+  =/  seed  (need seed.settings.built)
+  =/  s  (init:engine seed config.settings.built parts.built)
+  =.  s  (searching:engine s count)
+  =/  left  50.000
+  |-
+  ?^  result.s
+    =/  out  u.result.s
+    ?>  ?=(%examples -.out)
+    ?>  =(~ evidence.out)
+    %+  turn  found.out
+    |=(l=labelled:engine [label.l text.example.l steps.l])
+  ?>  (gth left 0)
+  $(s (step:engine s), left (dec left))
+::
+++  test-labelled-examples
+  ::  Each label's smallest example, as examples.md and the user's guide
+  ::  quote them: [label text steps].
+  ^-  tang
+  =/  queue
+    %:  search  /examples/props/'10-queue-model'/hoon  queue-model
+        ~[!>(engine) !>(quiz) !>(prop) !>(gen)]  100
+    ==
+  =/  sorted
+    %:  search  /examples/props/'16-sorted-insert'/hoon  insert
+        ~[!>(engine) !>(gen) !>(prop)]  100
+    ==
+  =/  expiry
+    %:  search  /examples/props/'32-expiry-agent'/hoon  expiry-src
+        ~[!>(engine) !>(gen) !>(prop) !>(h) !>(drive-expiry)]  100
+    ==
+  ::  Tags and times render as numbers: %pop 7.368.560, %push
+  ::  1.752.397.168, %put 7.632.240, %wait 1.953.063.287, %a 97, ~s1 2^64.
+  =/  pop  'cmds=[[7.368.560 0] 0]'
+  =/  refill  'cmds=[[1.752.397.168 0] [7.368.560 0] 0]'
+  =/  put  '[7.632.240 97 0 18.446.744.073.709.551.616]'
+  =/  wait  '[1.953.063.287 18.446.744.073.709.551.616]'
+  =/  twice  (crip "raw=[{(trip put)} {(trip put)} 0]")
+  =/  expired  (crip "raw=[{(trip put)} {(trip wait)} 0]")
+  ;:  weld
+    =/  want=(list [@t @t @ud])  ~[['empty-pop' pop 0] ['refill' refill 2]]
+    (expect-eq !>(want) !>(queue))
+    %+  expect-eq
+      !>  ^-  (list [@t @t @ud])
+          :~  ['empty' '[items=0 new=0]' 1]
+              ['end' '[items=[0 0] new=1]' 6]
+              ['front' '[items=[0 0] new=0]' 4]
+              ['middle' '[items=[0 1 0] new=1]' 18]
+          ==
+    !>(sorted)
+    %+  expect-eq
+      !>(`(list [@t @t @ud])`~[['expired' expired 5] ['repeated-key' twice 4]])
+    !>(expiry)
+  ==
+::
 ++  test-queue-model
   ^-  tang
-  =/  imports  ~[!>(engine) !>(quiz)]
+  =/  imports  ~[!>(engine) !>(quiz) !>(prop) !>(gen)]
   =/  path=path  /examples/props/'10-queue-model'/hoon
   =/  done  (run path queue-model imports)
   ;:  weld

@@ -8,6 +8,10 @@
   ::  put's timer, and the agent agrees with the model.
   ::  33-expiry-agent-bug runs the same model against the unfixed agent.
   ::
+  ::  Labels mark a put that replaces a live key and a wait that expires
+  ::  one; with ++alts, Find examples for each label reaches the shortest
+  ::  story for each.
+  ::
 +$  op  $%([%put key=@tas val=@ud ttl=@dr] [%wait span=@dr])
 ::
 ++  start  ~2026.1.1
@@ -19,7 +23,32 @@
   =/  res  (run-clock:h ~ start (handle:drive %.y) events)
   ?:  ?=(%| -.res)  |
   =/  got  ~(key by ;;(store:drive state.p.res))
+  =/  [repeated=? expired=?]  (cases ops)
+  %^  classify:prop  repeated  'repeated-key'
+  %^  classify:prop  expired  'expired'
   (same:prop !>((model ops)) !>(got))
+::
+++  cases
+  ::  Whether a put replaced a live key, and whether a wait expired one.
+  |=  ops=(list op)
+  ^-  [repeated=? expired=?]
+  =/  now  start
+  =|  dues=(map @tas @da)
+  =/  seen=[repeated=? expired=?]  [| |]
+  |-
+  ?~  ops  seen
+  ?-    -.i.ops
+      %put
+    =?  repeated.seen  (~(has by dues) key.i.ops)  &
+    $(ops t.ops, dues (~(put by dues) key.i.ops (add now ttl.i.ops)))
+  ::
+      %wait
+    =/  later  (add now span.i.ops)
+    =/  kept=(list [@tas @da])
+      (skim ~(tap by dues) |=([k=@tas d=@da] (gth d later)))
+    =?  expired.seen  (lth (lent kept) ~(wyt by dues))  &
+    $(ops t.ops, now later, dues (~(gas by *(map @tas @da)) kept))
+  ==
 ::
 ++  to-event
   |=  o=op
@@ -60,6 +89,35 @@
     |=([k=@tas v=@ud t=@dr] `op`[%put k v t])
   =/  wait=(norn:gen op)  (cook:gen seconds |=(d=@dr `op`[%wait d]))
   (list-of:gen 0 12 (frequency:gen ~[[2 put] [1 wait]]))
+::
+++  shrink-op
+  ::  Key toward %a, value toward 0, times toward one second.
+  |=  o=op
+  ^-  (list op)
+  =/  secs  (shrink-via:gen (curr div ~s1) (cury mul ~s1) (shrink-toward:gen 1))
+  ?-    -.o
+      %wait
+    (turn (secs span.o) |=(d=@dr `op`[%wait d]))
+  ::
+      %put
+    =/  keys=(list op)  ?:(=(%a key.o) ~ ~[o(key %a)])
+    =/  vals  (turn (shrink-atom:gen val.o) |=(v=@ud `op`o(val v)))
+    =/  ttls  (turn (secs ttl.o) |=(d=@dr `op`o(ttl d)))
+    :(weld keys vals ttls)
+  ==
+::
+++  rename
+  ::  Every key to %a at once, so a repeated key stays repeated.
+  |=  ops=(list op)
+  ^-  (list (list op))
+  =/  moved  (turn ops |=(o=op ?:(?=(%put -.o) o(key %a) o)))
+  ?:(=(moved ops) ~ ~[moved])
+::
+++  alts
+  ::  33-expiry-agent-bug's shrinker: delete operations, shrink each one,
+  ::  then rename every key at once.
+  %+  alts-of:gen  (list op)
+  (shrink-then:gen (shrink-list:gen shrink-op) rename)
 ::
 ++  conf
   =/  cfg  defaults:engine

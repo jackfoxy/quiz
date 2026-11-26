@@ -62,7 +62,10 @@ and repeats the seeded threshold with exact replay. It also previews
 disabled), and previews 200 samples of `36-weak-generator` and
 `37-insert-generated` to compare their generator summaries. On
 `11-queue-model-bug`, `38-shrink-order` and `39-shrink-together` it steps
-through **Shrink trace** and checks where and why each shrink stopped. Each
+through **Shrink trace** and checks where and why each shrink stopped. It
+runs **Find examples for each label** on `10-queue-model`,
+`16-sorted-insert` and `32-expiry-agent` and checks each label's smallest
+example. Each
 case writes a
 `run.json` artifact under its test-results directory. No teaching failure is
 included as a failing `-test` regression arm.

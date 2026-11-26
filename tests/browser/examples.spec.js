@@ -405,3 +405,44 @@ test('Preview summarizes a weak generator against its repair', async ({page}) =>
   expect(strong.summary.labels.long).toBe(119);
   await expect(page.locator('#run-preview-notes')).toHaveCount(0);
 });
+
+test('Find examples for each label shows the smallest of each', async ({page}) => {
+  test.setTimeout(240000);
+  const login = await page.request.post('/~/login', {form:{password:process.env.QUIZ_CODE}});
+  expect(login.ok()).toBeTruthy();
+  await page.goto('/apps/quiz/');
+  await page.waitForFunction(() => window.quiz?.ready);
+  await page.evaluate(() => window.quiz.ready);
+  const search = async (name) => {
+    await page.evaluate(path => window.quiz.documents.open('property', path),
+      ['props', name, 'hoon']);
+    await page.locator('#run-examplesCount').fill('100');
+    const newest = () => page.evaluate(() =>
+      window.quiz.documents.active('property').runIds?.[0] || null);
+    const before = await newest();
+    await page.locator('#run-find-examples').click();
+    let id;
+    await expect.poll(async () => (id = await newest()) !== before).toBe(true);
+    let record;
+    await expect.poll(async () => (record = await (await page.request.post('/apps/quiz/api',
+      {data:{op:'status', id}})).json())?.outcome?.kind, {timeout:90000}).toBe('examples');
+    expect(record.request.mode).toEqual({kind:'examples', count:100});
+    expect(record.outcome.evidence).toBeNull();
+    await expect(page.locator('#run-found-examples')).toBeVisible();
+    await expect(page.locator('#run-replay')).toBeDisabled();
+    return Object.fromEntries(record.outcome.found.map(row => [row.label, row.sample.text]));
+  };
+  // Tags and times render as numbers: %pop 7.368.560, %push 1.752.397.168,
+  // %put 7.632.240, %wait 1.953.063.287, %a 97, ~s1 2^64.
+  expect(await search('10-queue-model')).toEqual({
+    'empty-pop': 'cmds=[[7.368.560 0] 0]',
+    refill: 'cmds=[[1.752.397.168 0] [7.368.560 0] 0]'});
+  await expect(page.locator('#run-found')).toContainText('Smallest example for each of 2 labels');
+  expect(await search('16-sorted-insert')).toEqual({
+    empty: '[items=0 new=0]', end: '[items=[0 0] new=1]',
+    front: '[items=[0 0] new=0]', middle: '[items=[0 1 0] new=1]'});
+  const put = '[7.632.240 97 0 18.446.744.073.709.551.616]';
+  expect(await search('32-expiry-agent')).toEqual({
+    expired: `raw=[${put} [1.953.063.287 18.446.744.073.709.551.616] 0]`,
+    'repeated-key': `raw=[${put} ${put} 0]`});
+});

@@ -44,7 +44,8 @@
         arms: typeof value.arms === 'string' && value.arms.length <= 6400
           && /^[a-z0-9,\s-]*$/.test(value.arms) ? value.arms : '',
         previewCount: bounded('previewCount', /^[1-9][0-9]*$/, 4),
-        previewShow: previewShows.includes(value.previewShow) ? value.previewShow : 'all'
+        previewShow: previewShows.includes(value.previewShow) ? value.previewShow : 'all',
+        examplesCount: bounded('examplesCount', /^[1-9][0-9]*$/, 5)
       },
       runIds: Array.isArray(saved.runIds)
         ? [...new Set(saved.runIds.filter((id) => typeof id === 'string'
@@ -119,16 +120,18 @@
       ['verdicts', 'Samples and verdicts'], ['samples', 'Samples only']]) {
       const option = node('option', '', label); option.value = value; shows.append(option);
     }
+    addField('examplesCount', 'Find examples over passing samples (blank = 100)').inputMode = 'numeric';
     const contextButton = button('run-latest', 'Use latest revision', latest);
     const inspectButton = button('run-inspect', 'Read document conf', inspect);
     const discoverButton = button('run-discover', 'Discover suite arms', discover);
     const runButton = button('run-start', 'Run draft property', run);
     const previewButton = button('run-preview', 'Preview samples', preview);
+    const examplesButton = button('run-find-examples', 'Find examples for each label', findExamples);
     const note = node('p', 'run-source-note');
     const settingsNote = node('p', 'run-settings-note');
     const message = node('p', 'run-message'); message.setAttribute('role', 'status');
     const toolbar = node('div', 'run-toolbar');
-    toolbar.append(runButton, previewButton, contextButton, inspectButton, discoverButton);
+    toolbar.append(runButton, previewButton, examplesButton, contextButton, inspectButton, discoverButton);
     controls.append(toolbar, note, settingsNote, message);
     const results = el('quiz-runs');
     const actions = node('div', 'result-actions');
@@ -255,12 +258,13 @@
       for (const key of ['requested', 'seed', 'sizeStart', 'sizeMax', 'duplicates', 'onTimeout',
         ...Object.keys(budgetKeys), ...boundKeys.map((k) => `bound-${k}`)]) fields[key].disabled = suite;
       fields.arms.disabled = !suite;
-      for (const key of ['previewCount', 'previewShow']) fields[key].disabled = suite;
+      for (const key of ['previewCount', 'previewShow', 'examplesCount']) fields[key].disabled = suite;
       inspectButton.disabled = busy || suite || !online;
       discoverButton.disabled = busy || !suite || !pathFor(tab) || !online;
       runButton.disabled = busy || !online || !tab
         || (tab.path?.at(-1) === 'md') || (value.mode !== 'draft' && !pathFor(tab));
       previewButton.disabled = runButton.disabled || suite;
+      examplesButton.disabled = runButton.disabled || suite;
       contextButton.disabled = busy;
       runButton.textContent = {draft: 'Run draft property', file: 'Run saved property', suite: 'Run saved suite'}[value.mode] || 'Run';
       note.textContent = value.mode === 'draft'
@@ -274,7 +278,7 @@
       clearButton.disabled = busy || !online
         || !ids.some((id) => summaries.get(id)?.status === 'done');
       replayButton.disabled = busy || !online || !done || rec?.kind === 'suite'
-        || rec?.request?.mode?.kind === 'preview'
+        || ['preview', 'examples'].includes(rec?.request?.mode?.kind)
         || !rec?.snapshot || !rec?.config || !rec?.seed;
     }
     function requestFor(tab) {
@@ -382,10 +386,14 @@
         tell(`${errorText(error)}${error.uncertain ? '\nThe request may have been accepted. Refresh history before retrying; nothing was retried automatically.' : ''}`);
       } finally { busy = false; updateButtons(); }
     }
-    function run() { return submit(false); }
+    function run() { return submit('run'); }
     // A preview makes samples with the run's streams and sizes, but no budgets.
-    function preview() { return submit(true); }
-    async function submit(previewing) {
+    function preview() { return submit('preview'); }
+    // A search runs like a run to `count` passes, then shrinks each label's
+    // first sample to its smallest that still carries the label.
+    function findExamples() { return submit('examples'); }
+    async function submit(kind) {
+      const previewing = kind === 'preview';
       const tab = active(); if (!tab) return;
       // Capture source and controls before the first await, even if tabs change.
       let req, value;
@@ -400,10 +408,18 @@
           verdicts: ['all', 'verdicts'].includes(value.previewShow),
           alts: ['all', 'alts'].includes(value.previewShow)};
       }
+      if (kind === 'examples') {
+        const count = value.examplesCount === '' ? 100 : Number(value.examplesCount);
+        const maximum = getDefaults()?.bounds?.['requested-max'] ?? 10000;
+        if (!Number.isSafeInteger(count) || count < 1 || count > maximum) {
+          tell(`Find examples over 1 to ${maximum} passing samples.`); return;
+        }
+        req.mode = {kind: 'examples', count};
+      }
       await action(async () => {
         const {sizeStart, sizeMax, duplicates, onTimeout} = value;
-        // A preview's count replaces requested checks.
-        const requested = previewing ? '' : value.requested;
+        // A preview's or search's count replaces requested checks.
+        const requested = kind === 'run' ? value.requested : '';
         const budgets = Object.keys(budgetKeys).filter((key) => value[key] !== '');
         const bounds = boundKeys.filter((key) => value[`bound-${key}`] !== '');
         if (req.source.kind !== 'suite' && ([requested, sizeStart, sizeMax, duplicates, onTimeout]
@@ -674,6 +690,35 @@
       show();
       return box;
     }
+    // Each label's smallest example from a labelled-example search, the
+    // ++cover labels never seen, and why the search ended early, if it did.
+    function foundExamples(outcome) {
+      const box = node('section', 'run-found');
+      const ends = {done: 'smallest found', limited: 'shrink limit reached',
+        stopped: 'not shrunk: a failure ended the search'};
+      box.append(node('h3', '', outcome.found.length
+        ? `Smallest example for each of ${outcome.found.length} labels` : 'No sample carried a label'));
+      if (outcome.found.length) {
+        const table = node('table', 'run-found-examples');
+        const head = node('tr', '');
+        for (const title of ['Label', 'Smallest example', 'Weight', 'Shrink steps', 'Tried', 'Shrink']) head.append(node('th', '', title));
+        table.append(head);
+        for (const row of outcome.found) {
+          const tr = node('tr', '');
+          for (const text of [row.label, row.sample.text, row.weight, String(row.steps), String(row.tried), ends[row.end] ?? row.end]) tr.append(node('td', '', text));
+          table.append(tr);
+        }
+        box.append(table);
+      }
+      if (outcome.unseen?.length) {
+        const list = node('ul', 'run-found-unseen');
+        for (const label of outcome.unseen) list.append(node('li', '', label));
+        box.append(node('h3', '', '++cover labels no passing sample carried'), list);
+      }
+      if (outcome.budget) line(box, 'Generation ended early', `the ${outcome.budget} budget ran out`);
+      if (outcome.evidence) line(box, 'Search ended', 'A generated sample failed; it is shown below as a counterexample.');
+      return box;
+    }
     // A false verdict may carry the fate's notes and an expected/actual pair.
     const failure = (parent, why) => {
       if (why?.kind === 'timeout') {
@@ -728,7 +773,8 @@
       if (tab) detail.append(button('run-source-tab', `Source tab: ${tab.label}`,
         () => docs.select('property', tab.id)));
       line(detail, 'Server status', rec.status);
-      line(detail, 'Workflow', rec.kind === 'draft' ? 'Draft property' : rec.kind === 'suite' ? 'Saved suite' : 'Saved property');
+      line(detail, 'Workflow', rec.kind === 'draft' ? 'Draft property' : rec.kind === 'suite' ? 'Saved suite'
+        : rec.kind === 'preview' ? 'Generator preview' : rec.kind === 'examples' ? 'Labelled-example search' : 'Saved property');
       if (snapshot) {
         line(detail, 'Context', `%${snapshot.context.desk} revision ${snapshot.context.revision}`);
         const wanted = rec.request?.revision;
@@ -764,6 +810,7 @@
         for (const item of outcome.examples) list.append(node('li', '', `${item.label}: ${item.sample.text}`));
         detail.append(node('h3', '', 'First example per label'), list);
       }
+      if (outcome?.kind === 'examples') detail.append(foundExamples(outcome));
       if (outcome?.kind === 'preview') {
         if (outcome.summary) detail.append(previewSummary(outcome.summary, outcome.rows.length));
         const table = node('table', 'run-preview-rows');
@@ -921,7 +968,7 @@
       renderDetail();
     }
     return {activate, changed, refresh, run, cancel, rerun, replay, remove, clear,
-      latest, inspect, discover, preview, pathFor, requestFor, records,
+      latest, inspect, discover, preview, findExamples, pathFor, requestFor, records,
       start: async () => { activate(active()); await refresh(); },
       stop: () => { stopped = true; clearTimeout(timer); }};
   };

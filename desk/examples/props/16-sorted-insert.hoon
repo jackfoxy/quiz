@@ -2,7 +2,9 @@
 |%
   ::  Inserting into a sorted list keeps it sorted and adds the value.
   ::  quiz-gen builds sorted lists directly; quiz-prop labels where the value
-  ::  landed, so the run shows that every position was exercised.
+  ::  landed, so the run shows that every position was exercised. ++alts
+  ::  shrinks the list and the value, so Find examples for each label
+  ::  reaches the smallest insert at each position.
   ::
 ::
 ++  insert
@@ -31,6 +33,12 @@
 ++  norn
   ^-  $-([@ud _og] [(list @ud) @ud])
   (pair:gen (sorted:gen @ud 0 30 (range:gen 0 99) lte) (range:gen 0 99))
+::
+++  alts
+  ::  A candidate whose list is unsorted fails the law; a run never shrinks
+  ::  a pass, and a search rejects it.
+  %+  alts-of:gen  ,[(list @ud) @ud]
+  (shrink-pair:gen (shrink-list:gen shrink-atom:gen) shrink-atom:gen)
 ::
 ++  cover  [%check ~[['front' 5] ['middle' 20] ['end' 5]]]
 ::
