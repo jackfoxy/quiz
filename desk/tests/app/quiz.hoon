@@ -56,7 +56,7 @@
   ^-  tang
   =/  s  (queued 3)
   =/  a  (activate:job s now:bol)
-  =/  done  (finish:job a 1 [%passed ~ ~] now:bol)
+  =/  done  (finish:job a 1 [%passed ~ ~ ~] now:bol)
   =/  b  (activate:job done now:bol)
   ;:  weld
     (expect-eq !>(~[1 2 3]) !>(queue.saved.s))
@@ -120,7 +120,7 @@
   =/  rec  (get-record s 1)
   ?>  ?=(%property -.counts.rec)
   ;:  weld
-    (expect !>(?=([~ %passed ~ ~] result.rec)))
+    (expect !>(?=([~ %passed ~ ~ ~] result.rec)))
     (expect !>(=(%done status.rec)))
     (expect !>(=(~ active.s)))
     (expect-eq !>(100) !>(accepted.counts.rec))
@@ -156,8 +156,8 @@
 ++  test-retention-protects-pending
   ^-  tang
   =/  s  (queued 4)
-  =.  s  (finish:job s 1 [%passed ~ ~] now:bol)
-  =.  s  (finish:job s 2 [%passed ~ ~] now:bol)
+  =.  s  (finish:job s 1 [%passed ~ ~ ~] now:bol)
+  =.  s  (finish:job s 2 [%passed ~ ~ ~] now:bol)
   =.  s  (retain:job s 1)
   ;:  weld
     (expect-eq !>(~[4 3 2]) !>(order.saved.s))
@@ -171,7 +171,7 @@
 ++  test-reload-cancels-pending-keeps-completed
   ^-  tang
   =/  s  (running 3 7)
-  =.  s  (finish:job s 3 [%passed ~ ~] now:bol)
+  =.  s  (finish:job s 3 [%passed ~ ~ ~] now:bol)
   =/  restored  (restore:job saved.s now:bol)
   =/  one  (get-record restored 1)
   =/  two  (get-record restored 2)
@@ -273,7 +273,7 @@
   ::  One row per run, newest first, with the outcome once finished.
   ^-  tang
   =/  s  (queued 2)
-  =.  s  (finish:job s 1 [%passed ~ ~] now:bol)
+  =.  s  (finish:job s 1 [%passed ~ ~ ~] now:bol)
   =/  a  ~(. agent bol)
   =.  a  a(state s)
   =/  got  (on-peek.a /x/summaries)
@@ -329,7 +329,7 @@
 ++  test-clear-keeps-active
   ^-  tang
   =/  s  (running 2 0)
-  =.  s  (finish:job s 2 [%passed ~ ~] now:bol)
+  =.  s  (finish:job s 2 [%passed ~ ~ ~] now:bol)
   =/  a  ~(. agent bol)
   =.  a  a(state s)
   =/  got  (on-poke.a %quiz-action !>([%clear ~]))
@@ -444,7 +444,7 @@
   ^-  tang
   =/  evidence=counterexample:engine
     [[%false ~ ~] !>(`@ud`541) !>(`@ud`501) ['541' '501'] ~]
-  =/  got  (persist-outcome:job [%failed evidence] ~)
+  =/  got  (persist-outcome:job [%failed evidence] *state:engine)
   ?>  ?=(%failed -.got)
   ;:  weld
     (expect-eq !>(541) !>(value.original.got))
@@ -609,7 +609,7 @@
 ::
 ++  test-delete-fact-and-kick
   ^-  tang
-  =/  s  (finish:job (queued 1) 1 [%passed ~ ~] now:bol)
+  =/  s  (finish:job (queued 1) 1 [%passed ~ ~ ~] now:bol)
   =/  a  ~(. agent bol)
   =.  a  a(state s)
   =/  got  (on-poke.a %quiz-action !>([%delete 1]))
@@ -773,7 +773,7 @@
   =/  next  state:+.got
   =/  done  (get-record next 1)
   ;:  weld
-    (expect !>(?=([~ %passed ~ ~] result.done)))
+    (expect !>(?=([~ %passed ~ ~ ~] result.done)))
     (expect !>(=(~ active.next)))
     (expect !>(=(%queued status:(get-record next 2))))
     (expect-eq !>(11) !>(token:(need timer.next)))

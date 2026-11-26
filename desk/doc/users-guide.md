@@ -569,9 +569,15 @@ recorded run has 100 accepted lists: one empty, 15 short and 84 long.
 Each label counts once per accepted sample. Its retained example is the
 first passing sample with that label, not a minimized representative.
 
+Every requirement appears under **Coverage requirements**, met or not:
+`short` 15 of 100 (15%, required 5%) and `long` 84 of 100 (84%, required
+50%). A met row under `%check` is *observed*: this run had that share, but
+a different seed could fall short.
+
 Now run `failing/14-coverage-shortfall`. Every evaluated claim passes, yet
 the outcome is **uncovered**. Empty lists appeared in only 1% of accepted
-samples; `++cover` required 10%.
+samples; `++cover` required 10%. Its row reads `empty`, 1 / 100, 1%, 10%,
+not met.
 
 1. Open an editable copy of 14.
 2. Change `%check` in `++cover` to `%warn`.
@@ -604,6 +610,15 @@ Run `props/28-confident-coverage`. Its fair-coin property requires at least
 40% heads with `++cover [%confident ...]`. It evaluates repeats because the
 domain has only two inputs. With the bundled seed it continues past 100,
 200 and 400 checks, and passes at 800 accepted flips with 377 heads.
+
+Its **Coverage requirements** row shows the difference between observed and
+established coverage. `heads` is 377 of 800 (47%), with Wilson bounds
+36.71% – 57.79%. The lower bound reached 90% of the required 40% (36%), so
+the decision is **established**, as QuickCheck's
+[`checkCoverage`](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#v:checkCoverage)
+would say. A row whose upper bound fell below its share would read
+**refuted**. When the run reaches `requested-max` or a budget first, the row
+says **plain threshold** and why, and its share is only observed.
 
 Quiz uses Wilson bounds at successively doubled targets. Optional
 `++confidence` sets `[certainty tolerance]`, default `[9 90]`: certainty is

@@ -1089,4 +1089,89 @@
         %generate
     ==
   (expect-eq !>(want) !>(seen))
+::
+++  coin  !>(|=([size=@ud rng=_og] ^-(@ud (rad:rng 2))))
+::
+++  sides
+  ::  Every flip is 'any', heads are 'heads', none is 'none'; a side table.
+  !>  |=  n=@ud
+      ^-  report:engine
+      =/  side  ?:(=(1 n) 'h' 't')
+      =/  labels=(list @t)  ?:(=(1 n) ~['any' 'heads'] ~['any'])
+      [%report & [~ ~] labels ~[['side' side]]]
+::
+++  covering
+  ::  Run a coin to the end under `cover` and `tables`, repeats allowed.
+  |=  [cover=cover:engine tables=(list table-row:engine) cfg=conf:engine]
+  ^-  state:engine
+  =.  duplicates.cfg  %allow
+  =/  =coverage:engine  [cover tables default-confidence:engine]
+  =/  s  (init:engine 0v1 cfg [sides `coin `no-alts `coverage %pass])
+  =/  left  5.000
+  |-
+  ?:  !=(~ result.s)  s
+  ?>  (gth left 0)
+  $(s (step:engine s), left (dec left))
+::
+++  rulings
+  |=  s=state:engine
+  ^-  (list (unit decision:engine))
+  (turn covered.s |=(r=cover-row:engine decision.r))
+::
+++  test-cover-rows-plain
+  ::  %check rows: hits of total, floored and required shares, met; no
+  ::  bounds or decisions. A table row counts its table's entries.
+  ^-  tang
+  =/  cover=cover:engine  [%check ~[['any' 50] ['none' 10]]]
+  =/  done  (covering cover ~[['side' 'h' 10]] (config 100 10.000 5 5))
+  ?>  ?=([~ %uncovered *] result.done)
+  ?>  ?=([* * * ~] covered.done)
+  =/  [any=cover-row:engine none=cover-row:engine side=cover-row:engine]
+    [i i.t i.t.t]:covered.done
+  ;:  weld
+    %+  expect-eq  !>([%check 'any' ~ 100 100 100 50 &])
+    !>([mode label table hits total got want met]:any)
+    (expect-eq !>([~ ~]) !>([bounds decision]:any))
+    (expect-eq !>([0 100 0 10 |]) !>([hits total got want met]:none))
+    (expect-eq !>([`'side' 100 &]) !>([table total met]:side))
+    (expect-eq !>([~ ~]) !>([bounds decision]:side))
+  ==
+::
+++  test-cover-rows-confident
+  ::  At a deciding checkpoint each %confident row has Wilson bounds and
+  ::  a decision: established, refuted, or not yet.
+  ^-  tang
+  =/  cover=cover:engine  [%confident ~[['any' 50] ['none' 90] ['heads' 50]]]
+  =/  done  (covering cover ~ (config 100 10.000 5 5))
+  ?>  ?=([~ %uncovered *] result.done)
+  =/  want=(list (unit decision:engine))
+    ~[`[%established ~] `[%refuted ~] `[%undecided ~]]
+  ;:  weld
+    (expect-eq !>(want) !>((rulings done)))
+    (expect-eq !>(100) !>(accepted.counts.done))
+    %-  expect
+    !>  %+  levy  covered.done
+        |=  r=cover-row:engine
+        ?~  bounds.r  |
+        &((lte:rd low.u.bounds.r .~1) (lte:rd low.u.bounds.r high.u.bounds.r))
+  ==
+::
+++  test-cover-rows-threshold
+  ::  When %confident stays undecided, the plain threshold decides, and the
+  ::  row says why: a budget ran out, or the run reached requested-max.
+  ^-  tang
+  =/  cover=cover:engine  [%confident ~[['heads' 40]]]
+  =/  budget  (covering cover ~ (config 10 30 5 5))
+  =/  cfg  (config 10 10.000 5 5)
+  =.  requested-max.bounds.cfg  20
+  =/  ceiling  (covering cover ~ cfg)
+  ;:  weld
+    %+  expect-eq  !>(`(list (unit decision:engine))`~[`[%threshold %attempts]])
+    !>((rulings budget))
+    (expect-eq !>(30) !>(attempted.counts.budget))
+    %+  expect-eq
+      !>(`(list (unit decision:engine))`~[`[%threshold %requested-max]])
+    !>((rulings ceiling))
+    (expect-eq !>(20) !>(accepted.counts.ceiling))
+  ==
 --

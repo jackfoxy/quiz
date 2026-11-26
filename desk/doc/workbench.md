@@ -103,6 +103,13 @@ previewed. A preview is kept in history like a run; it cannot be replayed,
 and **Rerun request** previews again. See the
 [reference](reference.md#generator-preview).
 
+A passed or uncovered run with `++cover` or `++cover-table` shows
+**Coverage requirements**: one row per requirement, met or not, with hits of
+total, observed and required percent, whether it is met, and under
+`%confident` the Wilson bounds and decision (established, refuted,
+undecided, or plain threshold with the reason). A line under the table gives
+the meaning of each mode present ([coverage report](reference.md#reports-labels-and-coverage)).
+
 Results show only confirmed server status, effective configuration and seed,
 counters, diagnostics, and original/shrunk counterexamples. A property run
 also shows **Call limit: N ms per call**, the limit its last slice ran under. Under the

@@ -139,6 +139,11 @@ verdict. Use it to make failures readable and to see what was tested:
   `tabulate` table's entries, not of samples (QuickCheck's `coverTable`). It
   uses `++cover`'s mode, or `%check` alone; a table with no entries is short.
   Shortfall rows then carry the table's name.
+- A completed run's `coverage` lists every requirement, met or not: hits of
+  total, observed and required percent, `met`, and under `%confident` the
+  Wilson bounds and a decision (`established`, `refuted`, `undecided`, or
+  `threshold` with why). A met `%warn`/`%check` row is only observed in this
+  run; only `established` means the share is known with confidence.
 - `++expect %fail` marks a claim that should fail (`failed-as-expected`).
 - `implies` with a trap guards partial code. `all` and `any` combine props, but
   every list element is already evaluated.

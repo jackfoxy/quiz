@@ -128,7 +128,21 @@ for (const [root, name, outcome, why] of examples) {
         ? 'none was accepted (2 seen, 3 passed)' : 'none was accepted (1 seen, 2 passed)');
       if (!order) await expect(page.locator('#run-trace-step')).toContainText('lines=[[3 12] 0]');
     }
+    // Every coverage requirement is reported, met or not.
+    const rows = {
+      '12-labels-coverage': [['short', 15, 100, true], ['long', 84, 100, true]],
+      '14-coverage-shortfall': [['empty', 1, 100, false]],
+      '28-confident-coverage': [['heads', 377, 800, true]],
+      '35-cover-table': [['0', 24, 99, true], ['1', 21, 99, true], ['5', 6, 99, true]]}[name];
+    if (rows) {
+      expect(got.outcome.coverage.map(row => [row.label, row.hits, row.total, row.met])).toEqual(rows);
+      await expect(page.locator('#run-coverage-rows')).toBeVisible();
+    }
     if (name === '28-confident-coverage') {
+      const [heads] = got.outcome.coverage;
+      expect([heads.low, heads.high, heads.decision]).toEqual([36.71, 57.79, {kind:'established'}]);
+      await expect(page.locator('#run-coverage-rows')).toContainText('36.71% – 57.79%');
+      await expect(page.locator('#run-coverage-modes')).toContainText('checkCoverage');
       // %confident runs past requested until the Wilson bound decides.
       expect(got.counts).toMatchObject({accepted:800, attempted:800});
       expect(got.distribution.labels).toEqual({heads:377});

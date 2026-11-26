@@ -103,6 +103,35 @@
   ::  A row with its hits and the count its share is taken of.
   [=shortfall hits=@ud total=@ud]
 ::
++$  decision
+  ::  How a %confident row stood when the run ended: its lower bound
+  ::  reached the tolerance of its share, its upper bound fell below the
+  ::  share, neither yet, or the plain threshold decided because the run
+  ::  reached requested-max, ran out of a budget, or had no samples.
+  $%  [%established ~]
+      [%refuted ~]
+      [%undecided ~]
+      [%threshold why=?(%requested-max %no-samples budget-name)]
+  ==
+::
++$  cover-row
+  ::  One coverage requirement as the run ended: its mode, label (a table
+  ::  row's value, with the table's name), hits of total, observed share
+  ::  (floored) and required share in whole percent, whether the plain
+  ::  threshold is met, and under %confident the Wilson bounds on the share
+  ::  and the row's decision.
+  $:  mode=?(%warn %check %confident)
+      label=@t
+      table=(unit @t)
+      hits=@ud
+      total=@ud
+      got=@ud
+      want=@ud
+      met=?
+      bounds=(unit [low=@rd high=@rd])
+      decision=(unit decision)
+  ==
+::
 +$  counters
   $:  attempted=@ud
       accepted=@ud
@@ -283,6 +312,8 @@
       pending=(unit [=vase =shown])
       preview=(unit preview)
       search=(unit search)
+      ::  Every coverage requirement as the run ended, in ++cover order.
+      covered=(list cover-row)
       ::  A document's ++within: its calls' limit, below the ship's.
       within=(unit @dr)
   ==
@@ -340,7 +371,7 @@
   =/  size  ?:(=(0 size-max.config) start (min size-max.config start))
   %-  finish
   :*  seed  config  compiled  (slot 6 fate.compiled)  size  ~(. og seed)
-      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~  ~  ~  ~
+      ~  0  *counters  ~  ~  call-time  [~ ~]  ~  ~  ~  ~  ~  ~
   ==
 ::
 ++  preview-max
@@ -940,10 +971,59 @@
   (weld labels tables)
 ::
 ++  conclude
-  ::  A checkpoint was reached. Expected failure, then coverage. Under
-  ::  %confident a row whose upper bound is below its share fails, and the
-  ::  run passes once every lower bound reaches the tolerance of its share;
-  ::  otherwise it goes on. A table row with no entries yet is undecided.
+  ::  A checkpoint was reached: ++decide, and once that ends the run,
+  ::  record every coverage requirement as it stood.
+  |=  [s=state final=?]
+  ^-  state
+  =/  next  (decide s final)
+  ?~  result.next  next
+  next(covered (cover-rows next final))
+::
+++  cover-rows
+  ::  Every requirement with what was observed. Bounds need samples. A
+  ::  %confident row's decision repeats ++decide's test, or names why the
+  ::  plain threshold decided: no samples, requested-max, or a budget.
+  |=  [s=state final=?]
+  ^-  (list cover-row)
+  =/  cover  cover.compiled.s
+  ?~  cover  ~
+  =/  mode  mode.cover.u.cover
+  =/  n  accepted.counts.s
+  =/  z  (z-for certainty.confidence.u.cover)
+  =/  tolerance  (div:rd (sun:rd tolerance.confidence.u.cover) .~100)
+  =/  why=?(%requested-max %no-samples budget-name)
+    ?:  =(0 n)  %no-samples
+    ?:  (gte n requested-max.bounds.config.s)  %requested-max
+    =/  budget  (spent s)
+    ?~(budget %requested-max u.budget)
+  %+  turn  (requirements s)
+  |=  req=requirement
+  ^-  cover-row
+  =/  [label=@t want=@ud got=@ud table=(unit @t)]  shortfall.req
+  =/  total  total.req
+  =/  met
+    ?:  &(?=(^ table) =(0 total) (gth want 0))  |
+    (gte (mul 100 hits.req) (mul want total))
+  =/  bounds=(unit [low=@rd high=@rd])
+    ?.  &(?=(%confident mode) (gth total 0))  ~
+    :-  ~
+    :-  (wilson hits.req total (sub:rd .~0 z))
+    (wilson hits.req total z)
+  =/  share  (div:rd (sun:rd want) .~100)
+  =/  ruling=decision
+    ?:  |(final =(0 n))  [%threshold why]
+    ?~  bounds  [%undecided ~]
+    ?:  (lth:rd high.u.bounds share)  [%refuted ~]
+    ?:  (gte:rd low.u.bounds (mul:rd tolerance share))  [%established ~]
+    [%undecided ~]
+  =/  decided=(unit decision)  ?.(?=(%confident mode) ~ `ruling)
+  [mode label table hits.req total got want met bounds decided]
+::
+++  decide
+  ::  Expected failure, then coverage. Under %confident a row whose upper
+  ::  bound is below its share fails, and the run passes once every lower
+  ::  bound reaches the tolerance of its share; otherwise it goes on. A
+  ::  table row with no entries yet is undecided.
   ::  At the `final` checkpoint, or with no samples, the plain threshold
   ::  decides, as under %check.
   |=  [s=state final=?]

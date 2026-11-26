@@ -31,6 +31,9 @@ The compiler checks types without calling the property, generator, or shrinker:
 Reports, `++cover`, `++cover-table`, `++confidence` and `++expect` are
 explained in
 [reports, labels and coverage](reference.md#reports-labels-and-coverage).
+A completed run reports every `++cover` and `++cover-table` row, met or not,
+with its observed share and, under `%confident`, its Wilson bounds and
+decision.
 Build reports with `/+  prop=quiz-prop`, generators and shrinkers with
 `/+  gen=quiz-gen`, and generated functions with `/+  fun=quiz-fun`; see the
 [app generator library](reference.md#app-generator-library-quiz-gen) and

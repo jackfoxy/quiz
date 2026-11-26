@@ -690,6 +690,41 @@
       show();
       return box;
     }
+    // Every coverage requirement as the run ended: what was observed, what
+    // was required, and under %confident the Wilson bounds and decision.
+    const modeMeanings = {
+      warn: '%warn: a share below its requirement is reported; the run still passes.',
+      check: '%check: a share below its requirement at the requested count makes the run uncovered.',
+      confident: '%confident: testing goes on until Wilson bounds establish or refute each share, as QuickCheck\'s checkCoverage does.'
+    };
+    const whyWords = {'requested-max': 'requested-max reached', 'no-samples': 'no samples',
+      attempts: 'the attempts budget ran out', drops: 'the drops budget ran out',
+      duplicates: 'the duplicates budget ran out'};
+    const ruling = (decision) => !decision ? '—'
+      : decision.kind === 'established' ? 'established: lower bound reached the tolerance of the share'
+        : decision.kind === 'refuted' ? 'refuted: upper bound below the share'
+          : decision.kind === 'undecided' ? 'undecided'
+            : `plain threshold: ${whyWords[decision.why] ?? decision.why}`;
+    function coverageTable(rows) {
+      const box = node('section', 'run-coverage');
+      box.append(node('h3', '', 'Coverage requirements'));
+      const table = node('table', 'run-coverage-rows');
+      const head = node('tr', '');
+      for (const title of ['Requirement', 'Mode', 'Hits / total', 'Observed', 'Required', 'Met', 'Wilson bounds', 'Decision']) head.append(node('th', '', title));
+      table.append(head);
+      for (const row of rows) {
+        const tr = node('tr', '');
+        for (const text of [row.table == null ? row.label : `${row.table} = ${row.label}`, row.mode,
+          `${row.hits} / ${row.total}`, `${row.got}%`, `${row.want}%`, row.met ? 'yes' : 'no',
+          row.low == null ? '—' : `${row.low}% – ${row.high}%`, ruling(row.decision)]) tr.append(node('td', '', text));
+        table.append(tr);
+      }
+      box.append(table);
+      const modes = node('ul', 'run-coverage-modes');
+      for (const mode of [...new Set(rows.map((row) => row.mode))]) modes.append(node('li', '', modeMeanings[mode] ?? mode));
+      box.append(modes);
+      return box;
+    }
     // Each label's smallest example from a labelled-example search, the
     // ++cover labels never seen, and why the search ended early, if it did.
     function foundExamples(outcome) {
@@ -803,6 +838,7 @@
       if (outcome?.kind === 'uncovered') line(detail, 'Meaning', 'Every check passed, but required labels were too rare.');
       if (outcome?.kind === 'passed-unexpectedly') line(detail, 'Meaning', 'The document expects a failure, but every requested check passed.');
       if (outcome?.kind === 'failed-as-expected') line(detail, 'Meaning', 'The document expects a failure, and one was found.');
+      if (outcome?.coverage?.length) detail.append(coverageTable(outcome.coverage));
       coverage(detail, 'run-coverage-warnings', 'Coverage warnings', outcome?.warnings);
       coverage(detail, 'run-coverage-shortfalls', 'Coverage shortfalls', outcome?.shortfalls);
       if (outcome?.examples?.length) {

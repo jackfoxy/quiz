@@ -775,6 +775,29 @@ table row `label` is the value and `table` is the table's name. `got` is the
 floored observed percentage: of accepted samples for a label, of the table's
 entries for a table row.
 
+**Coverage report.** A `passed` or `uncovered` run also reports *every*
+requirement, met or not, in `++cover` then `++cover-table` order, so a pass
+shows how close each share came. Each row is a `cover-row`:
+`[mode label table hits total got want met bounds decision]`: the mode, the
+label (a table row's value, with `table` its name), hits of total (accepted
+samples, or the table's entries), the floored observed and the required
+percent, and `met`, the plain threshold's verdict. Under `%confident`,
+`bounds` holds the Wilson `[low high]` interval on the share, when there are
+samples, and `decision` says how the row stood when the run ended:
+
+| Decision | Meaning |
+| --- | --- |
+| `[%established ~]` | Its lower bound reached the tolerance of its share |
+| `[%refuted ~]` | Its upper bound fell below its share |
+| `[%undecided ~]` | Neither yet; another row's refutation ended the run |
+| `[%threshold why]` | The plain threshold decided: `why` is `%requested-max`, a budget (`%attempts`, `%drops`, `%duplicates`), or `%no-samples` |
+
+This changes what is reported, not what is decided. QuickCheck's
+[`checkCoverage`](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#v:checkCoverage)
+draws the same line between a share observed in this run and one
+established with confidence: under `%warn` and `%check` a met row is only
+observed. The workbench shows the rows as **Coverage requirements**.
+
 `++expect %fail` marks a property that should fail. A counterexample, after
 shrinking, ends `failed-as-expected`; reaching the requested count ends
 `passed-unexpectedly`. `error`, `limited` and `exhausted` outcomes are
@@ -802,8 +825,8 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 
 | Outcome | Meaning / payload |
 | --- | --- |
-| `passed` | Target accepted checks reached; no counterexample. Coverage `warnings` (empty unless `%warn` found a shortfall) and the first example per label |
-| `uncovered` | Target reached, but a `%check` coverage row was short, or a `%confident` row's upper bound fell below its share; `shortfalls` and examples |
+| `passed` | Target accepted checks reached; no counterexample. Coverage `warnings` (empty unless `%warn` found a shortfall), the first example per label, and the [coverage report](#reports-labels-and-coverage) |
+| `uncovered` | Target reached, but a `%check` coverage row was short, or a `%confident` row's upper bound fell below its share; `shortfalls`, examples and the coverage report |
 | `passed-unexpectedly` | `++expect %fail`, but every requested check passed |
 | `failed` | `why`, original sample, shrunk sample, shrink trace |
 | `failed-as-expected` | `++expect %fail` and a counterexample was found; same payload as `failed` |

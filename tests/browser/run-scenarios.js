@@ -308,6 +308,21 @@ async function scenario(env, mock, name) {
     assert.match(found, /attempts budget ran out/);
     assert.match(env.descendants(el('run-detail')).map(n=>n.textContent).join(' '), /Labelled-example search/);
     assert.equal(el('run-replay').disabled,true,'a search is not replayed');
+    // Every coverage requirement, met or not, with bounds under %confident.
+    await runs.run();
+    const covered = mock.records.get(docs.active('property').runIds[0]);
+    covered.status='done';
+    covered.outcome={kind:'uncovered', shortfalls:[{label:'none',want:90,got:0,table:null}], examples:[],
+      coverage:[
+        {mode:'confident',label:'any',table:null,hits:100,total:100,got:100,want:50,met:true,low:'73.04',high:'100.00',decision:{kind:'established'}},
+        {mode:'confident',label:'none',table:null,hits:0,total:100,got:0,want:90,met:false,low:'0.00',high:'26.96',decision:{kind:'refuted'}},
+        {mode:'confident',label:'h',table:'side',hits:3,total:10,got:30,want:40,met:false,low:null,high:null,decision:{kind:'threshold',why:'attempts'}}]};
+    await runs.refresh();
+    const rows = env.descendants(el('run-coverage-rows')).map(n=>n.textContent).join(' ');
+    assert.match(rows, /any confident 100 \/ 100 100% 50% yes 73\.04% – 100\.00% established/);
+    assert.match(rows, /refuted: upper bound below the share/);
+    assert.match(rows, /side = h .* plain threshold: the attempts budget ran out/);
+    assert.match(env.descendants(el('run-coverage-modes')).map(n=>n.textContent).join(' '), /checkCoverage/);
     // More limits: budgets and on-timeout go as single fields; a bound
     // sends the document's other bounds too, read with one conf build.
     field('requested','');

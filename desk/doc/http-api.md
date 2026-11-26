@@ -247,9 +247,17 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
 `failed-as-expected`, `error`, `limited`, `exhausted`, `invalid`, `cancelled`,
 `interrupted`, `suite`, `preview`, or `examples`. Additional fields follow the typed result:
 
-- `passed`: `warnings` (coverage shortfalls under `%warn`, usually empty) and
-  `examples`.
-- `uncovered`: `shortfalls` and `examples`. A shortfall is
+- `passed`: `warnings` (coverage shortfalls under `%warn`, usually empty),
+  `examples` and `coverage`.
+- `uncovered`: `shortfalls`, `examples` and `coverage`. A `coverage` row is
+  `{"mode","label","table","hits","total","got","want","met","low","high","decision"}`
+  for every requirement, met or not ([coverage report](reference.md#reports-labels-and-coverage)):
+  `got` and `want` are whole percents; `low` and `high` are the Wilson bounds
+  as percent numbers with two decimals, null outside `%confident` or without
+  samples; `decision` is null outside `%confident`, else `{"kind"}` with
+  `kind` `established`, `refuted` or `undecided`, or
+  `{"kind":"threshold","why"}` with `why` `requested-max`, `attempts`,
+  `drops`, `duplicates` or `no-samples`. A shortfall is
   `{"label","want","got","table"}`, percentages as numbers. `table` is `null`
   for a label row; for a `++cover-table` row it is the table's name and
   `label` is the value. An example is

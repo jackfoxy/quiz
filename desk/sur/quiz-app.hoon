@@ -82,8 +82,16 @@
   ==
 ::
 +$  outcome
-  $%  [%passed warnings=(list shortfall:engine) =examples]
-      [%uncovered shortfalls=(list shortfall:engine) =examples]
+  $%  $:  %passed
+          warnings=(list shortfall:engine)
+          =examples
+          coverage=(list cover-row:engine)
+      ==
+      $:  %uncovered
+          shortfalls=(list shortfall:engine)
+          =examples
+          coverage=(list cover-row:engine)
+      ==
       [%passed-unexpectedly ~]
       [%failed evidence]
       [%failed-as-expected evidence]

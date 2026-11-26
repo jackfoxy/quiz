@@ -305,13 +305,14 @@
 ::
 ++  persist-outcome
   ::  An engine outcome without vases: evidence and examples keep their
-  ::  nouns and rendered text.
-  |=  [out=outcome:engine kept=(map @t example:engine)]
+  ::  nouns and rendered text. A completed run adds its coverage rows.
+  |=  [out=outcome:engine run=state:engine]
   ^-  outcome:app
+  =/  kept  (persist-examples examples.run)
   ?-  -.out
     ?(%exhausted %passed-unexpectedly %preview)  out
-    %passed     [%passed warnings.out (persist-examples kept)]
-    %uncovered  [%uncovered shortfalls.out (persist-examples kept)]
+    %passed     [%passed warnings.out kept covered.run]
+    %uncovered  [%uncovered shortfalls.out kept covered.run]
     %failed  [%failed (persist-evidence +.out)]
     %failed-as-expected  [%failed-as-expected (persist-evidence +.out)]
     %error
@@ -404,7 +405,7 @@
         ==
       =/  result  result.running
       ?~  result  s
-      (finish s id (persist-outcome u.result examples.running) now)
+      (finish s id (persist-outcome u.result running) now)
     %suite
       =/  running
         ~>  %jinx.arm.timeouts.saved.s

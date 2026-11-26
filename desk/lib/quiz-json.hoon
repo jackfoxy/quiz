@@ -301,6 +301,38 @@
   |=  [label=@t =sample:app]
   (pairs:enjs:format ~[['label' s+label] ['sample' (sample-out sample)]])
 ::
+++  cover-row-out
+  ::  One coverage requirement as the run ended. Bounds are percentages
+  ::  with two decimals, null outside %confident or without samples; the
+  ::  decision is null outside %confident.
+  |=  row=cover-row:engine
+  ^-  json
+  =/  percent
+    |=  x=@rd
+    ^-  json
+    =/  bp=@ud  (abs:si (need (toi:rd (mul:rd x .~10000))))
+    =/  cents  (mod bp 100)
+    =/  pad  ?:((lth cents 10) "0" "")
+    n+(crip "{(a-co:co (div bp 100))}.{pad}{(a-co:co cents)}")
+  %-  pairs:enjs:format
+  :~  ['mode' s+mode.row]
+      ['label' s+label.row]
+      ['table' ?~(table.row ~ s+u.table.row)]
+      ['hits' (numb:enjs:format hits.row)]
+      ['total' (numb:enjs:format total.row)]
+      ['got' (numb:enjs:format got.row)]
+      ['want' (numb:enjs:format want.row)]
+      ['met' b+met.row]
+      ['low' ?~(bounds.row ~ (percent low.u.bounds.row))]
+      ['high' ?~(bounds.row ~ (percent high.u.bounds.row))]
+      :-  'decision'
+      ?~  decision.row  ~
+      =/  ruling  u.decision.row
+      %-  pairs:enjs:format
+      :-  ['kind' s+-.ruling]
+      ?.(?=(%threshold -.ruling) ~ ~[['why' s+why.ruling]])
+  ==
+::
 ++  labelled-out
   ::  A label's smallest example. The weight is a decimal string: it can
   ::  exceed a JavaScript number's exact range.
@@ -436,10 +468,12 @@
     %passed
       :~  ['warnings' (shortfalls-out warnings.value)]
           ['examples' (examples-out examples.value)]
+          ['coverage' a+(turn coverage.value cover-row-out)]
       ==
     %uncovered
       :~  ['shortfalls' (shortfalls-out shortfalls.value)]
           ['examples' (examples-out examples.value)]
+          ['coverage' a+(turn coverage.value cover-row-out)]
       ==
     %passed-unexpectedly  ~
     %failed  ~[['evidence' (evidence-out +.value)]]

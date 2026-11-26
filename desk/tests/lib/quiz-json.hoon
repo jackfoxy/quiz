@@ -147,6 +147,22 @@
   =/  got  (decode:codec (need (de:json:html body)))
   (expect !>(=(got `wanted)))
 ::
+++  test-cover-row-encodes
+  ::  Bounds are percentages with two decimals; a threshold names why.
+  ^-  tang
+  =/  row=cover-row:engine
+    :*  %confident  'heads'  ~  377  800  47  40  &
+        `[.~0.4253 .~0.05]  `[%threshold %requested-max]
+    ==
+  =/  fields  (object:codec (cover-row-out:codec row))
+  ;:  weld
+    (expect-eq !>(`json`n+'42.53') !>((~(got by fields) 'low')))
+    (expect-eq !>(`json`n+'5.00') !>((~(got by fields) 'high')))
+    =/  want=json
+      (pairs:enjs:format ~[['kind' s+'threshold'] ['why' s+'requested-max']])
+    (expect-eq !>(want) !>((~(got by fields) 'decision')))
+  ==
+::
 ++  test-outcomes-encode
   ^-  tang
   =/  steps=(list trace-row:engine)
@@ -159,10 +175,17 @@
     [[%false ~['too big' 'second'] `['1' '2']] [42 '42'] [1 '1'] ~]
   =/  short=(list shortfall:engine)  ~[['empty' 20 5 ~] ['3' 10 0 `'length']]
   =/  examples=examples:app  ~[['small' [1 '1']] ['big' [99 '99']]]
+  =/  rows=(list cover-row:engine)
+    :~  [%check 'empty' ~ 5 100 5 20 | ~ ~]
+        :*  %confident  'heads'  ~  377  800  47  40  &
+            `[.~0.4253 .~0.5174]  `[%established ~]
+        ==
+        [%confident 'tails' `'side' 0 0 0 10 | ~ `[%threshold %attempts]]
+    ==
   =/  outcomes=(list outcome:app)
-    :~  [%passed ~ ~]
-        [%passed short examples]
-        [%uncovered short examples]
+    :~  [%passed ~ ~ ~]
+        [%passed short examples rows]
+        [%uncovered short examples rows]
         [%passed-unexpectedly ~]
         [%failed proof]
         [%failed detailed]
