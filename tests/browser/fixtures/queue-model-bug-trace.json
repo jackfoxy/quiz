@@ -1,0 +1,515 @@
+[
+ {
+  "count": 20,
+  "kind": "alts",
+  "best": "17239453263"
+ },
+ {
+  "weight": "15536932056",
+  "text": "cmds=[[1.752.397.168 97] [1.702.521.203 0] [1.752.397.168 7] [1.752.397.168 78] [1.702.521.203 0] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.5...",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 19,
+  "kind": "alts",
+  "best": "15536932056"
+ },
+ {
+  "weight": "13784534787",
+  "text": "cmds=[[1.702.521.203 0] [1.752.397.168 7] [1.752.397.168 78] [1.702.521.203 0] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.20...",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 16,
+  "kind": "alts",
+  "best": "13784534787"
+ },
+ {
+  "weight": "12082013580",
+  "text": "cmds=[[1.752.397.168 7] [1.752.397.168 78] [1.702.521.203 0] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.20...",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 15,
+  "kind": "alts",
+  "best": "12082013580"
+ },
+ {
+  "weight": "10329616401",
+  "text": "cmds=[[1.752.397.168 78] [1.702.521.203 0] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "10329616330",
+  "text": "cmds=[[1.752.397.168 7] [1.702.521.203 0] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "10379492373",
+  "text": "cmds=[[1.752.397.168 7] [1.752.397.168 78] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 14,
+  "kind": "alts",
+  "best": "10379492373"
+ },
+ {
+  "weight": "8627095194",
+  "text": "cmds=[[1.752.397.168 78] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "8627095123",
+  "text": "cmds=[[1.752.397.168 7] [7.368.560 0] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "10372123809",
+  "text": "cmds=[[1.752.397.168 7] [1.752.397.168 78] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 13,
+  "kind": "alts",
+  "best": "10372123809"
+ },
+ {
+  "weight": "8619726630",
+  "text": "cmds=[[1.752.397.168 78] [1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 10,
+  "kind": "alts",
+  "best": "8619726630"
+ },
+ {
+  "weight": "6867329380",
+  "text": "cmds=[[1.702.521.203 0] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "6917205423",
+  "text": "cmds=[[1.752.397.168 78] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 9,
+  "kind": "alts",
+  "best": "6917205423"
+ },
+ {
+  "weight": "5164808173",
+  "text": "cmds=[[1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "5164808229",
+  "text": "cmds=[[1.752.397.168 78] [7.368.560 0] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "6909836859",
+  "text": "cmds=[[1.752.397.168 78] [1.752.397.168 22] [1.702.521.203 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "5214684216",
+  "text": "cmds=[[1.752.397.168 78] [1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 8,
+  "kind": "alts",
+  "best": "5214684216"
+ },
+ {
+  "weight": "3462286966",
+  "text": "cmds=[[1.752.397.168 22] [7.368.560 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3462287022",
+  "text": "cmds=[[1.752.397.168 78] [7.368.560 0] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "5207315652",
+  "text": "cmds=[[1.752.397.168 78] [1.752.397.168 22] [1.702.521.203 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512163009",
+  "text": "cmds=[[1.752.397.168 78] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 7,
+  "kind": "alts",
+  "best": "3512163009"
+ },
+ {
+  "weight": "1759765759",
+  "text": "cmds=[[1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "1759765815",
+  "text": "cmds=[[1.752.397.168 78] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794445",
+  "text": "cmds=[[1.752.397.168 78] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162970",
+  "text": "cmds=[[1.752.397.168 39] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 7,
+  "kind": "alts",
+  "best": "3512162970"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "1759765776",
+  "text": "cmds=[[1.752.397.168 39] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794406",
+  "text": "cmds=[[1.752.397.168 39] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162950",
+  "text": "cmds=[[1.752.397.168 19] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 7,
+  "kind": "alts",
+  "best": "3512162950"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "1759765756",
+  "text": "cmds=[[1.752.397.168 19] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794386",
+  "text": "cmds=[[1.752.397.168 19] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162940",
+  "text": "cmds=[[1.752.397.168 9] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 7,
+  "kind": "alts",
+  "best": "3512162940"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "1759765746",
+  "text": "cmds=[[1.752.397.168 9] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794376",
+  "text": "cmds=[[1.752.397.168 9] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162935",
+  "text": "cmds=[[1.752.397.168 4] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 7,
+  "kind": "alts",
+  "best": "3512162935"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "1759765741",
+  "text": "cmds=[[1.752.397.168 4] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794371",
+  "text": "cmds=[[1.752.397.168 4] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162933",
+  "text": "cmds=[[1.752.397.168 2] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 7,
+  "kind": "alts",
+  "best": "3512162933"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "1759765739",
+  "text": "cmds=[[1.752.397.168 2] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794369",
+  "text": "cmds=[[1.752.397.168 2] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162932",
+  "text": "cmds=[[1.752.397.168 1] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 6,
+  "kind": "alts",
+  "best": "3512162932"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "1759765738",
+  "text": "cmds=[[1.752.397.168 1] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794368",
+  "text": "cmds=[[1.752.397.168 1] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162931",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 22] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 5,
+  "kind": "alts",
+  "best": "3512162931"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "1759765737",
+  "text": "cmds=[[1.752.397.168 0] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3504794367",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 22] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162920",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 11] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 5,
+  "kind": "alts",
+  "best": "3512162920"
+ },
+ {
+  "weight": "1759765748",
+  "text": "cmds=[[1.752.397.168 11] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "3504794356",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 11] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162914",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 5] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 5,
+  "kind": "alts",
+  "best": "3512162914"
+ },
+ {
+  "weight": "1759765742",
+  "text": "cmds=[[1.752.397.168 5] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "3504794350",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 5] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162911",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 2] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 5,
+  "kind": "alts",
+  "best": "3512162911"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "3504794347",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 2] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162910",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 1] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "accepted"
+ },
+ {
+  "count": 4,
+  "kind": "alts",
+  "best": "3512162910"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": null,
+  "text": null,
+  "kind": "candidate",
+  "why": "visited"
+ },
+ {
+  "weight": "3504794346",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 1] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ },
+ {
+  "weight": "3512162909",
+  "text": "cmds=[[1.752.397.168 0] [1.752.397.168 0] [7.368.560 0] 0]",
+  "kind": "candidate",
+  "why": "passed"
+ }
+]

@@ -1,0 +1,219 @@
+# Quiz agent API
+
+`%quiz` accepts local-ship clients only. Pokes and watches from another ship
+are rejected. The engine and `quiz` library contracts are separate; see
+[source format](source-format.md) and [suites and replay](suites-and-replay.md).
+
+The authoritative types are in `sur/quiz-app.hoon`. `app/quiz.hoon` exports the
+Gall interface from `lib/quiz-agent.hoon`; tests can exercise the latter's
+transient state directly. `lib/quiz-job.hoon` owns the pure queue and lifecycle.
+
+## Actions and requests
+
+Poke `%quiz-action` with one of:
+
+- `[%run request]`: enqueue, allocating the next positive `@ud` ID.
+- `[%cancel id]`: cancel a queued job immediately, or request cancellation of
+  active work at its next Behn boundary, including a pending Clay build.
+- `[%delete id]`: delete a completed record. A missing ID is nacked with the
+  trace `run-not-found`, an unfinished one with `run-unfinished`.
+- `[%clear ~]`: delete completed records; preserve queued and active work.
+- `[%timeouts call=@dr build=@dr arm=@dr]`: set the ship-wide CPU time limits.
+  Each must be from `~s1` to `~h1`, or the poke is nacked. Defaults are
+  `[~s10 ~s30 ~m1]`. A change applies from the next slice, build or arm.
+
+The request fields, in order, are:
+
+| Field | Type and meaning |
+| --- | --- |
+| `source` | `[%draft text=@t]`, `[%file path]`, or `[%suite path arms=(list term)]` |
+| `desk` | Local Clay desk, `@tas` |
+| `revision` | Clay `case`: positive `%ud`, `%da`, or `%tas` label |
+| `config` | `(unit patch)`; optional per-field settings override |
+| `seed` | `(unit @uv)`; optional seed override, including zero |
+| `replay-of` | `(unit @ud)`; replay an existing property's captured inputs |
+| `mode` | `[%run ~]`, `[%preview count=@ud verdicts=? alts=?]` for a [generator preview](reference.md#generator-preview), or `[%examples count=@ud]` for a [labelled-example search](reference.md#labelled-examples) |
+
+Absent overrides use the document's `conf`, then engine defaults. Entropy is
+captured on admission; a document seed takes precedence over that entropy.
+The effective settings and seed are recorded after compilation. A `patch`
+holds one `unit` per top-level `conf` field (`bounds` is one whole `limits`);
+`%quiz` merges the set fields into the document's settings after the build, so
+a client changing one field sets just that field. A merged result outside the
+engine ranges ends the run `%invalid` with `%conf-range`. Suites expose neither a controlled seed
+nor property counters: their record's `seed` and `config` are absent.
+
+A `%preview` request is an ordinary queued job: it runs in slices, can be
+cancelled or interrupted, and ends with the outcome
+`[%preview rows candidates summary]`. It makes at most 1,000 samples, the
+first 100 as rows and all in the summary, never shrinks,
+and ignores `requested` and the attempt, drop and duplicate budgets. Its
+summary's kind is `%preview`. A suite cannot be previewed.
+
+An `%examples` request is also an ordinary job. It generates and judges as a
+run does until `count` samples pass (at most `requested-max`; a budget can
+end generation first), then shrinks each label's first sample while it passes
+and keeps the label, one label per slice. It ends with
+`[%examples found unseen budget proof]`: per label a `labelled` row
+`[label sample weight steps tried end]`, `++cover` labels never seen, the
+budget that ended generation, and the evidence of a generated sample that
+failed, which ends the search. Its summary's kind is `%examples`. A suite
+cannot be searched.
+
+When `replay-of` is present, its stored source, path, context, seed, and settings
+replace the other request fields. Missing/pruned records and records without
+property replay inputs are rejected. Replay still checks local ship, engine
+version, source hash, and context availability before execution.
+
+Source and context are pinned when the queued job becomes active. For a date
+or label request, the recorded immutable revision is the authority. A saved
+file changed while waiting may therefore use the newer content if the chosen
+case resolves to it. Use an explicit `%ud` revision to select immutable input
+before enqueueing. Missing sources or unavailable contexts yield `%invalid`.
+A source snapshot is retained before property parsing, so syntax errors still
+refer to the captured text. If the source/context cannot be read, it is absent.
+
+## Correlated web admission
+
+The local web adapter pokes `%quiz-submit` with `[ticket=@ta request]`.
+After successful admission, `%quiz` pokes the local `%quiz-web` agent with
+`%quiz-admitted` carrying `[ticket=@ta id=@ud]`. The ID is allocated in the
+same event as admission; a rejected request sends no callback. `%quiz-web`
+accepts only a matching pending ticket and ignores stale callbacks. These
+marks support the HTTP adapter; `%quiz-action` and its ordinary poke
+acknowledgement remain unchanged. Tickets and pending HTTP state are transient;
+the durable state schema and engine semantics version are unchanged.
+
+## Reads and updates
+
+Subscribe using `%quiz-update` facts:
+
+- `/runs` initially sends `[%runs ids]`, newest ID first. It subsequently
+  sends list changes, `[%run record]` progress, and `[%deleted id]`.
+- `/run/<id>` initially sends `[%run record]` and then progress snapshots.
+  Unknown IDs are rejected. Deletion/pruning sends `[%deleted id]` followed
+  by a kick. Completion keeps the subscription open.
+- `/timeouts` initially sends `[%timeouts timeouts]`, then the new value after
+  every change. `%quiz-web` subscribes here for its build limit.
+
+IDs in paths use canonical `(scot %ud id)`, including dots for thousands.
+Snapshots are current state; they are not a lossless log of every internal
+engine step. A no-import draft can move from queued directly to running in
+one event. Progress facts precede outgoing build requests.
+
+Scries return `%noun` cages:
+
+| Agent path | Product |
+| --- | --- |
+| `/x/run/<id>` | `record:quiz-app`; known path with absent ID returns no value |
+| `/x/runs` | Newest-first `(list @ud)` of retained and pending IDs |
+| `/x/summaries` | Newest-first `(list summary)`: id, source kind (`%preview` for a preview, `%examples` for a labelled-example search), status and outcome tag per run |
+| `/x/limits` | `defaults:quiz-engine`, including bounds |
+| `/x/version` | Engine semantics version (`%quiz-engine-1`) |
+| `/x/timeouts` | `timeouts:quiz-app`, the current CPU time limits |
+
+The Dojo `%gx` syntax adds a terminal mark; Gall strips it before `on-peek`:
+
+```hoon
+=qa -build-file /=quiz=/sur/quiz-app/hoon
+.^((list @ud) %gx /=quiz=/runs/noun)
+.^(@tas %gx /=quiz=/version/noun)
+.^(record:qa %gx /=quiz=/run/1/noun)
+```
+
+```hoon
+:quiz &quiz-action [%run [%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ ~ ~ [%run ~]]
+:quiz &quiz-action [%cancel 1]
+:quiz &quiz-action [%run [%draft ''] %quiz [%ud 1] ~ ~ `1 [%run ~]]
+:quiz &quiz-action [%run [%draft '|%  ++  fate  |=(@ud &)  --'] %quiz [%ud 1] ~ ~ ~ [%preview 10 & &]]
+```
+
+Replace revision `1` with an available revision. An empty suite arm list runs
+all discovered arms. Numeric filenames need cord path components, for example
+`~[%tests %examples '02-boxcar' %hoon]`.
+
+## Scheduling, bounds, and persistence
+
+There is one active job and a FIFO queue of at most 100 waiting jobs. Property
+slices start at 8 engine steps and adapt: when the span from one slice's wake
+to the next is under 50 ms the next slice doubles, and over 250 ms it halves,
+never above `samples-per-slice` (default and ceiling 1,000). Results do not
+depend on slicing; only how often progress is committed. Shrinking steps use
+the same budget, and under a split timeout policy every slice is one step. A slice also ends when it first finds a
+counterexample, so that evidence is committed before any alts call. Suites run
+one arm per slice. A self-addressed Behn wake yields between slices, with a
+nominal 10 ms delay. Each wake does one kind of work: it either advances the
+active job by one slice or starts the next queued job (pin, read and build). Tokens are monotonic
+and saved; duplicate, late, wrong-kind, and pre-reload replies are ignored.
+Cancellation of active work first publishes `%cancelling`; the next slice
+publishes `%done` with `[%cancelled %request]`, without another evaluation.
+
+Each property slice runs its calls under the ship-wide call limit, lowered by
+the document's `++within` when it has one, and records that limit as the
+record's `call` (`(unit @dr)`; `~` for suites and before the first slice).
+
+The default retained completed-record cap is 100. A property's effective
+`retained-runs` can lower the cap when that property completes. Pruning removes
+the oldest submitted completed records, never queued/active work. Suites use
+the default cap. Reload applies the default cap after cancelling interruptions.
+Deleting/clearing does not reset IDs or tokens. Admission rejects oversized
+drafts, invalid overrides/paths/names, more than 100 explicit suite arm names,
+and a full queue; these pokes are nacked and allocate no ID. Build/type/context
+failures after admission are recorded as `%invalid` runs.
+
+`on-save` emits `[%0 state-0]`: IDs, tokens, requests, source/replay snapshots,
+settings, timestamps, progress (with the label distribution and current
+size), and durable
+outcomes (with rendered per-label examples). It excludes pending Clay
+replies, compiled gates, suite cores, RNGs, the samples `%exact` keeps for
+duplicate comparison, and timer state. Counterexamples
+contain only their noun values and bounded rendered text, without vase types.
+`on-load` preserves completed records and marks every unfinished queued,
+building, running, shrinking, or cancelling record `%cancelled` with reason
+`%reload`. It never resumes old execution or substitutes new replay inputs.
+
+## Aborted events and `%interrupted`
+
+Under a property's `on-timeout` policy (`%fail` or `%discard`), a fate that
+exceeds the call limit is handled as a sample outcome, not an interruption;
+see [the timeout policy](reference.md#timeout-policy-on-timeout). An abort is
+taken as a timeout only when the time from the tick's scheduled wake to the
+wake after the error wake is at least the call limit; a shorter one was Ctrl-C
+or loom exhaustion. Everything below applies to all other aborts and to the default
+`%interrupt` policy.
+
+Every fate, norn, alts and sample-rendering call runs under a Vere `%jinx`
+CPU-time limit. Draft compilation and document arm checks have a build limit,
+and each suite arm an arm limit. All three come from the ship-wide `timeouts`
+(see below). When a
+limit expires the runtime aborts the **whole Gall event**; `mule` and `mong`
+cannot catch it. The same happens when the operator presses Ctrl-C in the Vere
+terminal, or when the computation exhausts the ship's memory (loom).
+
+The aborted event rolls back. Vere then delivers the tick's Behn wake again,
+this time with an error: `[%behn %wake [~ tang]]`. Vere replays it as a
+`%crud` with the aborted event's own `now`, and its tang is only the Gall
+stack, so the error wake can tell neither the cause nor how long the event
+ran. `%quiz` therefore only records when the aborted tick was due and asks for
+another wake. On that wake, whose `now` is fresh, it finishes the job that
+tick was working on as:
+
+```hoon
+[%interrupted during=?(%building %running %shrinking) proof=(unit evidence) arm=(unit term)]
+```
+
+- If a job was active, that job is blamed. `during` comes from its status,
+  `proof` is the best counterexample committed before the abort, and `arm` is
+  the suite arm that was executing.
+- Otherwise the head of the queue is blamed, with `during=%building`. Its
+  source snapshot is absent, because recording it was rolled back with the
+  event.
+
+The job is never retried, because deterministic work would hang again. The
+next wake continues the queue. The tang does not identify the cause, so a
+timeout, a Ctrl-C and memory exhaustion produce the same outcome. Clay builds
+of saved files and suites run inside Clay and have no CPU limit. They can
+still be interrupted with Ctrl-C.
+
+Byte caps apply after allocation. There is no per-run memory limit below the
+loom size, and no isolation of the ship from the code it runs.
