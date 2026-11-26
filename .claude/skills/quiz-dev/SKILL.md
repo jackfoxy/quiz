@@ -128,7 +128,8 @@ Ctrl-C in the Vere terminal: the terminal prints `recover: dig: alrm`,
 is followed by a `meme`, and the serf can die (`loom: strange guard` or
 `pier: serf unexpectedly shut down`); restart the pier. With a 2 GB loom it
 died on every `%discard` hanging-sample run once the engine grew to include
-`quiz-auto`; boot test ships with `--loom 32`. A pier whose queue still holds
+`quiz-auto`; boot test ships with `--loom 32`, which makes the death rare
+but not impossible. A pier whose queue still holds
 the hanging job can die again on boot; restart until it stays up, then reset
 the call limit in Settings. An error wake carries the aborted event's own `now`, so
 `%quiz` times an abort on the wake after it. A Clay build of a saved

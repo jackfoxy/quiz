@@ -168,7 +168,7 @@ authoritative behavior and recovery guidance.
   correlated admission, and cancellation returns after acknowledgement. Poll
   the run record for its confirmed terminal state. There is no automatic
   mutation retry. See [run and replay](http-api.md#run-and-replay) and
-  [history, status and cancellation](http-api.md#history-status-and-cancellation).
+  [history, status and cancellation](http-api.md#history-status-cancellation-and-deletion).
 - **The file wire serializes writes.** Only one save or delete may be pending;
   verification times out after 10 seconds. See the
   [file wire](http-api.md#file-wire).

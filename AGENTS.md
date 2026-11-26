@@ -77,11 +77,12 @@ lists each module's entry points.
 - **urui copies.** Never edit a urui copy here. Make the change in the urui
   repository, test it there, re-copy every changed file by hand, and update the
   pin below.  `bin/verify-sync.sh` reports drift against the urui checkout.
-  Pinned source: **obelisk `47881e9`**, not the urui repository.  urui's own
+  Pinned source: **obelisk `c0626d4`**, not the urui repository.  urui's own
   working tree is *behind* its consumers -- it lacks dialog dragging,
   `refresh-tree`, the conflict gate and the three shared key documents -- so
   the shipped set is whatever obelisk, graph-viz and heathcliff carry, and
-  those three agree file for file.  Re-pin to urui once it catches up.
+  those three agree file for file, except one graph-viz Help entry in
+  `doubles/fetch.js`.  Re-pin to urui once it catches up.
 - **No secrets or machine paths** in committed files. Use `<pier>`, `<vere>`
   and `QUIZ_*` environment variables as placeholders.
 - **Disposable ships only.** Develop and test on a fake ship. Never install on,
@@ -94,8 +95,8 @@ installation is in [README.md](README.md#installation); browser test setup and
 commands are in [tests/browser/README.md](tests/browser/README.md).
 
 Boot a disposable fake ship on `%zuse 408` (for example
-`<vere> -F zod --loom 32`; the larger loom keeps Vere 4.6's serf alive
-through `%jinx` aborts), then install the desk as the README describes. To iterate after editing:
+`<vere> -F zod --loom 32`; the larger loom usually keeps Vere 4.6's serf
+alive through `%jinx` aborts), then install the desk as the README describes. To iterate after editing:
 
 ```sh
 rsync -a --delete desk/ <pier>/quiz/
@@ -167,7 +168,7 @@ Also run `git diff --check` and `find desk -type l` (expect no symlinks).
   counters. Re-run the affected examples after any engine or example change
   and update the numbers.
 - The fallback help in `desk/lib/quiz-web.hoon` is a short summary. Keep its
-  shortcut list in step with `desk/doc/keyboard-shortcuts.md` and the
+  shortcut list in step with `desk/doc/keyboard/quiz-keys.md` and the
   configured shortcuts.
 - Keep this file, [CLAUDE.md](CLAUDE.md), [llms.txt](llms.txt) and the
   skills in `.claude/skills/` in step with the tree.

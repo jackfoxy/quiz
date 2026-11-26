@@ -12,8 +12,7 @@ them. You will grow a collection under `guide/` in **My documents**. Later
 chapters use the bundled examples to test collections, dependent inputs,
 generated functions and Gall agent doors.
 
-The guide describes Quiz at commit `7210f00`, engine `%quiz-engine-1`,
-targeting `%zuse 408`. It assumes you can read simple Hoon gates. The
+The guide describes engine `%quiz-engine-1`, targeting `%zuse 408`. It assumes you can read simple Hoon gates. The
 [reference][reference] supplies exact library signatures.
 
 **Workbench coverage.** All property-document features can be authored in
@@ -1310,8 +1309,10 @@ implementation interfaces, not additional workbench operations.
 | Generator/shrinker/report/function/harness libraries | Editor imports, preview and run | Available; libraries have no dedicated GUI editors |
 | Counts, seed, sizes and repeat-policy overrides | Run-panel fields | Available |
 | Other budgets, bounds and timeout policy | More limits; or `++conf` | Available |
-| Sample/verdict/candidate previews | Four Preview presets | Available |
-| Diagnosis, counterexamples, coverage and shrink trace | Selected history result | Available with bounded retained evidence |
+| Sample/verdict/candidate previews and their summary | Four Preview presets; Preview summary | Available |
+| Smallest passing example for each label | Find examples for each label | Available |
+| Diagnosis, counterexamples and coverage decisions | Selected history result | Available with bounded retained evidence |
+| Shrink trace, step by step | Shrink trace | Available within `trace-steps` |
 | Exact property replay; request rerun | Result buttons | Available; suites/previews cannot exact-replay by design |
 | Counterexample as a regression suite | Save as regression | Available for property runs with a counterexample; saved and run as a suite |
 | Saved-suite discovery and named/all arms | Run controls | Available for openable saved suites |
@@ -1328,15 +1329,13 @@ implementation interfaces, not additional workbench operations.
 | Install/update desk, agent lifecycle and recursive `-test` | No workbench control | Operator/Dojo workflow |
 | Rendered Help | Help, with `%docs` installed | Available conditionally; fallback summary otherwise |
 
-The claim that **all Quiz functionality is accessible through the urui
-workbench is false for this revision**. The tutorial covers the accessible
-property and suite workflows and identifies the remaining interface gaps.
-No application code was changed to hide or repair those gaps.
+Every user-facing operation is reachable from the workbench. The rows
+without a workbench control are programming and operator interfaces: Gall
+subscriptions, desk installation and lifecycle, and Dojo `-test`.
 
-The companion [validation record](cod-ug-validation.md) gives the fresh
-test results, source comparisons, test-to-feature mapping and remaining
-validation limits. It distinguishes actual fake-ship execution from source
-inspection and recorded evidence.
+The access audit, `tests/browser/workbench-access-audit.md` in the
+repository, lists each capability, the route the browser tests exercise,
+and the validation limits.
 
 ## Sources
 

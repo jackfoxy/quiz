@@ -1,7 +1,8 @@
 # Quiz browser checks
 
 See the [workbench access audit](workbench-access-audit.md) for the public
-capability inventory, validation results, and confirmed gaps in UI access.
+capability inventory, the browser test for each route, validation results
+and remaining limits.
 
 Install with `npm ci` and `npx playwright install chromium`. Boot a disposable
 fake ship, install the packaged `%quiz` and `%quiz-web`, and commit `desk/`
@@ -10,7 +11,10 @@ to its `%quiz` desk. Never run mutation checks on a production ship.
 Boot it with a 4 GB loom (`<vere> zod --loom 32`). The hanging-sample specs
 abort events with `%jinx`. On Vere 4.6 each abort is followed by a `meme`,
 and with the default 2 GB loom the serf died on every `%discard` run once
-the engine also carried `quiz-auto`; with `--loom 32` it passes.
+the engine also carried `quiz-auto`. With `--loom 32` it usually passes,
+but the serf died once in unit 34's fresh run (`pier: serf unexpectedly
+shut down`). Restart the pier, set the call limit back to 10 s in Settings
+(the spec's cleanup did not run), and rerun with `--last-failed`.
 
 ```
 QUIZ_URL=http://127.0.0.1:18881 npm run test:doubles

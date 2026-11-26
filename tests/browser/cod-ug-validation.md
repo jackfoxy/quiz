@@ -2,7 +2,8 @@
 
 Checked on 2026-11-24 against checkout `7210f00b8ef76c86c61a526b72344474dbc1cc45`,
 engine `%quiz-engine-13`, on an existing disposable fake `~zod` with `%zuse
-408`, Vere 4.6 and a 4 GB loom. The companion is [cod-ug.md](cod-ug.md).
+408`, Vere 4.6 and a 4 GB loom. The companion is `cod-ug.md`. It and the
+`cod-ug-evidence/` files named below were kept outside the repository.
 
 **Result: Quiz's complete public functionality is not accessible through
 the urui workbench.** Its property-authoring and execution features are
@@ -37,14 +38,14 @@ repository. Test-created regression files were removed.
 
 | Check | Result | Evidence |
 | --- | --- | --- |
-| Existing Playwright suite | 60 passed, 1 skipped, 0 failed; 7.5 minutes | [browser.log](cod-ug-evidence/browser.log), [JSON report](cod-ug-evidence/browser-results.json) |
-| Additional guide checks | 14 distinct checks passed: 11 initially, 2 on targeted recheck, 1 after waiting for explorer refresh | [initial log](cod-ug-evidence/lessons.log), [targeted recheck](cod-ug-evidence/lessons-recheck.log), [saved-suite check](cod-ug-evidence/suite-settled.log) |
-| Workbench doubles using freshly fetched deployed bundle | 5 scenarios passed | [doubles.log](cod-ug-evidence/doubles.log) |
-| Shortcut conflict checks | 9 passed | [shortcuts.log](cod-ug-evidence/shortcuts.log) |
-| Mounted deployment vs checkout | All 134 Hoon/JavaScript files identical | [source-comparison.json](cod-ug-evidence/source-comparison.json) |
+| Existing Playwright suite | 60 passed, 1 skipped, 0 failed; 7.5 minutes | browser.log, JSON report (`cod-ug-evidence/browser-results.json`) |
+| Additional guide checks | 14 distinct checks passed: 11 initially, 2 on targeted recheck, 1 after waiting for explorer refresh | initial log (`cod-ug-evidence/lessons.log`), targeted recheck (`cod-ug-evidence/lessons-recheck.log`), saved-suite check (`cod-ug-evidence/suite-settled.log`) |
+| Workbench doubles using freshly fetched deployed bundle | 5 scenarios passed | doubles.log |
+| Shortcut conflict checks | 9 passed | shortcuts.log |
+| Mounted deployment vs checkout | All 134 Hoon/JavaScript files identical | source-comparison.json |
 | Served client vs checkout | Compiled bundle embeds the current `quiz.js` and `quiz-runs.js` texts | Checked directly after fetching the public bundle |
-| Fresh example snapshots vs checkout | All 37 saved source snapshots match, ignoring trailing whitespace | [example-checks.json](cod-ug-evidence/example-checks.json) |
-| Guide references and code formatting | Local reference targets resolve; fenced Hoon lines fit 80 columns | [document-checks.json](cod-ug-evidence/document-checks.json) |
+| Fresh example snapshots vs checkout | All 37 saved source snapshots match, ignoring trailing whitespace | example-checks.json |
+| Guide references and code formatting | Local reference targets resolve; fenced Hoon lines fit 80 columns | document-checks.json |
 | Repository hygiene | `git diff --check` passes; no desk symlinks | Checked after validation |
 
 The skipped test is installed, rendered `%docs` Help. The fake ship has no
@@ -215,9 +216,9 @@ npx playwright test --config <guide-directory>/cod-ug-evidence/lessons.config.cj
 Set `QUIZ_URL` and `QUIZ_CODE` for the first two browser commands and the
 additional lesson tests. The lesson configuration resolves Playwright and
 sources from the current checkout; optionally set `QUIZ_REPO` to that
-checkout. The evidence includes its [test source](cod-ug-evidence/lessons.spec.cjs),
-[configuration](cod-ug-evidence/lessons.config.cjs) and extracted
-[guide snippets](cod-ug-evidence/snippets.json). It contains no login code or
+checkout. The evidence includes its test source (`cod-ug-evidence/lessons.spec.cjs`),
+configuration (`cod-ug-evidence/lessons.config.cjs`) and extracted
+guide snippets (`cod-ug-evidence/snippets.json`). It contains no login code or
 browser traces. Existing `guide.spec.js` currently hardcodes its clipboard
 permission origin to port 8092; adjust that test's origin if validating on
 another port.

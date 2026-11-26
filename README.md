@@ -9,7 +9,7 @@ counterexamples, then replay a property with its recorded seed and source.
 - [User's guide: seven steps](desk/doc/users-guide.md)
 - [Reference: contracts, limits and library/app differences](desk/doc/reference.md)
 - [Examples and recorded results](desk/doc/examples.md)
-- [Keyboard shortcuts](desk/doc/keyboard-shortcuts.md)
+- [Keyboard shortcuts](desk/doc/keyboard/quiz-keys.md)
 
 ## Installation
 

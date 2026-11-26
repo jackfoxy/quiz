@@ -31,7 +31,7 @@ test('F1 opens Help and F2 opens Settings with the CPU limits', async ({page}) =
 });
 
 test('New document, Copy (Alt-C) and Open (Alt-O) work from outside the editor', async ({page, context}) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'], {origin: 'http://127.0.0.1:8092'});
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await open(page);
   await page.locator('button:has-text("+")').first().click();
   await expect.poll(() => page.evaluate(() => window.quiz.documents.list('property').length)).toBeGreaterThan(0);
@@ -174,9 +174,10 @@ test('More limits, alternates-only preview and date or label revisions', async (
   expect(preview.outcome.rows.every((row) => row.verdict === null)).toBeTruthy();
   expect(preview.outcome.candidates.length).toBeGreaterThan(0);
   // A date revision pins the revision current at that time; an unknown
-  // label ends invalid.
+  // label ends invalid. The time of day matters on a desk made today.
   const now = new Date();
-  const date = `~${now.getUTCFullYear()}.${now.getUTCMonth() + 1}.${now.getUTCDate()}`;
+  const date = `~${now.getUTCFullYear()}.${now.getUTCMonth() + 1}.${now.getUTCDate()}`
+    + `..${now.getUTCHours()}.${now.getUTCMinutes()}.${now.getUTCSeconds()}`;
   await page.locator('#run-revision').fill(date);
   const dated = await finished();
   expect(dated.request.revision).toEqual({kind: 'da', value: date});
