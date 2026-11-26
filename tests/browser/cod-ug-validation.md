@@ -16,7 +16,7 @@ UI parity with the HTTP or Gall APIs.
 
 ## What was checked
 
-The inventory starts with the public contracts in `desk/doc/reference.md`,
+The inventory starts with the public contracts in `desk/doc/reference/engine-and-library.md`,
 `source-format.md`, `agent-api.md`, `http-api.md`, `suites-and-replay.md` and
 `workbench.md`. Each capability was traced to the run panel, result renderer,
 explorer, Settings, file wire or source editor. The inspection includes the
@@ -29,7 +29,7 @@ public library families. New snippets and substantive editing exercises
 were checked through the real workbench on the fake ship.
 
 No application implementation, frozen file or urui copy was edited. The
-pre-existing changes to `desk/doc/workbench.md`, `tests/browser/README.md`
+pre-existing changes to `desk/doc/reference/workbench.md`, `tests/browser/README.md`
 and `tests/browser/guide.spec.js` were preserved. Existing tests were used;
 additional guide tests live with the evidence rather than modifying the
 repository. Test-created regression files were removed.

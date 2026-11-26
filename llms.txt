@@ -11,17 +11,17 @@
 
 - [README](README.md): installation, quick start, library-only use
 - [User's guide](desk/doc/users-guide.md): nineteen-chapter tutorial, property-design advice
-- [Reference](desk/doc/reference.md): public contracts, limits, outcomes, troubleshooting
-- [Limitations](desk/doc/limitations.md): safety boundaries, unsupported behavior, operational caveats
-- [Examples catalog](desk/doc/examples.md): bundled examples with recorded results
+- [Reference](desk/doc/reference/engine-and-library.md): public contracts, limits, outcomes, troubleshooting
+- [Limitations](desk/doc/reference/limitations.md): safety boundaries, unsupported behavior, operational caveats
+- [Examples catalog](desk/doc/reference/examples.md): bundled examples with recorded results
 
 ## Contracts
 
-- [Property documents](desk/doc/source-format.md): `++fate`, `++norn`, `++alts`, `++conf`, restricted Ford prelude
-- [Suites and replay](desk/doc/suites-and-replay.md): `test-*` discovery, aggregation, replay inputs, regression suites
-- [Agent API](desk/doc/agent-api.md): `%quiz-action` pokes, `%quiz-update` facts, scries
-- [HTTP API](desk/doc/http-api.md): routes, authentication, JSON shapes
-- [Workbench](desk/doc/workbench.md): explorer, documents, run controls
+- [Property documents](desk/doc/reference/source-format.md): `++fate`, `++norn`, `++alts`, `++conf`, restricted Ford prelude
+- [Suites and replay](desk/doc/reference/suites-and-replay.md): `test-*` discovery, aggregation, replay inputs, regression suites
+- [Agent API](desk/doc/reference/agent-api.md): `%quiz-action` pokes, `%quiz-update` facts, scries
+- [HTTP API](desk/doc/reference/http-api.md): routes, authentication, JSON shapes
+- [Workbench](desk/doc/reference/workbench.md): explorer, documents, run controls
 - [Keyboard shortcuts](desk/doc/keyboard/quiz-keys.md)
 - [Public types](desk/sur/quiz-app.hoon): request, record, outcome, state
 
@@ -38,7 +38,7 @@
 - [Suite runner](desk/lib/quiz-suite.hoon), [replay capture](desk/lib/quiz-replay.hoon) and [regression suites](desk/lib/quiz-regression.hoon)
 - [Job lifecycle](desk/lib/quiz-job.hoon) and [Gall adapter](desk/lib/quiz-agent.hoon)
 - [Web agent](desk/lib/quiz-web-agent.hoon), [HTTP codec](desk/lib/quiz-json.hoon), [workbench config](desk/lib/quiz-web.hoon) and [file roots](desk/lib/quiz-files.hoon)
-- [Internal module map](desk/doc/reference.md#internal-implementation-map)
+- [Internal module map](desk/doc/reference/engine-and-library.md#internal-implementation-map)
 
 ## Examples
 

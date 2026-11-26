@@ -32,7 +32,7 @@ The request fields, in order, are:
 | `config` | `(unit patch)`; optional per-field settings override |
 | `seed` | `(unit @uv)`; optional seed override, including zero |
 | `replay-of` | `(unit @ud)`; replay an existing property's captured inputs |
-| `mode` | `[%run ~]`, `[%preview count=@ud verdicts=? alts=?]` for a [generator preview](reference.md#generator-preview), or `[%examples count=@ud]` for a [labelled-example search](reference.md#labelled-examples) |
+| `mode` | `[%run ~]`, `[%preview count=@ud verdicts=? alts=?]` for a [generator preview](engine-and-library.md#generator-preview), or `[%examples count=@ud]` for a [labelled-example search](engine-and-library.md#labelled-examples) |
 
 Absent overrides use the document's `conf`, then engine defaults. Entropy is
 captured on admission; a document seed takes precedence over that entropy.
@@ -176,7 +176,7 @@ building, running, shrinking, or cancelling record `%cancelled` with reason
 
 Under a property's `on-timeout` policy (`%fail` or `%discard`), a fate that
 exceeds the call limit is handled as a sample outcome, not an interruption;
-see [the timeout policy](reference.md#timeout-policy-on-timeout). An abort is
+see [the timeout policy](engine-and-library.md#timeout-policy-on-timeout). An abort is
 taken as a timeout only when the time from the tick's scheduled wake to the
 wake after the error wake is at least the call limit; a shorter one was Ctrl-C
 or loom exhaustion. Everything below applies to all other aborts and to the default

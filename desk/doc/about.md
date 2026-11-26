@@ -12,8 +12,8 @@ terms. Vendored components retain their own notices.
 - [Source repository](https://github.com/jackfoxy/quiz)
 - [Report an issue](https://github.com/jackfoxy/quiz/issues)
 - [User's guide](users-guide.md)
-- [Reference](reference.md)
-- [Examples](examples.md)
+- [Reference](reference/engine-and-library.md)
+- [Examples](reference/examples.md)
 
 For a reproducible property issue, retain the exact source/import revision,
 effective configuration and seed, engine version, diagnostics and original

@@ -71,7 +71,7 @@ test('read-only examples/docs, editable copies, pinned Clay and fallback help', 
   await expect(page.locator('#property-save')).toBeEnabled();
   expect(await page.evaluate(() => window.quiz.documents.active('property').text)).toBe(source);
   await page.evaluate(() => window.quiz.documents.open('property',
-    ['docs', 'source-format', 'md']));
+    ['docs', 'reference', 'source-format', 'md']));
   await expect(page.locator('#property-save')).toBeDisabled();
   await page.locator('#editable-copy').click();
   await expect(page.locator('#property-save')).toBeEnabled();

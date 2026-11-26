@@ -18,7 +18,7 @@ semantics. Pick the right one first:
 The `quiz` library counts drops toward `runs` and can return `%.y` after
 duplicate exhaustion (`%tired`). The app never counts drops or duplicates
 as accepted checks. Do not mix their numbers. See
-[library and app semantics](../../../desk/doc/reference.md#library-and-app-semantics-compared).
+[library and app semantics](../../../desk/doc/reference/engine-and-library.md#library-and-app-semantics-compared).
 
 ## Property document template
 
@@ -78,12 +78,12 @@ The builder type-checks every arm before anything runs. A mistake is an
   10 ms to 1 h) to lower this document's call limit without touching the
   ship-wide Settings. `++within` never raises the limit and is not part of
   `conf`. See
-  [timeout policy](../../../desk/doc/reference.md#timeout-policy-on-timeout)
+  [timeout policy](../../../desk/doc/reference/engine-and-library.md#timeout-policy-on-timeout)
   and [27-timeout-fail](../../../desk/examples/props/27-timeout-fail.hoon).
 
 The prelude allows only `/-`, `/+`, `/=`, `/*`, in that order, all from the
 selected desk at the pinned revision. Full rules:
-[source-format.md](../../../desk/doc/source-format.md).
+[source-format.md](../../../desk/doc/reference/source-format.md).
 
 ## Writing a good fate
 
@@ -152,7 +152,7 @@ Models: [12-labels-coverage](../../../desk/examples/props/12-labels-coverage.hoo
 [13-expected-actual](../../../desk/examples/failing/13-expected-actual.hoon),
 [14-coverage-shortfall](../../../desk/examples/failing/14-coverage-shortfall.hoon),
 [35-cover-table](../../../desk/examples/props/35-cover-table.hoon).
-API: [reports, labels and coverage](../../../desk/doc/reference.md#reports-labels-and-coverage).
+API: [reports, labels and coverage](../../../desk/doc/reference/engine-and-library.md#reports-labels-and-coverage).
 
 ## Norns
 
@@ -189,7 +189,7 @@ and auras have real generators (`ship`, `date`, `real`, `cord`, `knot`,
   sample, and `(both:dep raw)` for `[outer dependent]`
   ([30-dependent-inner](../../../desk/examples/failing/30-dependent-inner.hoon)).
 
-API: [app generator library](../../../desk/doc/reference.md#app-generator-library-quiz-gen).
+API: [app generator library](../../../desk/doc/reference/engine-and-library.md#app-generator-library-quiz-gen).
 
 For a property over a function argument (`turn`, `skim`, folds), generate
 the function with `quiz-fun` (`/+ fun=quiz-fun`): `(fun-of:fun keys vals n)`
@@ -209,7 +209,7 @@ the vase's type takes minutes. Models:
 
 The `quiz` library's combinators are in `norns:quiz` (import `/+ quiz`): `atom`, `noun`,
 `const`, `cell`, `freq`, `pick`, `list`. Signatures:
-[norns and composition](../../../desk/doc/reference.md#norns-and-composition).
+[norns and composition](../../../desk/doc/reference/engine-and-library.md#norns-and-composition).
 Things that go wrong:
 
 - **Reusing an RNG core repeats the draw.** Thread the new core from
@@ -234,7 +234,7 @@ Things that go wrong:
   spread lengths, draw a length with `rads:rng` in a custom norn, as
   [11-queue-model-bug](../../../desk/examples/failing/11-queue-model-bug.hoon)
   does. Measured shapes:
-  [generator characteristics](../../../desk/doc/reference.md#measured-generator-characteristics).
+  [generator characteristics](../../../desk/doc/reference/engine-and-library.md#measured-generator-characteristics).
 
 ## Alts and shrinking
 
@@ -244,7 +244,7 @@ defaults: valid values for meaningful auras (`@t`, `@ta`, `@tas`, `@p`, `@da`,
 containers, up to 20 elements; plain atoms and cells behave exactly as in the
 `quiz` library. Write a norn and alts when the domain is narrower than the
 type ([34-typed-defaults](../../../desk/examples/failing/34-typed-defaults.hoon),
-[reference](../../../desk/doc/reference.md#type-directed-defaults-quiz-auto)).
+[reference](../../../desk/doc/reference/engine-and-library.md#type-directed-defaults-quiz-auto)).
 
 The default shrinker halves and decrements plain atoms, recurses into cells,
 shrinks text, ships, signed numbers and floats by meaning, deletes elements
@@ -325,11 +325,11 @@ shrink together ([29-bst-coordinated](../../../desk/examples/failing/29-bst-coor
   [36-weak-generator](../../../desk/examples/props/36-weak-generator.hoon)
   against [37-insert-generated](../../../desk/examples/props/37-insert-generated.hoon).
   It is QuickCheck's `sample`, with no budgets and no shrinking
-  ([generator preview](../../../desk/doc/reference.md#generator-preview)).
+  ([generator preview](../../../desk/doc/reference/engine-and-library.md#generator-preview)).
 - **Dojo / Gall:** poke `%quiz-action` `[%run request]` and read
   `/x/run/<id>`. Exact nouns and examples:
-  [agent-api.md](../../../desk/doc/agent-api.md).
-- **HTTP:** [http-api.md](../../../desk/doc/http-api.md).
+  [agent-api.md](../../../desk/doc/reference/agent-api.md).
+- **HTTP:** [http-api.md](../../../desk/doc/reference/http-api.md).
 - **Inside a `-test` suite:** use the `quiz` library.
   `(expect !>((~(check quiz 0v123 20) !>(fate) ~ ~)))` passes custom norns or
   alts as `[~ gate]`.
@@ -350,8 +350,8 @@ shrink together ([29-bst-coordinated](../../../desk/examples/failing/29-bst-coor
 | `interrupted` | A call exceeded its CPU limit (**Settings**, default 10 s per call), was stopped with Ctrl-C, or exhausted memory. `during` gives the stage, `arm` the suite arm, and `proof` the best counterexample so far. Look for a loop or runaway allocation. |
 
 Counter definitions:
-[counters, status and outcomes](../../../desk/doc/reference.md#counters-status-and-outcomes).
-Symptom table: [troubleshooting](../../../desk/doc/reference.md#troubleshooting).
+[counters, status and outcomes](../../../desk/doc/reference/engine-and-library.md#counters-status-and-outcomes).
+Symptom table: [troubleshooting](../../../desk/doc/reference/engine-and-library.md#troubleshooting).
 
 ## Reproduce, then regress
 

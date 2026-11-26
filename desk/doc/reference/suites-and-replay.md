@@ -113,7 +113,7 @@ made before a semantic change can replay with different results. Pinning imports
 does not by itself freeze a future kernel/compiler; cross-Kelvin replay is not
 claimed. This desk currently targets `%zuse 408`.
 
-The [replay fixture](../fixtures/quiz-replay/property.hoon) intentionally fails
+The [replay fixture](../../fixtures/quiz-replay/property.hoon) intentionally fails
 against its imported threshold and is kept outside the passing test directory.
 Suites can be rerun at their saved Clay context, but this property
 replay API does not invent seed control or sample-level replay for suite arms.
@@ -126,5 +126,5 @@ one arm, `test-counterexample`, requires the fate to pass the shrunk
 counterexample. The sample is `cue`d from its recorded jam, so no seed,
 norn or engine version is involved. `proof:quiz-regression` decides which
 records qualify. The contract is in the
-[reference](reference.md#clay-context-seed-and-replay) and the HTTP op in
+[reference](engine-and-library.md#clay-context-seed-and-replay) and the HTTP op in
 [`regression`](http-api.md#regression-suite).

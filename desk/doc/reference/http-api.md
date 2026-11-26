@@ -122,7 +122,7 @@ document's configuration or engine defaults.
 {"op":"replay","id":"42"}
 ```
 
-An optional `mode` asks for a [generator preview](reference.md#generator-preview)
+An optional `mode` asks for a [generator preview](engine-and-library.md#generator-preview)
 instead of a run:
 
 ```json
@@ -134,7 +134,7 @@ is at most 1,000; the first 100 samples are returned as rows. A preview has no b
 duplicate budgets in `config` are ignored, while sizes, the duplicate policy
 and byte bounds apply. Suites cannot be previewed.
 
-A [labelled-example search](reference.md#labelled-examples) finds each
+A [labelled-example search](engine-and-library.md#labelled-examples) finds each
 label's smallest example over `count` passing samples, at most the conf's
 `requested-max`:
 
@@ -164,7 +164,7 @@ retrying.
 {"op":"regression","id":"42"}
 ```
 
-Builds the [regression suite](reference.md#clay-context-seed-and-replay) for
+Builds the [regression suite](engine-and-library.md#clay-context-seed-and-replay) for
 a finished property run and returns it. Nothing is written, admitted or
 built:
 
@@ -273,7 +273,7 @@ Outcome `kind` is `passed`, `uncovered`, `passed-unexpectedly`, `failed`,
   `examples` and `coverage`.
 - `uncovered`: `shortfalls`, `examples` and `coverage`. A `coverage` row is
   `{"mode","label","table","hits","total","got","want","met","low","high","decision"}`
-  for every requirement, met or not ([coverage report](reference.md#reports-labels-and-coverage)):
+  for every requirement, met or not ([coverage report](engine-and-library.md#reports-labels-and-coverage)):
   `got` and `want` are whole percents; `low` and `high` are the Wilson bounds
   as percent numbers with two decimals, null outside `%confident` or without
   samples; `decision` is null outside `%confident`, else `{"kind"}` with
@@ -335,7 +335,7 @@ Evidence `trace` is the shrink trace, oldest step first, at most
 exceed JavaScript's exact integer range; `weight` is `null` for `visited`.
 `text` is the rendered candidate, at most 160 bytes, or `null` for `heavier`,
 `visited` and a candidate that failed to render. See the
-[reference](reference.md#alts-and-shrinking).
+[reference](engine-and-library.md#alts-and-shrinking).
 
 ### Suite arm discovery
 

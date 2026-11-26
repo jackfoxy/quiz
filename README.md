@@ -7,8 +7,8 @@ existing Clay test suites. Generate inputs, inspect failures and smaller
 counterexamples, then replay a property with its recorded seed and source.
 
 - [User's guide: seven steps](desk/doc/users-guide.md)
-- [Reference: contracts, limits and library/app differences](desk/doc/reference.md)
-- [Examples and recorded results](desk/doc/examples.md)
+- [Reference: contracts, limits and library/app differences](desk/doc/reference/engine-and-library.md)
+- [Examples and recorded results](desk/doc/reference/examples.md)
 - [Keyboard shortcuts](desk/doc/keyboard/quiz-keys.md)
 
 ## Installation
@@ -60,7 +60,7 @@ Passing randomized checks are evidence, not proof. App drops and duplicates
 never count as accepted; exhaustion is a distinct outcome. Each Hoon call has a
 CPU time limit, and a stuck run can also be stopped with Ctrl-C. Either way it
 is recorded as interrupted. There is no memory isolation, so use a disposable
-ship for experiments. See [limitations](desk/doc/limitations.md).
+ship for experiments. See [limitations](desk/doc/reference/limitations.md).
 
 ## Library-only use
 
@@ -77,7 +77,7 @@ If those files are on `%quiz`, this Dojo generator checks increment/decrement:
 Recorded output: `[[%success-runs 20] %drops 0]`, `%.y`.
 For explicit deterministic seeds or custom norns/alts, import `quiz` and use
 its `check`/`check-verbose` arms; see the
-[exact signatures](desk/doc/reference.md#library-signatures) and
+[exact signatures](desk/doc/reference/engine-and-library.md#library-signatures) and
 [tutorial suite](desk/tests/examples/01-quiz-tutorial.hoon).
 The library's drops consume its run target, and duplicate exhaustion can
 return true. The application's `lib/quiz-engine.hoon` has separate counters,
@@ -101,8 +101,8 @@ its real compiled page on a disposable ship; setup and commands are in
 Shared urui files are pinned copies; keep framework changes in urui, not these
 copies. Keep `lib/quiz.hoon` and `gen/quiz.hoon` unchanged. Deterministic
 app engine changes require replay-version review. See the
-[internal module map](desk/doc/reference.md#internal-implementation-map),
-[Gall API](desk/doc/agent-api.md) and [HTTP API](desk/doc/http-api.md).
+[internal module map](desk/doc/reference/engine-and-library.md#internal-implementation-map),
+[Gall API](desk/doc/reference/agent-api.md) and [HTTP API](desk/doc/reference/http-api.md).
 
 ## About
 

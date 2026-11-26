@@ -32,10 +32,10 @@ Start with [llms.txt](llms.txt) for the documentation index. Contracts live in
 | `desk/examples/props/`, `desk/examples/failing/` | Passing and intentionally failing property documents | quiz |
 | `desk/tests/examples/` | Tutorial, boxcar and Euler suites (all pass) | quiz |
 | `desk/fixtures/` | Inputs used by builder and replay tests | quiz |
-| `desk/doc/*.md`, `desk/doc.toc` | User and contract documentation, served as Help | quiz |
+| `desk/doc/**/*.md`, `desk/doc.toc` | User and contract documentation, served as Help | quiz |
 | `tests/browser/` | Doubles scenarios and Playwright specs | quiz (except copies) |
 
-The [internal implementation map](desk/doc/reference.md#internal-implementation-map)
+The [internal implementation map](desk/doc/reference/engine-and-library.md#internal-implementation-map)
 lists each module's entry points.
 
 ## Rules
@@ -47,7 +47,7 @@ lists each module's entry points.
   products; wide form only when the whole expression fits on one line.
 - **Stable library.** Do not change the stable files above except to fix a
   defect. App semantics belong in `quiz-engine`, which differs from the
-  library by design; see [library and app semantics](desk/doc/reference.md#library-and-app-semantics-compared).
+  library by design; see [library and app semantics](desk/doc/reference/engine-and-library.md#library-and-app-semantics-compared).
 - **Engine version.** `++version` in `desk/lib/quiz-engine.hoon` stays
   `%quiz-engine-1` until release; do not bump it during development. After
   release, any change to deterministic generation, evaluation, shrinking or
@@ -157,14 +157,14 @@ Also run `git diff --check` and `find desk -type l` (expect no symlinks).
 
 ## Documentation maintenance
 
-- `desk/doc/*.md` is the single source for both the repository and in-app
+- `desk/doc/**/*.md` is the single source for both the repository and in-app
   Help. Add every new page to `desk/doc.toc`. Use relative links only.
-- Authorities: [reference.md](desk/doc/reference.md) for public contracts,
-  [agent-api.md](desk/doc/agent-api.md) for the Gall interface,
-  [http-api.md](desk/doc/http-api.md) for the HTTP wire, and
-  [source-format.md](desk/doc/source-format.md) for property documents.
+- Authorities: [engine-and-library.md](desk/doc/reference/engine-and-library.md) for public contracts,
+  [agent-api.md](desk/doc/reference/agent-api.md) for the Gall interface,
+  [http-api.md](desk/doc/reference/http-api.md) for the HTTP wire, and
+  [source-format.md](desk/doc/reference/source-format.md) for property documents.
   Update the authority in the same change as the code.
-- [examples.md](desk/doc/examples.md) and the user's guide quote recorded
+- [examples.md](desk/doc/reference/examples.md) and the user's guide quote recorded
   counters. Re-run the affected examples after any engine or example change
   and update the numbers.
 - The fallback help in `desk/lib/quiz-web.hoon` is a short summary. Keep its

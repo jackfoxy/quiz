@@ -1,4 +1,4 @@
-# Quiz reference
+# Quiz engine and library
 
 This desk targets `%zuse 408`. The application engine is `%quiz-engine-1`.
 The `lib/quiz.hoon` library and `gen/quiz.hoon` generator check properties
@@ -35,7 +35,7 @@ arm types or settings produce `%invalid`, rather than an ordinary failing
 property. Other arms may contain helpers. Missing `conf` means
 `[~ defaults:quiz-engine]`; missing `norn` and `alts` select default generation
 and shrinking. Start from the complete defaults when changing a setting, as
-in [the success document](../examples/props/01-success.hoon).
+in [the success document](../../examples/props/01-success.hoon).
 
 A standalone gate is accepted by the `quiz` library, but is not an app
 document. Existing `test-*` cores use the saved-suite workflow instead.
@@ -74,7 +74,7 @@ The following types describe the exported arms, including the helper arms.
 Pass a fate vase with `!>(fate-gate)`; pass `~` for an absent custom generator
 or shrinker, and `[~ gate]` for a supplied one. Configure the library door
 using `~(check quiz seed requested-runs)` or the corresponding
-`check-verbose` arm. The [tutorial suite](../tests/examples/01-quiz-tutorial.hoon)
+`check-verbose` arm. The [tutorial suite](../../tests/examples/01-quiz-tutorial.hoon)
 contains executable calls with custom norns and alts.
 
 `check` prints `[success-runs+N drops+M]` and, on failure, the resulting vase.
@@ -92,8 +92,8 @@ library's `check`, with no custom norn/alts. Its positional argument is the
 fate vase; `runs` is an optional named argument. Omitting it uses the
 library's 100-run fallback. It is not the application's recorded-seed replay interface.
 
-Source authority: [quiz library](../lib/quiz.hoon),
-[generator](../gen/quiz.hoon), [behaviour tests](../tests/lib/quiz-check.hoon).
+Source authority: [quiz library](../../lib/quiz.hoon),
+[generator](../../gen/quiz.hoon), [behaviour tests](../../tests/lib/quiz-check.hoon).
 
 ### Norns and composition
 
@@ -132,9 +132,9 @@ subtrees or independent subtrees. `cell` splits the RNG for its children.
 an empty list. Its distribution depends on size and is not a fixed geometric
 `2^(-1-n)` distribution. It does not enumerate every list or semantic domain.
 
-Use the [composed list/cell example](../examples/props/06-composed.hoon),
-[positive custom norn](../examples/props/07-positive.hoon) and
-[queue model](../examples/props/10-queue-model.hoon) as executable models.
+Use the [composed list/cell example](../../examples/props/06-composed.hoon),
+[positive custom norn](../../examples/props/07-positive.hoon) and
+[queue model](../../examples/props/10-queue-model.hoon) as executable models.
 The composed example uses a noun boundary for its list and validates it
 inside the fate: a recursive sample type can retain a large compiler context,
 and the sample-byte cap includes that type even when the value is small.
@@ -207,9 +207,9 @@ bytes against `sample-bytes` (64 KiB by default).
 | Library `list` norn | Length at most `xeb(size)-1` | Logarithmic length |
 
 A recursive generator must divide its budget. Executable models:
-[40-tree-depth-budget](../examples/props/40-tree-depth-budget.hoon) gives
+[40-tree-depth-budget](../../examples/props/40-tree-depth-budget.hoon) gives
 each child `size - 1`, so size bounds depth and a tree can hold
-2^size - 1 nodes; [41-tree-divided-budget](../examples/props/41-tree-divided-budget.hoon)
+2^size - 1 nodes; [41-tree-divided-budget](../../examples/props/41-tree-divided-budget.hoon)
 keeps one unit per node and splits the rest between the children, so a
 tree has at most size nodes. Passing size unchanged to both children would
 never terminate. Measured over 100 samples with each document's seed
@@ -234,14 +234,14 @@ Duplicate counts are cumulative for the run, not consecutive streaks; they do
 not reset after an accepted sample. Under `%mug` and `%exact` a small finite
 generator cannot satisfy a request larger than its available distinct samples;
 use `%allow`, as in
-[21-small-domain-allow](../examples/props/21-small-domain-allow.hoon).
+[21-small-domain-allow](../../examples/props/21-small-domain-allow.hoon).
 Shrinking always uses a mug-based visited set as a loop guard, whatever the
 policy; decreasing weight alone guarantees termination.
 
 ### Measured generator characteristics
 
-[`tests/lib/quiz-norns.hoon`](../tests/lib/quiz-norns.hoon) and
-[`tests/lib/quiz-sink.hoon`](../tests/lib/quiz-sink.hoon) pin these facts
+[`tests/lib/quiz-norns.hoon`](../../tests/lib/quiz-norns.hoon) and
+[`tests/lib/quiz-sink.hoon`](../../tests/lib/quiz-sink.hoon) pin these facts
 with fixed seeds. They describe the `quiz` library; they are not guarantees
 beyond it. The app's default differs for meaningful auras, containers and
 unions: see [type-directed defaults](#type-directed-defaults-quiz-auto).
@@ -257,7 +257,7 @@ unions: see [type-directed defaults](#type-directed-defaults-quiz-auto).
 | `fill` on a union | Each branch is equally likely; `(unit a)` yields both `~` and values |
 | Small domains | A `?` sample yields at most two accepted checks before duplicates exhaust the run, unless the app conf sets `duplicates %allow` |
 | Default `sink` | An atom `n` gives `n/2` and `n-1`; a cell shrinks its children; a noun cell gives its two subtrees; every candidate weighs less than its parent |
-| `sink` on lists and unions | Nothing: a list's type is a fork. The app's `quiz-auto` default shrinks both; with the `quiz` library, write `alts` for lists, as in [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) |
+| `sink` on lists and unions | Nothing: a list's type is a fork. The app's `quiz-auto` default shrinks both; with the `quiz` library, write `alts` for lists, as in [11-queue-model-bug](../../examples/failing/11-queue-model-bug.hoon) |
 
 ### Library and app semantics compared
 
@@ -283,11 +283,11 @@ Do not interpret its `runs` field as the app's `accepted` or `attempted` count.
 
 ### App generator library (`quiz-gen`)
 
-[`quiz-gen`](../lib/quiz-gen.hoon) (`/+ gen=quiz-gen`) provides generators,
+[`quiz-gen`](../../lib/quiz-gen.hoon) (`/+ gen=quiz-gen`) provides generators,
 typed shrinkers and an adaptor to `++alts`. Executable models:
-[16-sorted-insert](../examples/props/16-sorted-insert.hoon) to
-[20-dependent](../examples/failing/20-dependent.hoon), and
-[31-float-associativity](../examples/failing/31-float-associativity.hoon)
+[16-sorted-insert](../../examples/props/16-sorted-insert.hoon) to
+[20-dependent](../../examples/failing/20-dependent.hoon), and
+[31-float-associativity](../../examples/failing/31-float-associativity.hoon)
 for floats.
 
 Every generator is a norn, `$-([@ud _og] a)`, and is **total in size**: size 0
@@ -357,11 +357,11 @@ is a cell of two gates.
 
 Shrinkers combine independently. When values constrain each other, such as a
 tree's keys and the key being deleted in
-[17-bst-delete-bug](../examples/failing/17-bst-delete-bug.hoon), each can
+[17-bst-delete-bug](../../examples/failing/17-bst-delete-bug.hoon), each can
 shrink only while the failure survives, so the result may keep larger values.
 `shrink-equal` coordinates them: viewed through `shrink-via` as one list, every
 copy of a value shrinks at once, and `shrink-then` adds those candidates after
-the independent ones. [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon)
+the independent ones. [29-bst-coordinated](../../examples/failing/29-bst-coordinated.hoon)
 reaches `[~[1 0 2] 1]` where 17 stops at `[~[12 0 13] 12]`.
 
 **Dependent shrinking.** QuickCheck shrinks nested `forAll` inputs by
@@ -377,7 +377,7 @@ shrinks the current dependent value with `inner` and pins each candidate.
 Pinning clears the seed, which a pinned value does not need: the unpinned
 sample does not hold its dependent value, so only dropping the seed lets a
 pinned candidate weigh less. Later outer shrinks rebuild from seed 0.
-[20-dependent](../examples/failing/20-dependent.hoon) spells these parts out.
+[20-dependent](../../examples/failing/20-dependent.hoon) spells these parts out.
 
 `dependent` bundles them. Give it molds for the outer and dependent values,
 the outer generator and shrinker, `make`, and the dependent shrinker; write
@@ -399,22 +399,22 @@ the document's arms from its core:
 
 The molds type the sample, as for `set-of`, so it renders without the
 shrinkers' faces: `raw=[value=1 seed=0v0 size=0 pin=[~ ~[90]]]`.
-[30-dependent-inner](../examples/failing/30-dependent-inner.hoon) is this
+[30-dependent-inner](../../examples/failing/30-dependent-inner.hoon) is this
 document.
 
 ### Type-directed defaults (`quiz-auto`)
 
-[`quiz-auto`](../lib/quiz-auto.hoon) (`/+ auto=quiz-auto`) is the app's
+[`quiz-auto`](../../lib/quiz-auto.hoon) (`/+ auto=quiz-auto`) is the app's
 default generator and shrinker: the engine uses `fill` when a document has no
 `++norn` and `sink` when it has no `++alts`. Both read the fate's sample type.
 Executable model:
-[34-typed-defaults](../examples/failing/34-typed-defaults.hoon).
+[34-typed-defaults](../../examples/failing/34-typed-defaults.hoon).
 
 **Plain types are unchanged.** For `@ud` and other atoms without a meaningful
 aura, loobeans, cells, faces, hints, plain unions and `*`, `fill` draws from
 the RNG exactly as the `quiz` library's `fill` does (a `*` sample is filled
 by that `fill` itself), and `sink` offers the library `sink`'s candidates.
-[`tests/lib/quiz-auto.hoon`](../tests/lib/quiz-auto.hoon) pins this parity.
+[`tests/lib/quiz-auto.hoon`](../../tests/lib/quiz-auto.hoon) pins this parity.
 
 **Auras with a meaning** get valid values from `quiz-gen` and shrink by that
 meaning:
@@ -468,7 +468,7 @@ A document can add its own candidates to the defaults:
 
 ### Generated functions (`quiz-fun`)
 
-[`quiz-fun`](../lib/quiz-fun.hoon) (`/+ fun=quiz-fun`) generates functions
+[`quiz-fun`](../../lib/quiz-fun.hoon) (`/+ fun=quiz-fun`) generates functions
 for higher-order properties. As in QuickCheck's `Fun`, a function is a
 finite table plus a default:
 
@@ -479,8 +479,8 @@ finite table plus a default:
 A table is plain data: it replays exactly, renders, and shrinks. `apply`
 returns the value of the first case whose key equals the input, else the
 default. Executable models:
-[23-map-fusion](../examples/props/23-map-fusion.hoon) and
-[24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon).
+[23-map-fusion](../../examples/props/23-map-fusion.hoon) and
+[24-filter-map-swap](../../examples/failing/24-filter-map-swap.hoon).
 
 | Arm | Meaning |
 | --- | --- |
@@ -500,7 +500,7 @@ never randomized.
 
 ### Agent harness (`quiz-harness`)
 
-[`quiz-harness`](../lib/quiz-harness.hoon) (`/+ h=quiz-harness`) drives a Gall
+[`quiz-harness`](../../lib/quiz-harness.hoon) (`/+ h=quiz-harness`) drives a Gall
 agent's door through model-based properties. It is pure: a property never
 performs a real effect, a scry made by the agent is refused, and replay stays
 exact. The bowl comes from the sample, never from the clock.
@@ -522,10 +522,10 @@ event arm, then `on-save`. That is how Gall reloads state, so each sample
 starts fresh and needs no cleanup. A door arm that crashes ends its run as
 `[%| tang]` rather than a property crash. Wrap a door in a fixture file and
 import it with `/=  drive  /fixtures/...`; see
-[counter](../fixtures/quiz-harness/counter.hoon) and
-[drive](../fixtures/quiz-harness/drive.hoon). Executable models:
-[25-counter-agent](../examples/props/25-counter-agent.hoon) and
-[26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon).
+[counter](../../fixtures/quiz-harness/counter.hoon) and
+[drive](../../fixtures/quiz-harness/drive.hoon). Executable models:
+[25-counter-agent](../../examples/props/25-counter-agent.hoon) and
+[26-counter-agent-bug](../../examples/failing/26-counter-agent-bug.hoon).
 
 **Simulated clock.** `run-clock` keeps the behn timers a step sets with
 `[%pass wire %arvo %b %wait due]` cards; a `%rest` card cancels the first
@@ -535,12 +535,12 @@ first delivering every timer due by then as `[%arvo wire %behn %wake ~]`, with
 set while a wait is delivering wakes fires within that wait when it falls due.
 The result's `timers` are those still pending, in the order set. No real time
 passes and no timer reaches Behn. The
-[expiry](../fixtures/quiz-harness/expiry.hoon) fixture, a gate over `fixed`
+[expiry](../../fixtures/quiz-harness/expiry.hoon) fixture, a gate over `fixed`
 returning the door, and its
-[drive-expiry](../fixtures/quiz-harness/drive-expiry.hoon) driver are the
+[drive-expiry](../../fixtures/quiz-harness/drive-expiry.hoon) driver are the
 executable models
-[32-expiry-agent](../examples/props/32-expiry-agent.hoon) and
-[33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon).
+[32-expiry-agent](../../examples/props/32-expiry-agent.hoon) and
+[33-expiry-agent-bug](../../examples/failing/33-expiry-agent-bug.hoon).
 
 A `fate` reads its saved state with `;;(vase state)`, and `!<` works on that
 vase afterwards. Read the sample as a noun with `;;`, not `!<`, where the
@@ -630,12 +630,12 @@ changes a run's result or counters (pinned on examples 09, 11, 17 and 29),
 but each rendered rejected candidate is one more sandboxed call under the
 property call limit.
 
-The [seeded threshold example](../examples/failing/08-seeded-threshold.hoon)
+The [seeded threshold example](../../examples/failing/08-seeded-threshold.hoon)
 reaches 501 under the recorded seed/configuration. This is a verified example,
 not a promise that every threshold property or shrinker always returns 501.
-The [custom alts example](../examples/failing/09-custom-alts.hoon) preserves
+The [custom alts example](../../examples/failing/09-custom-alts.hoon) preserves
 positive even inputs and reaches 502, the smallest failure in that domain.
-The [queue model bug](../examples/failing/11-queue-model-bug.hoon) shrinks a
+The [queue model bug](../../examples/failing/11-queue-model-bug.hoon) shrinks a
 command list: its alts deletes commands and shrinks pushed values, and keeps
 only sequences that satisfy the pop precondition.
 
@@ -748,7 +748,7 @@ A fate may return a report instead of a bare verdict:
   ==
 ```
 
-Build reports with [`quiz-prop`](../lib/quiz-prop.hoon) (`/+ prop=quiz-prop`).
+Build reports with [`quiz-prop`](../../lib/quiz-prop.hoon) (`/+ prop=quiz-prop`).
 Every combinator accepts a bare verdict or a report (`prop`) and returns a
 report:
 
@@ -810,7 +810,7 @@ decision is wrong at most 1 in 10^k; z is taken from a table of
 is the percent of its share a row's lower bound must reach. The default
 `[9 90]` is the behaviour described above. Without a `%confident` `++cover`
 the arm is checked and then ignored.
-[35-cover-table](../examples/props/35-cover-table.hoon) is an executable
+[35-cover-table](../../examples/props/35-cover-table.hoon) is an executable
 model of `++cover-table`.
 
 A shortfall is `[label want got table]`. For a label row `table` is `~`; for a
@@ -883,7 +883,7 @@ Run status is one of `queued`, `building`, `running`, `shrinking`, `cancelling`,
 | `preview` | A [generator preview](#generator-preview)'s `rows` and `candidates` |
 | `examples` | A [labelled-example search](#labelled-examples)'s smallest example per label, unseen `++cover` labels, the budget that ended generation and any failure's evidence |
 
-The durable Hoon [record](../sur/quiz-app.hoon) contains `id`, `request`, nullable
+The durable Hoon [record](../../sur/quiz-app.hoon) contains `id`, `request`, nullable
 `snapshot` and `replay`, nullable effective `seed` and `config`, `engine-version`,
 `status`, tagged `counts` (for properties, the counters plus the label and
 table `distribution`), nullable `result`, created/updated/finished times, and
@@ -1059,7 +1059,7 @@ the document; imported code is not copied, so a fix in an imported library
 makes it pass. The text is checked to parse at the record's context; the
 real build is the saved suite's. See
 [`regression`](http-api.md#regression-suite) and
-[chapter 8](users-guide.md#save-a-counterexample-as-a-regression).
+[chapter 8](../users-guide.md#save-a-counterexample-as-a-regression).
 
 ### Gall, HTTP and persistence
 
@@ -1134,7 +1134,7 @@ created a run: inspect history before retrying. The UI does not invent progress.
 
 Ace adds editing bindings such as undo/redo and search; Settings selects the
 default or Vim keymap. Replay and cancel have no shortcut: they act on a
-selected run. [Quiz keys](keyboard/quiz-keys.md) explains why Open is Alt-O.
+selected run. [Quiz keys](../keyboard/quiz-keys.md) explains why Open is Alt-O.
 The [workbench guide](workbench.md) describes editing and dirty protection.
 
 ### Timeout policy (`on-timeout`)
@@ -1171,7 +1171,7 @@ sample or candidate costs a full call limit (10 s by default), so give such a
 document a short `++within`, or set a short call limit in **Settings**. Each
 abort also costs its recovery (the error wake and the next tick), so a lower
 limit mainly helps fates that hang for long, not runs with many aborts:
-[27-timeout-fail](../examples/props/27-timeout-fail.hoon) under a 0.5 s
+[27-timeout-fail](../../examples/props/27-timeout-fail.hoon) under a 0.5 s
 `++within` took 33.6 s, about what it took under a 2 s Settings limit. Timing is not reproducible bit
 for bit, so replay of a timeout run reproduces its policy and evidence, not
 its wall-clock time. A timed-out sample has no separate counter: it appears
@@ -1215,23 +1215,23 @@ already checked parts/configuration and own scheduling and persistence.
 
 | Module | Responsibility / key entry points |
 | --- | --- |
-| [quiz-engine](../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `previewing [state count verdicts alts]` → a preview state; `searching [state count]` → a labelled-example search; `step state` → state (`preview-step`/`preview-end` while previewing, `gather`/`hunt-step` while searching); `doing state` → the work the next step does, which a slice keeps to; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit coverage) expect=?(%pass %fail)]`, where `coverage` is `[cover tables confidence]`; `judge` classifies reports; terminal states are stable |
-| [quiz-prop](../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
-| [quiz-harness](../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
-| [quiz-fun](../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |
-| [quiz-gen](../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
-| [quiz-auto](../lib/quiz-auto.hoon) | Type-directed default `fill` and `sink` used by the engine without `++norn`/`++alts`; `smaller`, `shape-of`, `expand`; the library's RNG use for plain types |
-| [quiz-build](../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
-| [quiz-suite](../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
-| [quiz-replay](../lib/quiz-replay.hoon) | Capture/validate stored inputs; `refuse` checks a record without parsing; `resolve` checks context before rebuilding |
-| [quiz-regression](../lib/quiz-regression.hoon) | `proof` picks a record's counterexample or names why it has none; `make` builds and parses the regression suite text |
-| [quiz-job](../lib/quiz-job.hoon) | Pure admission, queue, slices, retention, save/load transformations |
-| [quiz-agent](../lib/quiz-agent.hoon) | Gall bowl, Clay requests, Behn scheduling, facts/scries and local admission callbacks |
-| [quiz-json](../lib/quiz-json.hoon) | JSON codecs; decimal string IDs; no vases on HTTP |
-| [quiz-web-agent](../lib/quiz-web-agent.hoon) | Eyre authentication/routes, correlated admission, config inspection and file wire |
-| [quiz-files](../lib/quiz-files.hoon) | Consumer virtual roots and pinned Clay reads |
-| [quiz-web](../lib/quiz-web.hoon) | Compiled urui configuration, shell, help and assets |
-| [quiz-runs.js](../web/quiz-runs.js), [quiz.js](../web/quiz.js) | Quiz controls/results and document integration; shared urui owns editor/file/dialog/session machinery |
+| [quiz-engine](../../lib/quiz-engine.hoon) | `init [seed config compiled]` → state; `previewing [state count verdicts alts]` → a preview state; `searching [state count]` → a labelled-example search; `step state` → state (`preview-step`/`preview-end` while previewing, `gather`/`hunt-step` while searching); `doing state` → the work the next step does, which a slice keeps to; `compiled=[fate=vase norn=(unit vase) alts=(unit vase) cover=(unit coverage) expect=?(%pass %fail)]`, where `coverage` is `[cover tables confidence]`; `judge` classifies reports; terminal states are stable |
+| [quiz-prop](../../lib/quiz-prop.hoon) | Report combinators for fates; no engine state |
+| [quiz-harness](../../lib/quiz-harness.hoon) | Pure agent harness: `event`, `bowl-at`, `run`, `cards-of`, `facts-on`; fixtures in `fixtures/quiz-harness/` |
+| [quiz-fun](../../lib/quiz-fun.hoon) | Generated functions as tables: `fun`, `apply`, `to-gate`, `fun-of`, `fun-on`, `shrink-fun`, `fun-text`; no engine state |
+| [quiz-gen](../../lib/quiz-gen.hoon) | Total generators, size combinators, typed shrinkers and the `alts-of` adaptor; no engine state |
+| [quiz-auto](../../lib/quiz-auto.hoon) | Type-directed default `fill` and `sink` used by the engine without `++norn`/`++alts`; `smaller`, `shape-of`, `expand`; the library's RNG use for plain types |
+| [quiz-build](../../lib/quiz-build.hoon) | `pin`, `prepare`/`prepare-file`, dependency requests, `draft`/`take-saved`, arm/config checks |
+| [quiz-suite](../../lib/quiz-suite.hoon) | `prepare-file`, `request`, `take-built`, one-arm `step` |
+| [quiz-replay](../../lib/quiz-replay.hoon) | Capture/validate stored inputs; `refuse` checks a record without parsing; `resolve` checks context before rebuilding |
+| [quiz-regression](../../lib/quiz-regression.hoon) | `proof` picks a record's counterexample or names why it has none; `make` builds and parses the regression suite text |
+| [quiz-job](../../lib/quiz-job.hoon) | Pure admission, queue, slices, retention, save/load transformations |
+| [quiz-agent](../../lib/quiz-agent.hoon) | Gall bowl, Clay requests, Behn scheduling, facts/scries and local admission callbacks |
+| [quiz-json](../../lib/quiz-json.hoon) | JSON codecs; decimal string IDs; no vases on HTTP |
+| [quiz-web-agent](../../lib/quiz-web-agent.hoon) | Eyre authentication/routes, correlated admission, config inspection and file wire |
+| [quiz-files](../../lib/quiz-files.hoon) | Consumer virtual roots and pinned Clay reads |
+| [quiz-web](../../lib/quiz-web.hoon) | Compiled urui configuration, shell, help and assets |
+| [quiz-runs.js](../../web/quiz-runs.js), [quiz.js](../../web/quiz.js) | Quiz controls/results and document integration; shared urui owns editor/file/dialog/session machinery |
 
 Generation and fate/shrinker execution use virtualization with refused scries,
 inside `sandbox:quiz-engine`, which adds the `%jinx` CPU limit.

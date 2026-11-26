@@ -25,7 +25,7 @@ a bowl.
 | Agent harness (`quiz-harness`) | `lib/quiz-harness.hoon`, `fixtures/quiz-harness/`; no engine change | `tests/lib/quiz-harness.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generated functions (`quiz-fun`) | `lib/quiz-fun.hoon`; no engine change | `tests/lib/quiz-fun.hoon`, `tests/lib/quiz-examples.hoon` |
 | Generator and default-shrinker characterization (frozen `lib/quiz.hoon`) | none: record surprises in the docs | `tests/lib/quiz-norns.hoon`, `tests/lib/quiz-sink.hoon` |
-| Bundled property examples | `examples/props/`, `examples/failing/` | `tests/lib/quiz-examples.hoon` (queue models), browser `examples.spec.js`; re-measure `doc/examples.md` |
+| Bundled property examples | `examples/props/`, `examples/failing/` | `tests/lib/quiz-examples.hoon` (queue models), browser `examples.spec.js`; re-measure `doc/reference/examples.md` |
 | Document format, prelude, arm type checks, context pinning | `lib/quiz-build.hoon` | `tests/lib/quiz-build.hoon` (fixtures in `fixtures/quiz-build/`) |
 | `test-*` discovery and arm execution | `lib/quiz-suite.hoon` | `tests/lib/quiz-suite.hoon` |
 | Replay capture and validation | `lib/quiz-replay.hoon` | `tests/lib/quiz-replay.hoon` |
@@ -97,7 +97,7 @@ the fake ship as the real authority.
 The mount is incomplete. Sync all of `desk/`, not just `lib/` and `tests/`.
 
 **`%invalid` with a code.** Codes are listed in
-[troubleshooting](../../../desk/doc/reference.md#troubleshooting).
+[troubleshooting](../../../desk/doc/reference/engine-and-library.md#troubleshooting).
 A saved-file `%build` has no compiler trace, because Clay does not return
 one. Run the same text as a draft to get the located tang. `%import-context`
 or `%build-context` means a Clay reply didn't match the pinned
@@ -196,7 +196,7 @@ context has gone. Replay never substitutes another context.
   disconnects still holds the slot until the timeout. Admission may still
   have happened, so check `runs` before you resubmit.
 
-Wire shapes: [http-api.md](../../../desk/doc/http-api.md).
+Wire shapes: [http-api.md](../../../desk/doc/reference/http-api.md).
 
 **Help shows the fallback although `%docs` is installed, or rendered docs
 appear after `%docs` was removed.** Eyre caches the `%docs` landing page.
@@ -218,6 +218,6 @@ want, re-copy it and update the pin in AGENTS.md.
 - The frozen files and urui copies are unchanged: `git diff --stat` and the
   drift check.
 - `++version` stays `%quiz-engine-1` until release. Recorded counters in
-  `doc/examples.md` and the user's guide are re-measured.
+  `doc/reference/examples.md` and the user's guide are re-measured.
 - New Hoon follows `hoon-style-guide` and stays within 80 columns.
 - `git diff --check` is clean.

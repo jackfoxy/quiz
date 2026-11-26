@@ -18,12 +18,12 @@
 ++  test-read-only-roots
   ^-  tang
   =/  examples  (locate:files bol /examples/example/hoon)
-  =/  docs  (locate:files bol /docs/source-format/md)
+  =/  docs  (locate:files bol /docs/reference/source-format/md)
   ?>  ?=(%.y -.examples)
   ?>  ?=(%.y -.docs)
   ;:  weld
     (expect-eq !>(/tests/examples/example/hoon) !>(rel.p.examples))
-    (expect-eq !>(/doc/source-format/md) !>(rel.p.docs))
+    (expect-eq !>(/doc/reference/source-format/md) !>(rel.p.docs))
     (expect !>(!write.p.examples))
     (expect !>(!write.p.docs))
   ==

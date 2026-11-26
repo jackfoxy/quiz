@@ -327,7 +327,7 @@ fixed-width integer in Rust's
 [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html),
 a value of a million is just 20 bits. Lengths and recursion are where size
 gets expensive, because they multiply. The
-[size table](reference.md#default-generation-size-and-duplicates) lists
+[size table](reference/engine-and-library.md#default-generation-size-and-duplicates) lists
 what size means for each generator.
 
 1. Run `props/40-tree-depth-budget`. Its tree norn gives each child the
@@ -1348,17 +1348,17 @@ and the examples themselves. It borrows its progressive teaching structure
 from [Obelisk's guide][obelisk-guide], not Obelisk's commands or UI behavior.
 
 [obelisk-guide]: ../../../../../../mnt/mars/gitrepos/obelisk/desk/doc/usr/users-guide.md
-[installation]: ../../../../../../mnt/mars/gitrepos/quiz/README.md#installation
-[reference]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md
-[configuration]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md#configuration-and-limits
-[workbench]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/workbench.md
-[source-format]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/source-format.md
-[examples]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/examples.md
-[suites]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/suites-and-replay.md
-[http-api]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/http-api.md
-[agent-api]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/agent-api.md
-[limitations]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/limitations.md
-[keys]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/keyboard/quiz-keys.md
+[installation]: ../../README.md#installation
+[reference]: reference/engine-and-library.md
+[configuration]: reference/engine-and-library.md#configuration-and-limits
+[workbench]: reference/workbench.md
+[source-format]: reference/source-format.md
+[examples]: reference/examples.md
+[suites]: reference/suites-and-replay.md
+[http-api]: reference/http-api.md
+[agent-api]: reference/agent-api.md
+[limitations]: reference/limitations.md
+[keys]: keyboard/quiz-keys.md
 
-[generator-characteristics]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md#measured-generator-characteristics
-[timeout-policy]: ../../../../../../mnt/mars/gitrepos/quiz/desk/doc/reference.md#timeout-policy-on-timeout
+[generator-characteristics]: reference/engine-and-library.md#measured-generator-characteristics
+[timeout-policy]: reference/engine-and-library.md#timeout-policy-on-timeout

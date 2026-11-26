@@ -61,7 +61,7 @@ fixes the copy and runs it again (passed). Server run
 history is retained on the disposable ship for inspection.
 
 Run/replay HTTP replies now carry their correlated decimal `id`; configuration
-inspection uses `document-conf`. See `desk/doc/http-api.md` for both contracts.
+inspection uses `document-conf`. See `desk/doc/reference/http-api.md` for both contracts.
 
 `examples.spec.js` runs all forty-one property documents and the three existing
 suites through the real UI, checks their expected outcomes and readonly roots,

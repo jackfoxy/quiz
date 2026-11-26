@@ -17,47 +17,47 @@ settings, not universal outcomes of similar-looking properties.
 
 | Document | Expected outcome | What it demonstrates |
 | --- | --- | --- |
-| [01-success](../examples/props/01-success.hoon) | Passed, 20 accepted | Increment then decrement on unsigned atoms |
-| [02-boolean](../examples/failing/02-boolean.hoon) | Failed, false | Dividing by two and doubling loses an odd remainder |
-| [03-crash](../examples/failing/03-crash.hoon) | Failed, crash at zero | Decrement is partial on unsigned atoms |
-| [04-discards](../examples/props/04-discards.hoon) | Passed, 20 accepted with a discard | Reject zero before applying the partial identity |
-| [05-duplicates](../examples/failing/05-duplicates.hoon) | Exhausted, duplicates | Constant seven yields 1 accepted + 3 duplicate = 4 attempted; passes with **Repeated samples** set to evaluate every sample |
-| [06-composed](../examples/props/06-composed.hoon) | Passed, 20 accepted | List/atom/cell norns; mapping an offset changes sum by length × offset |
-| [07-positive](../examples/props/07-positive.hoon) | Passed, 20 accepted, no drops | Generate positive values directly |
-| [08-seeded-threshold](../examples/failing/08-seeded-threshold.hoon) | Failed, false; 541 → 501 | Fixed-seed replay and default shrinking around 500 |
-| [09-custom-alts](../examples/failing/09-custom-alts.hoon) | Failed, false; best sample 502 | A terminating shrinker preserving positive even inputs |
-| [10-queue-model](../examples/props/10-queue-model.hoon) | Passed, 100 accepted | Model-based test: a two-list queue against a list model over generated command sequences; labels `empty-pop` and `refill` |
-| [11-queue-model-bug](../examples/failing/11-queue-model-bug.hoon) | Failed, false; 12 commands → 3 | A pop precondition kept by both the norn and a sequence shrinker |
-| [12-labels-coverage](../examples/props/12-labels-coverage.hoon) | Passed, 100 accepted; coverage met | `classify`, `tabulate` and `++cover`; the run shows the label distribution |
-| [13-expected-actual](../examples/failing/13-expected-actual.hoon) | Failed, false; expected 1, actual 0 | `same` and `note`: a failure that explains itself |
-| [14-coverage-shortfall](../examples/failing/14-coverage-shortfall.hoon) | Uncovered; empty 1% of 10% | Every check passes, but the generator misses a required case |
-| [15-expect-failure](../examples/props/15-expect-failure.hoon) | Failed as expected; 11 → 10 | `++expect %fail` for a claim known to be false |
-| [16-sorted-insert](../examples/props/16-sorted-insert.hoon) | Passed, 100 accepted; every position covered | `sorted` and `pair` generators; labels where the value lands; `++alts` for label searches |
-| [17-bst-delete-bug](../examples/failing/17-bst-delete-bug.hoon) | Failed, false; 9 keys → 3 | A search tree against a sorted-set model; `shrink-pair` of `shrink-list` |
-| [18-parse-print](../examples/props/18-parse-print.hoon) | Passed, 100 accepted | Aura generators (`upto`, `ship`, `knot`) in `scot`/`slav` round trips |
-| [19-queue-gen-lib](../examples/failing/19-queue-gen-lib.hoon) | Failed, false; 4 commands → 3 | Example 11 rebuilt from `list-of`, `cook`, `shrink-keep` and `shrink-list` |
-| [20-dependent](../examples/failing/20-dependent.hoon) | Failed, false; one-element list | `seeded`, `regen` and `shrink-seeded`: dependent shrinking |
-| [21-small-domain-allow](../examples/props/21-small-domain-allow.hoon) | Passed, 100 accepted from four samples | `duplicates %allow` evaluates repeats of a small domain |
-| [22-size-capped](../examples/props/22-size-capped.hoon) | Passed, 100 accepted; size held at 30 | `size-max` keeps size-driven lists short; `sized` and `vector` |
-| [23-map-fusion](../examples/props/23-map-fusion.hoon) | Passed, 100 accepted | Generated functions: two `turn`s equal one over `cork` |
-| [25-counter-agent](../examples/props/25-counter-agent.hoon) | Passed, 100 accepted; 5 duplicates | Pure agent harness: model-based pokes against a counter agent's door |
-| [27-timeout-fail](../examples/props/27-timeout-fail.hoon) | Failed, timeout; shrinks to `n=11` | `on-timeout %fail`: a fate that never returns is a `%timeout` failure, shrunk to the smallest hanging input. `++within ~s0..8000` lowers its call limit to 0.5 s, since each hanging candidate costs it; no Settings change is needed |
-| [28-confident-coverage](../examples/props/28-confident-coverage.hoon) | Passed, 800 accepted; heads 377 | `++cover [%confident …]`: undecided at 100, 200 and 400 checks, covered at 800 by the Wilson lower bound |
-| [29-bst-coordinated](../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
-| [30-dependent-inner](../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `dependent`, which bundles `seeded` and `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
-| [31-float-associativity](../examples/failing/31-float-associativity.hoon) | Failed, false; `[a=.~-1.2 b=.~-1 c=.~1]` | Sized `real` and `shrink-real`: float addition is not associative; the shrunk triple has short decimals |
-| [32-expiry-agent](../examples/props/32-expiry-agent.hoon) | Passed, 100 accepted; 15 duplicates | Simulated behn clock: puts with a time to live and waits against an expiring key store; labels `repeated-key` and `expired`, 33's shrinker |
-| [33-expiry-agent-bug](../examples/failing/33-expiry-agent-bug.hoon) | Failed, false; two puts of `%a` and a wait | A re-put that does not `%rest` its old timer; the old wake deletes the new value early |
-| [34-typed-defaults](../examples/failing/34-typed-defaults.hoon) | Failed, false; `[name='' tags=~[%a %a %a]]` | No norn or alts: `quiz-auto` fills printable text and a list of terms from the sample's type and shrinks the list |
-| [35-cover-table](../examples/props/35-cover-table.hoon) | Passed, 100 accepted; 64 duplicates | `++cover-table`: each list's least element is tabulated, and three values must each be 5% of the table's entries |
-| [36-weak-generator](../examples/props/36-weak-generator.hoon) | Passed, 100 accepted; 215 dropped | A weak generator: arbitrary lists, unsorted ones dropped, so only 6 accepted lists are long. Preview 200 with verdicts: 132 dropped, 1 long |
-| [37-insert-generated](../examples/props/37-insert-generated.hoon) | Passed, 100 accepted; 61 long | 36 repaired: `sorted:gen` makes sorted lists, nothing is dropped, and `++cover` requires half to be long. Preview 200: no drops, 119 long |
-| [38-shrink-order](../examples/failing/38-shrink-order.hoon) | Failed, false; 3 lines → `[[4 1] 0]` | Deliberate shrink order: `shrink-list` deletes lines first, then `shrink-pair` shrinks quantity and price one at a time |
-| [39-shrink-together](../examples/failing/39-shrink-together.hoon) | Failed, false; 3 lines → `[[4 13] 0]` | 38's bug with a pitfall: quantity and price only shrink together, so the price is never lowered alone |
-| [40-tree-depth-budget](../examples/props/40-tree-depth-budget.hoon) | Passed, 100 accepted; 30 duplicates | Size as depth: each child gets `size - 1`, so trees reach 2^size - 1 nodes; `depth` and `nodes` tables |
-| [41-tree-divided-budget](../examples/props/41-tree-divided-budget.hoon) | Passed, 100 accepted; 30 duplicates | Size as a budget: each node keeps one unit and splits the rest, so at most size nodes |
-| [26-counter-agent-bug](../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
-| [24-filter-map-swap](../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
+| [01-success](../../examples/props/01-success.hoon) | Passed, 20 accepted | Increment then decrement on unsigned atoms |
+| [02-boolean](../../examples/failing/02-boolean.hoon) | Failed, false | Dividing by two and doubling loses an odd remainder |
+| [03-crash](../../examples/failing/03-crash.hoon) | Failed, crash at zero | Decrement is partial on unsigned atoms |
+| [04-discards](../../examples/props/04-discards.hoon) | Passed, 20 accepted with a discard | Reject zero before applying the partial identity |
+| [05-duplicates](../../examples/failing/05-duplicates.hoon) | Exhausted, duplicates | Constant seven yields 1 accepted + 3 duplicate = 4 attempted; passes with **Repeated samples** set to evaluate every sample |
+| [06-composed](../../examples/props/06-composed.hoon) | Passed, 20 accepted | List/atom/cell norns; mapping an offset changes sum by length × offset |
+| [07-positive](../../examples/props/07-positive.hoon) | Passed, 20 accepted, no drops | Generate positive values directly |
+| [08-seeded-threshold](../../examples/failing/08-seeded-threshold.hoon) | Failed, false; 541 → 501 | Fixed-seed replay and default shrinking around 500 |
+| [09-custom-alts](../../examples/failing/09-custom-alts.hoon) | Failed, false; best sample 502 | A terminating shrinker preserving positive even inputs |
+| [10-queue-model](../../examples/props/10-queue-model.hoon) | Passed, 100 accepted | Model-based test: a two-list queue against a list model over generated command sequences; labels `empty-pop` and `refill` |
+| [11-queue-model-bug](../../examples/failing/11-queue-model-bug.hoon) | Failed, false; 12 commands → 3 | A pop precondition kept by both the norn and a sequence shrinker |
+| [12-labels-coverage](../../examples/props/12-labels-coverage.hoon) | Passed, 100 accepted; coverage met | `classify`, `tabulate` and `++cover`; the run shows the label distribution |
+| [13-expected-actual](../../examples/failing/13-expected-actual.hoon) | Failed, false; expected 1, actual 0 | `same` and `note`: a failure that explains itself |
+| [14-coverage-shortfall](../../examples/failing/14-coverage-shortfall.hoon) | Uncovered; empty 1% of 10% | Every check passes, but the generator misses a required case |
+| [15-expect-failure](../../examples/props/15-expect-failure.hoon) | Failed as expected; 11 → 10 | `++expect %fail` for a claim known to be false |
+| [16-sorted-insert](../../examples/props/16-sorted-insert.hoon) | Passed, 100 accepted; every position covered | `sorted` and `pair` generators; labels where the value lands; `++alts` for label searches |
+| [17-bst-delete-bug](../../examples/failing/17-bst-delete-bug.hoon) | Failed, false; 9 keys → 3 | A search tree against a sorted-set model; `shrink-pair` of `shrink-list` |
+| [18-parse-print](../../examples/props/18-parse-print.hoon) | Passed, 100 accepted | Aura generators (`upto`, `ship`, `knot`) in `scot`/`slav` round trips |
+| [19-queue-gen-lib](../../examples/failing/19-queue-gen-lib.hoon) | Failed, false; 4 commands → 3 | Example 11 rebuilt from `list-of`, `cook`, `shrink-keep` and `shrink-list` |
+| [20-dependent](../../examples/failing/20-dependent.hoon) | Failed, false; one-element list | `seeded`, `regen` and `shrink-seeded`: dependent shrinking |
+| [21-small-domain-allow](../../examples/props/21-small-domain-allow.hoon) | Passed, 100 accepted from four samples | `duplicates %allow` evaluates repeats of a small domain |
+| [22-size-capped](../../examples/props/22-size-capped.hoon) | Passed, 100 accepted; size held at 30 | `size-max` keeps size-driven lists short; `sized` and `vector` |
+| [23-map-fusion](../../examples/props/23-map-fusion.hoon) | Passed, 100 accepted | Generated functions: two `turn`s equal one over `cork` |
+| [25-counter-agent](../../examples/props/25-counter-agent.hoon) | Passed, 100 accepted; 5 duplicates | Pure agent harness: model-based pokes against a counter agent's door |
+| [27-timeout-fail](../../examples/props/27-timeout-fail.hoon) | Failed, timeout; shrinks to `n=11` | `on-timeout %fail`: a fate that never returns is a `%timeout` failure, shrunk to the smallest hanging input. `++within ~s0..8000` lowers its call limit to 0.5 s, since each hanging candidate costs it; no Settings change is needed |
+| [28-confident-coverage](../../examples/props/28-confident-coverage.hoon) | Passed, 800 accepted; heads 377 | `++cover [%confident …]`: undecided at 100, 200 and 400 checks, covered at 800 by the Wilson lower bound |
+| [29-bst-coordinated](../../examples/failing/29-bst-coordinated.hoon) | Failed, false; `[~[1 0 2] 1]` | 17's tree with `shrink-equal` through `shrink-via`: the deleted key and its copy in the tree shrink together |
+| [30-dependent-inner](../../examples/failing/30-dependent-inner.hoon) | Failed, false; bound 1, pinned `~[90]` | `dependent`, which bundles `seeded` and `shrink-seeded` with an inner shrinker: once the bound is minimal, the regenerated list itself shrinks and is pinned |
+| [31-float-associativity](../../examples/failing/31-float-associativity.hoon) | Failed, false; `[a=.~-1.2 b=.~-1 c=.~1]` | Sized `real` and `shrink-real`: float addition is not associative; the shrunk triple has short decimals |
+| [32-expiry-agent](../../examples/props/32-expiry-agent.hoon) | Passed, 100 accepted; 15 duplicates | Simulated behn clock: puts with a time to live and waits against an expiring key store; labels `repeated-key` and `expired`, 33's shrinker |
+| [33-expiry-agent-bug](../../examples/failing/33-expiry-agent-bug.hoon) | Failed, false; two puts of `%a` and a wait | A re-put that does not `%rest` its old timer; the old wake deletes the new value early |
+| [34-typed-defaults](../../examples/failing/34-typed-defaults.hoon) | Failed, false; `[name='' tags=~[%a %a %a]]` | No norn or alts: `quiz-auto` fills printable text and a list of terms from the sample's type and shrinks the list |
+| [35-cover-table](../../examples/props/35-cover-table.hoon) | Passed, 100 accepted; 64 duplicates | `++cover-table`: each list's least element is tabulated, and three values must each be 5% of the table's entries |
+| [36-weak-generator](../../examples/props/36-weak-generator.hoon) | Passed, 100 accepted; 215 dropped | A weak generator: arbitrary lists, unsorted ones dropped, so only 6 accepted lists are long. Preview 200 with verdicts: 132 dropped, 1 long |
+| [37-insert-generated](../../examples/props/37-insert-generated.hoon) | Passed, 100 accepted; 61 long | 36 repaired: `sorted:gen` makes sorted lists, nothing is dropped, and `++cover` requires half to be long. Preview 200: no drops, 119 long |
+| [38-shrink-order](../../examples/failing/38-shrink-order.hoon) | Failed, false; 3 lines → `[[4 1] 0]` | Deliberate shrink order: `shrink-list` deletes lines first, then `shrink-pair` shrinks quantity and price one at a time |
+| [39-shrink-together](../../examples/failing/39-shrink-together.hoon) | Failed, false; 3 lines → `[[4 13] 0]` | 38's bug with a pitfall: quantity and price only shrink together, so the price is never lowered alone |
+| [40-tree-depth-budget](../../examples/props/40-tree-depth-budget.hoon) | Passed, 100 accepted; 30 duplicates | Size as depth: each child gets `size - 1`, so trees reach 2^size - 1 nodes; `depth` and `nodes` tables |
+| [41-tree-divided-budget](../../examples/props/41-tree-divided-budget.hoon) | Passed, 100 accepted; 30 duplicates | Size as a budget: each node keeps one unit and splits the rest, so at most size nodes |
+| [26-counter-agent-bug](../../examples/failing/26-counter-agent-bug.hoon) | Failed, false; `[%add 11]` | A lost update in the agent; shrinks to one add of eleven. Expected 11, actual 0 |
+| [24-filter-map-swap](../../examples/failing/24-filter-map-swap.hoon) | Failed, false; `p = {8 -> %.y, _ -> %.n}` | A false law over generated functions; the tables shrink and print |
 
 The composed example's list is generated as `(list @ud)` but enters its fate
 through a noun boundary and is checked there. Recursive vase types can include
@@ -76,7 +76,7 @@ Select the seeded threshold's result and use **Replay exact property**. The
 replay should retain its seed, effective config, source hash and revision and
 reproduce both counterexamples and all counters. Editing the source tab marks
 the earlier result stale; replay still uses its recorded snapshot. See
-[replay semantics](reference.md#clay-context-seed-and-replay).
+[replay semantics](engine-and-library.md#clay-context-seed-and-replay).
 
 ## Model-based queue examples
 
@@ -136,7 +136,7 @@ note and comparison follow the shrunk sample, not the original 3.
 
 ## Generator library examples
 
-Examples 16 to 20, 29 to 31 and 38 to 41 use [`quiz-gen`](reference.md#app-generator-library-quiz-gen).
+Examples 16 to 20, 29 to 31 and 38 to 41 use [`quiz-gen`](engine-and-library.md#app-generator-library-quiz-gen).
 
 `16-sorted-insert` generates a sorted list and a value, inserts the value,
 and checks the result with `same` under `all`. It labels where the value
@@ -209,15 +209,15 @@ takes a `*` sample and molds it, because a `(list @ud)` sample type would
 exceed the sample-byte limit.
 
 `25-counter-agent` and `26-counter-agent-bug` drive the agent in
-[`fixtures/quiz-harness/counter.hoon`](../fixtures/quiz-harness/counter.hoon)
-through [`quiz-harness`](reference.md#agent-harness-quiz-harness). The agent
+[`fixtures/quiz-harness/counter.hoon`](../../fixtures/quiz-harness/counter.hoon)
+through [`quiz-harness`](engine-and-library.md#agent-harness-quiz-harness). The agent
 keeps a count and ignores an add above ten. The first property generates adds
 of 0 to 9 and resets, so model and agent agree; the second generates adds of
 up to 99, and the lost update shows as a mismatch. Its alts is `shrink-list`
 over each operation, with each amount shrunk toward zero.
 
 `32-expiry-agent` and `33-expiry-agent-bug` drive the expiring key store in
-[`fixtures/quiz-harness/expiry.hoon`](../fixtures/quiz-harness/expiry.hoon)
+[`fixtures/quiz-harness/expiry.hoon`](../../fixtures/quiz-harness/expiry.hoon)
 through `run-clock`, the harness's simulated clock. A put stores a value and
 sets a behn timer for its time to live; the wake deletes the key. The model
 keeps each key until its latest put expires. Generated waits fire the timers
@@ -231,7 +231,7 @@ of one key, so moving one copy alone would lose it.
 
 `34-typed-defaults` has no `++norn` and no `++alts`. Its sample is
 `[name=@t tags=(list @tas)]`, and the false claim is that a record never has
-more than two tags. [`quiz-auto`](reference.md#type-directed-defaults-quiz-auto)
+more than two tags. [`quiz-auto`](engine-and-library.md#type-directed-defaults-quiz-auto)
 reads the type: the name is printable text and the tags a list of valid
 terms, up to 20. Two samples pass and the third fails. The default shrinker
 recognizes the list, deletes tags, empties the name and lowers each term
@@ -249,7 +249,7 @@ stays 8 because keys never shrink: 8 is the key `p`'s case names.
 ## Recorded property counters
 
 Seed `0v123`, no UI overrides. Columns use the definitions in the reference.
-[`tests/lib/quiz-examples.hoon`](../tests/lib/quiz-examples.hoon) pins the
+[`tests/lib/quiz-examples.hoon`](../../tests/lib/quiz-examples.hoon) pins the
 queue, report, coverage, generator-library, size and function rows in
 `-test`.
 
@@ -329,7 +329,7 @@ At `size-max 22`, 40 ends `limited` `sample-bytes` at the 17th sample.
 ## Labelled examples
 
 **Find examples for each label** over 100 passes, with each document's seed
-([labelled examples](reference.md#labelled-examples)). Tags and times render
+([labelled examples](engine-and-library.md#labelled-examples)). Tags and times render
 as numbers: `%pop` 7.368.560, `%push` 1.752.397.168, `%put` 7.632.240,
 `%wait` 1.953.063.287, `%a` 97, `~s1` 18.446.744.073.709.551.616. Pinned in
 `test-labelled-examples` and `examples.spec.js`.
@@ -349,9 +349,9 @@ as numbers: `%pop` 7.368.560, `%push` 1.752.397.168, `%put` 7.632.240,
 
 | Suite | Recorded arm result | Notes |
 | --- | --- | --- |
-| [Quiz tutorial](../tests/examples/01-quiz-tutorial.hoon) | 12/12 passed | Library fates, norns, drops, shrinking and round trips |
-| [Boxcar](../tests/examples/02-boxcar.hoon) | 3/3 passed | Property/unit checks for a small range predicate |
-| [Euler](../tests/examples/03-euler.hoon) | 4/4 passed | Prime-number examples and ordinary assertions |
+| [Quiz tutorial](../../tests/examples/01-quiz-tutorial.hoon) | 12/12 passed | Library fates, norns, drops, shrinking and round trips |
+| [Boxcar](../../tests/examples/02-boxcar.hoon) | 3/3 passed | Property/unit checks for a small range predicate |
+| [Euler](../../tests/examples/03-euler.hoon) | 4/4 passed | Prime-number examples and ordinary assertions |
 
 Across these three files, all 19 test arms pass in the app and under `-test`.
 They report arm counters, not property sample metrics; seeds, drops and
@@ -367,5 +367,5 @@ The intentional failures are outside `desk/tests/`. Running the complete
 regression suite therefore remains a passing check. The executable browser
 matrix is `tests/browser/examples.spec.js`; its `run.json` artifacts retain
 full source hashes, effective configurations, counters and outcomes for each
-example and the threshold replay. See the [reference](reference.md) for exact
+example and the threshold replay. See the [reference](engine-and-library.md) for exact
 contracts, limits and library/app differences.

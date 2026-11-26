@@ -9,7 +9,7 @@ authoritative behavior and recovery guidance.
 - **A passing property is evidence, not proof.** Quiz reports `%passed` after
   the requested number of accepted checks. It does not establish that the
   property holds for every input. See
-  [counters, status and outcomes](reference.md#counters-status-and-outcomes).
+  [counters, status and outcomes](engine-and-library.md#counters-status-and-outcomes).
 - **A timeout policy costs a full call limit per hanging sample.** Under
   `on-timeout %fail` or `%discard`, every hanging sample or candidate waits
   the whole call limit (default 10 s) before it is handled, and a shrink can
@@ -21,7 +21,7 @@ authoritative behavior and recovery guidance.
   The policy covers the fate only; generation, norn, alts and rendering still
   interrupt the run.
 - **A preview judges in the same step and ignores the timeout policy.** With
-  verdicts, a [generator preview](reference.md#generator-preview) runs the
+  verdicts, a [generator preview](engine-and-library.md#generator-preview) runs the
   fate in the step that makes the sample. A fate that exceeds the call limit
   interrupts the preview, whatever `on-timeout` says. A preview makes at most
   100 samples, shows at most 20 shrink candidates, and cannot be replayed.
@@ -32,7 +32,7 @@ authoritative behavior and recovery guidance.
   `++within` (10 ms to 1 hour) can lower its own property call limit, never
   raise it. Until a limit fires, the ship processes nothing else.
   Clay builds of saved files and suites have no CPU limit. See
-  [configuration and limits](reference.md#configuration-and-limits).
+  [configuration and limits](engine-and-library.md#configuration-and-limits).
 - **An aborted run keeps only committed progress.** A CPU limit, Ctrl-C or
   memory exhaustion aborts the whole Gall event, and the run is recorded as
   `%interrupted`. Work done in the aborted slice is lost: counters and evidence
@@ -46,7 +46,7 @@ authoritative behavior and recovery guidance.
   disposable ship.
 - **Cancellation is not preemption.** Active cancellation takes effect only at
   a boundary between returning calls. Queued work can cancel immediately. See
-  [Gall, HTTP and persistence](reference.md#gall-http-and-persistence).
+  [Gall, HTTP and persistence](engine-and-library.md#gall-http-and-persistence).
 
 ## Properties and suites
 
@@ -58,12 +58,12 @@ authoritative behavior and recovery guidance.
 - **A zero requested count passes without checking an input.** Zero is a valid
   configuration value, and the requested accepted count has already been
   reached at startup. Use a positive value for meaningful evidence. See
-  [configuration and limits](reference.md#configuration-and-limits) and
-  [counters, status and outcomes](reference.md#counters-status-and-outcomes).
+  [configuration and limits](engine-and-library.md#configuration-and-limits) and
+  [counters, status and outcomes](engine-and-library.md#counters-status-and-outcomes).
 - **Suites cannot use property replay.** Suites can rerun, but replay is
   limited to property records with captured source, context, seed and
   configuration. See
-  [Clay context, seed and replay](reference.md#clay-context-seed-and-replay).
+  [Clay context, seed and replay](engine-and-library.md#clay-context-seed-and-replay).
 - **The `quiz` library's generators are narrow and partial.** Its `list` norn
   yields at most `xeb(size)-1` elements, usually close to that, so short
   lists are rare late in a run. `atom`, `list` and `noun` crash at size 0,
@@ -72,7 +72,7 @@ authoritative behavior and recovery guidance.
   as a raw atom, so a negative double can shrink to NaN. The app's defaults
   come from `quiz-auto` instead, which shrinks containers, unions and floats
   by type. Prefer the
-  [app generator library](reference.md#app-generator-library-quiz-gen),
+  [app generator library](engine-and-library.md#app-generator-library-quiz-gen),
   whose generators are total and whose `shrink-list` handles lists.
 - **Type-directed defaults are heuristic.** Without `++norn` and `++alts`,
   `quiz-auto` reads the sample's type: meaningful auras get valid values, and
@@ -81,7 +81,7 @@ authoritative behavior and recovery guidance.
   holds at most 20 elements per container, and it finds a union's branch by
   checking only atoms and the first few cell heads. Write a norn and alts
   for anything more specific. See
-  [type-directed defaults](reference.md#type-directed-defaults-quiz-auto).
+  [type-directed defaults](engine-and-library.md#type-directed-defaults-quiz-auto).
 - **Duplicates are skipped by mug unless you choose otherwise.** Under the
   default `%mug` policy a small domain such as `?` exhausts before a larger
   request, and a mug collision skips a distinct noun. Set `duplicates %allow`
@@ -90,7 +90,7 @@ authoritative behavior and recovery guidance.
 - **Size grows fast unless capped.** The default size passes 50,000 by the
   100th sample. Set `size-max`, or use `quiz-gen`'s `capped`, for generators
   whose output grows with size.
-  See [measured generator characteristics](reference.md#measured-generator-characteristics).
+  See [measured generator characteristics](engine-and-library.md#measured-generator-characteristics).
 - **Shrinkers combine independently unless told otherwise.** `quiz-gen`
   shrinks each component on its own. Values that constrain each other may stop
   high; `shrink-equal` coordinates equal values, but there is no general
@@ -119,7 +119,7 @@ authoritative behavior and recovery guidance.
   `requested-max` (10,000) or a budget, where the plain threshold decides.
   `++confidence` sets certainty from 1 in 10 to 1 in 10^15 (powers of ten
   only) and tolerance in whole percent. See
-  [reports, labels and coverage](reference.md#reports-labels-and-coverage).
+  [reports, labels and coverage](engine-and-library.md#reports-labels-and-coverage).
 - **Labels are bounded and not shrunk per class.** At most 100 distinct labels
   and 100 table rows of at most 256 bytes; the run otherwise ends
   `%limited %labels`. Each label keeps its first passing example, unshrunk.

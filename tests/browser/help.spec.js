@@ -14,11 +14,19 @@ test('rendered help routes, repository links and restored tabs', async ({page}, 
   test.setTimeout(300000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  const toc = fs.readFileSync('desk/doc.toc','utf8').trim().split('\n')
-    .map(line => line.trim().split(/\s{2,}/));
+  const toc = [];
+  const parents = [];
+  for (const line of fs.readFileSync('desk/doc.toc','utf8').trimEnd().split('\n')) {
+    const depth = line.search(/\S/) / 2;
+    const [path, title] = line.trim().split(/\s{2,}/);
+    parents.length = depth;
+    const parts = path.split('/').filter(Boolean);
+    if (parts.at(-1) === 'md') {
+      toc.push([[...parents, ...parts.slice(0, -1)].join('/'), title]);
+    } else parents.push(...parts);
+  }
   const routes = [];
-  for (const [path, title] of toc) {
-    const slug = path.split('/')[1];
+  for (const [slug, title] of toc) {
     const {status, html} = await page.evaluate(async slug => {
       const response = await fetch(`/docs/d/quiz/${slug}`);
       return {status:response.status, html:await response.text()};
@@ -35,17 +43,21 @@ test('rendered help routes, repository links and restored tabs', async ({page}, 
   const guide = page.frameLocator('iframe[title="User\'s Guide documentation"]');
   await expect(guide.locator('main h1')).toHaveText("Quiz user's guide");
   await expect(guide.getByRole('link',{name:'reference',exact:true}).first())
-    .toHaveAttribute('href','/docs/d/quiz/reference');
+    .toHaveAttribute('href','/docs/d/quiz/reference/engine-and-library');
   await guide.getByRole('link',{name:'reference',exact:true}).first().click();
-  await expect(guide.locator('main h1')).toHaveText('Quiz reference');
+  await expect(guide.locator('main h1')).toHaveText('Quiz engine and library');
   await expect(guide.getByRole('link',{name:'quiz library',exact:true}))
     .toHaveAttribute('href','https://github.com/jackfoxy/quiz/blob/dev/desk/lib/quiz.hoon');
   await expect(guide.getByRole('link',{name:'quiz library',exact:true}))
     .toHaveAttribute('target','_blank');
   await page.locator('#help').click();
+  await page.locator('#docs-help-nav').getByText('Reference',{exact:true}).click();
+  await page.locator('#docs-help-nav').getByText('Engine and Library',{exact:true}).click();
+  await page.locator('#help').click();
   await page.locator('#docs-help-nav').getByText("User's Guide",{exact:true}).click();
   await page.locator('#help').click();
   await page.locator('#docs-help-nav').getByText('Keyboard Shortcuts',{exact:true}).click();
+  await page.locator('#docs-help-nav').getByText('Quiz Keys',{exact:true}).click();
   await expect(page.locator('.docs-tab')).toHaveCount(3);
   await page.evaluate(() => window.quiz.runtime.session.save());
   await page.reload();

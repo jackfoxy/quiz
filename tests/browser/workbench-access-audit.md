@@ -15,11 +15,11 @@ running that document is a valid workbench workflow.
 
 ## Capability inventory
 
-The inventory covers the public contracts in [reference](../../desk/doc/reference.md),
-[source format](../../desk/doc/source-format.md),
-[agent API](../../desk/doc/agent-api.md),
-[HTTP API](../../desk/doc/http-api.md), and
-[suite/replay contracts](../../desk/doc/suites-and-replay.md). The last
+The inventory covers the public contracts in [reference](../../desk/doc/reference/engine-and-library.md),
+[source format](../../desk/doc/reference/source-format.md),
+[agent API](../../desk/doc/reference/agent-api.md),
+[HTTP API](../../desk/doc/reference/http-api.md), and
+[suite/replay contracts](../../desk/doc/reference/suites-and-replay.md). The last
 column names the browser test that exercises the route; `doubles` is the
 deterministic scenario suite in [run-scenarios.js](run-scenarios.js).
 
@@ -102,7 +102,7 @@ changed only documentation and examples.
 | `-test /=quiz=/tests ~` | 561 arms, `ok=%.y` |
 | Workbench doubles | 5 scenarios passed |
 | Complete repository Playwright suite | 72 passed, 1 skipped, 0 failed; 7.7 minutes (after the two fixes below) |
-| Example counters against [examples.md](../../desk/doc/examples.md) | 40 of 40 recorded rows match (seed `0v123`, no overrides); 27 has no counters and passes in Playwright |
+| Example counters against [examples.md](../../desk/doc/reference/examples.md) | 40 of 40 recorded rows match (seed `0v123`, no overrides); 27 has no counters and passes in Playwright |
 | urui copies against the pinned obelisk revision | Identical, except the two documented `chords.js` and `shortcut-conflicts.test.js` changes |
 | `node --check`, `git diff --check`, desk symlinks, relative links | Clean |
 

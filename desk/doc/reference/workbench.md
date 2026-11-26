@@ -64,7 +64,7 @@ a newly recorded seed. **Read document conf** previews those settings.
 Overriding any of these fields preserves every other document budget. A seed
 uses Hoon `@uv` notation, for example `0v123`. A largest size of 0 removes the
 cap. **Repeated samples** chooses the
-[duplicates policy](reference.md#default-generation-size-and-duplicates):
+[duplicates policy](engine-and-library.md#default-generation-size-and-duplicates):
 skip a repeated mug, skip only an equal sample, or evaluate every sample.
 **More limits** folds away the other configuration fields: the attempts,
 drops and duplicates budgets, **On timeout**, and each of the twelve bounds.
@@ -74,7 +74,7 @@ fill the others; the other fields need no build. Suite execution has no
 controlled seed or property sample counters; those controls are disabled.
 
 **Find examples for each label**, beside **Preview samples**, runs a
-[labelled-example search](reference.md#labelled-examples) over **Find
+[labelled-example search](engine-and-library.md#labelled-examples) over **Find
 examples over passing samples** passes (blank means 100; at most the
 conf's `requested-max`). The result lists each label's smallest example,
 its weight, shrink steps, candidates tried and how its shrink ended
@@ -101,14 +101,14 @@ where the duplicate policy would skip it), followed by **First sample's
 shrink candidates**. Requested checks are ignored; suites cannot be
 previewed. A preview is kept in history like a run; it cannot be replayed,
 and **Rerun request** previews again. See the
-[reference](reference.md#generator-preview).
+[reference](engine-and-library.md#generator-preview).
 
 A passed or uncovered run with `++cover` or `++cover-table` shows
 **Coverage requirements**: one row per requirement, met or not, with hits of
 total, observed and required percent, whether it is met, and under
 `%confident` the Wilson bounds and decision (established, refuted,
 undecided, or plain threshold with the reason). A line under the table gives
-the meaning of each mode present ([coverage report](reference.md#reports-labels-and-coverage)).
+the meaning of each mode present ([coverage report](engine-and-library.md#reports-labels-and-coverage)).
 
 Results show only confirmed server status, effective configuration and seed,
 counters, diagnostics, and original/shrunk counterexamples. A property run
@@ -131,7 +131,7 @@ suite that fails until the bug is fixed. It opens unsaved as
 `regression-<id>`, in **Saved suite** mode; save it under **My documents**,
 and the tab selects the new revision for **Run saved suite**. It is disabled
 for suites, expected failures and runs without a counterexample; see
-[chapter 8](users-guide.md#save-a-counterexample-as-a-regression).
+[chapter 8](../users-guide.md#save-a-counterexample-as-a-regression).
 An error after a counterexample, such as a crashing shrinker, shows its
 **Error cause** above the retained counterexamples and their failure. The
 **Record** disclosure shows the submitted request, created, updated and
