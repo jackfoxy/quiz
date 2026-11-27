@@ -16,7 +16,8 @@ env.window.addEventListener = (name, callback) => {
 const {ace, aceAssets} = createAce('ace/mode/hoon');
 // Consumer-only shell nodes; the upstream doubles stay unchanged.
 for (const id of ['quiz-editor', 'editable-copy', 'document-location',
-  'quiz-error', 'run-controls', 'quiz-runs', 'clay-source-panel', 'work-files-tree', 'example-files-tree',
+  'quiz-error', 'run-controls', 'quiz-runs', 'clay-source-panel', 'clay-source-tree',
+  'work-files-tree', 'example-files-tree',
   'doc-files-tree', 'property-save', 'property-save-as', 'property-open',
   'property-ref', 'source-status', 'quiz-limit-call', 'quiz-limit-build',
   'quiz-limit-arm', 'quiz-limits-state']) {

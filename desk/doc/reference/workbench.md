@@ -27,20 +27,33 @@ an unsaved tab; save it in My documents to keep your version.
 **Clay source** lists the property documents and suites on a local desk at
 an explicit revision. A property document imports `quiz-engine` on a `/+`
 prelude line, under any face, and declares a `++  fate` arm at the start of a
-line; otherwise a file with a `++  test-` arm at the start of a line is listed
-as a suite. Select a desk, enter a positive decimal revision, then choose
-**Browse revision**. The revision is pinned: changing files does not change
-that view. Select a file to read it or make an editable copy. An unavailable
-revision reports an error. The Open chooser's `clay` location lists every
-Hoon file at the context last browsed in Clay source, so browse there first
-to choose the desk and revision. A Clay tab runs as a saved suite when it has
-a `++  test-` arm and no `++  fate`, and as a saved property otherwise.
+line. Otherwise a file that imports `test` on a `/+` line and has a
+`++  test-` arm at the start of a line is a suite, marked “(suite)”, or a
+quiz suite, marked “(quiz suite)”, when its `/+` lines also import `quiz`,
+`quiz-auto` or `quiz-engine`. Select a desk and its files list at once,
+in folders that start below the desk and revision. The revision box opens
+at the desk's head, marked by a green `now`; ▴, ▾ and the Up and Down keys
+step one revision, and a typed number takes effect on Enter. A number
+outside 1 to the head is refused. The context menu of the box, a folder or
+a file (right-click, Shift-F10, Alt-Enter or `…`) offers **Now**, which
+returns to the head from any revision, and **Revision…**, which selects
+the box for a typed revision. A file's menu, here and in Examples, also
+offers **Open and run**, which opens the property or suite and runs it
+with its tab's run settings. Each desk keeps the revision last chosen
+for it, and a desk at `now` follows its head when a save moves it. The
+revision is pinned: changing files does not change that view. Select a
+file, or right-click it (Shift-F10, Alt-Enter or its `…` button) and
+choose **Open**, to read it or make an editable copy. The Open chooser's
+`clay` location lists every Hoon file at the desk and revision last listed
+in Clay source. A Clay tab runs as a saved suite when it has a `++  test-`
+arm and no `++  fate`, and as a saved property otherwise.
 
-Tabs, unsaved text, selections, pane layout and the last browsed Clay
-context are saved in this browser's local storage. Clearing browser data
-removes unsaved work. Saved files remain in Clay. A restored tab keeps its
-buffer; explicitly reopening it reloads the saved file and protects dirty
-edits with a confirmation.
+Tabs, unsaved text, selections, pane layout, the last browsed Clay context,
+each desk's revision and the Clay source folders you closed are saved in
+this browser's local storage. Clearing browser data removes unsaved work.
+Saved files remain in Clay. A restored tab keeps its buffer; explicitly
+reopening it reloads the saved file and protects dirty edits with a
+confirmation.
 
 Choose a source workflow in each tab's run controls:
 

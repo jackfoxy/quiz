@@ -1076,16 +1076,24 @@ and revision. A saved run reads both the file and imports there.
 
 To browse indexed properties and suites:
 
-1. Open **Clay source** and select a desk.
-2. Enter an available positive decimal **Revision**.
-3. Click **Browse revision** and select a listed file. Suites are marked
-   “(suite)”.
+1. Open **Clay source** and select a desk. Its files list at once, at the
+   desk's head, marked `now`.
+2. To pin an older revision, step with ▴ and ▾ (or Up and Down), or type a
+   positive decimal revision and press Enter. The list follows. **Now** on
+   the context menu of the box or any listed row returns to the head.
+3. Select a listed file, or right-click it and choose **Open**, or
+   **Open and run** to run it at once with its tab's run settings. Files are
+   listed in folders below the desk and revision. Suites are marked
+   “(suite)” and quiz suites “(quiz suite)”.
 4. Inspect its read-only source and pinned context, or use **Open editable
    copy** to experiment with a draft.
 
 The index is textual: a property imports `quiz-engine` on a `/+` prelude line,
-under any face, and has a top-level `++  fate`; a suite has a top-level
-`++  test-` arm. A valid minimal property without the engine import is absent.
+under any face, and has a top-level `++  fate`; a suite imports `test` on a
+`/+` line and has a top-level `++  test-` arm, and is a quiz suite when it
+also imports `quiz`, `quiz-auto` or `quiz-engine`. A valid minimal property
+without the engine import is absent, as is a file with `++  test-` arms that
+does not import `test`, such as a thread.
 
 Any other Hoon file at that context opens through **Open** (Alt-O): choose
 the `clay` location, which lists every Hoon file at the desk and revision last

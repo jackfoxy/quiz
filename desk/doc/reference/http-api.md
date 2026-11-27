@@ -361,8 +361,10 @@ desk, revision, or test core returns 422 with the located diagnostic object.
 Returns 200 with `entries`, in path order, as
 `{"path":["clay","quiz","100",…,"hoon"],"kind":"file","role":…}`. `role` is
 `property` for a Hoon file whose prelude imports `/lib/quiz-engine` on a `/+`
-line, under any face, and that declares a `++  fate` arm; otherwise `suite`
-for a file with a `++  test-` arm. Other files are omitted. The first 4,096
+line, under any face, and that declares a `++  fate` arm. Otherwise a file
+whose `/+` lines import `/lib/test` and that has a `++  test-` arm is
+`quiz-suite` when its `/+` lines also import `/lib/quiz`, `/lib/quiz-auto`
+or `/lib/quiz-engine`, else `suite`. Other files are omitted. The first 4,096
 bytes of each file are parsed for the prelude, in whole lines. The arm checks
 are textual: a line must start at column 0 with `++  fate` followed by a
 space or the end of the line, or with `++  test-`; nothing is compiled. The paths open through the file

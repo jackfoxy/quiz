@@ -225,8 +225,8 @@ test('Use latest revision and Clay source browsing open a read-only file', async
   await page.getByRole('tab', {name: 'Clay source'}).click();
   await expect(page.locator('#clay-desk')).toHaveValue('quiz');
   await page.locator('#clay-revision').fill(revision);
-  await page.getByRole('button', {name: 'Browse revision'}).click();
-  const file = page.locator('#clay-files button').filter({hasText: 'props'}).first();
+  await page.locator('#clay-revision').press('Enter');
+  const file = page.locator('#clay-source-tree .file-tree-file[data-path*="/props/"]').first();
   await expect(file).toBeVisible({timeout: 30000});
   await file.click();
   await expect(page.locator('#document-location')).toHaveText(/clay|props/);

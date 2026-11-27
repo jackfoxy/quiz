@@ -76,15 +76,31 @@ test('read-only examples/docs, editable copies, pinned Clay and fallback help', 
   await page.locator('#editable-copy').click();
   await expect(page.locator('#property-save')).toBeEnabled();
   await page.evaluate(() => window.quiz.runtime.explorer.setView('clay-source'));
-  const rev = await page.locator('#clay-revision').inputValue();
+  // The box opens at %quiz's head: now.
+  const rev = (await (await page.request.post('/apps/quiz/api',
+    {data: {op: 'contexts'}})).json()).contexts.find((item) => item.desk === 'quiz').revision;
   const pinned = String(Number(rev) - 1);
+  await expect(page.locator('#clay-revision')).toHaveValue(rev);
+  await expect(page.locator('#clay-source-panel .clay-now')).toBeVisible();
+  // ▾ steps back one revision and lists it; Enter takes a typed one.
+  await page.locator('#clay-older').click();
+  await expect(page.locator('#clay-revision')).toHaveValue(pinned);
+  await expect(page.locator('#clay-source-panel .clay-now')).toBeHidden();
+  // Now, from the selector's menu as from any Clay row's, returns to the head.
+  await page.locator('#clay-source-panel .clay-case').click({button: 'right'});
+  await expect(page.locator('#file-context-open')).toBeHidden();
+  await page.locator('#file-context-now').click();
+  await expect(page.locator('#clay-revision')).toHaveValue(rev);
+  await expect(page.locator('#clay-source-panel .clay-now')).toBeVisible();
   await page.locator('#clay-revision').fill(pinned);
-  await page.locator('#clay-browse').click();
+  await page.locator('#clay-revision').press('Enter');
   await expect(page.locator('#clay-state')).toContainText(`revision ${pinned}`);
   // Clay source lists property documents only: lib/quiz has no engine import.
-  await expect(page.locator('#clay-files button').filter({hasText: /^lib\/quiz\/hoon$/})).toHaveCount(0);
-  await page.locator('#clay-files button')
-    .filter({hasText: /^examples\/props\/01-success\/hoon$/}).click();
+  const row = (path) => page.locator(
+    `#clay-source-tree .file-tree-file[data-path="clay/quiz/${pinned}/${path}"]`);
+  await expect(row('examples/props/01-success/hoon')).toBeVisible();
+  await expect(row('lib/quiz/hoon')).toHaveCount(0);
+  await row('examples/props/01-success/hoon').click();
   await expect(page.locator('#document-location'))
     .toHaveText(`Read-only: clay/quiz/${pinned}/examples/props/01-success/hoon`);
   await page.evaluate(() => window.quiz.runtime.session.save());
@@ -203,15 +219,28 @@ test('Open → clay lists every Hoon file at the Clay source context', async ({p
       return entries.filter((entry) => entry.path.join('/').includes(String(stamp)))
         .map((entry) => entry.role).sort().join(',');
     }, {timeout: 30000}).toBe('property,suite');
+    // The page loaded before both saves; reloading moves %quiz's now.
+    await page.reload();
+    await page.waitForFunction(() => window.quiz?.ready);
+    await page.evaluate(() => window.quiz.ready);
     await page.evaluate(() => window.quiz.runtime.explorer.setView('clay-source'));
-    await page.locator('#clay-revision').fill(String(rev));
-    await page.locator('#clay-browse').click();
-    const listed = page.locator('#clay-files button');
-    await expect(listed.filter({hasText: `data/quiz/${suite}/hoon (suite)`})).toHaveCount(1);
+    await expect(page.locator('#clay-revision')).toHaveValue(String(rev));
+    const listed = (name) => page.locator('#clay-source-tree .file-tree-file'
+      + `[data-path="clay/quiz/${rev}/data/quiz/${name}/hoon"]`);
+    await expect(listed(suite)).toHaveAttribute('data-role', 'suite');
     // A property importing the engine as `e` is indexed and runs saved.
-    await listed.filter({hasText: `data/quiz/${property}/hoon`}).click();
+    await expect(listed(property)).toHaveAttribute('data-role', 'property');
+    // Open and run, from the row's context menu, opens it and submits.
+    await listed(property).click({button: 'right'});
+    await expect(page.locator('#file-context-now')).toBeVisible();
+    await page.locator('#file-context-open-run').click();
     await expect(page.locator('#run-mode')).toHaveValue('file');
-    expect((await ran()).outcome.kind).toBe('passed');
+    let id = null;
+    await expect.poll(async () => (id = await page.evaluate(() =>
+      window.quiz.documents.active('property').runIds?.[0] || null))).not.toBeNull();
+    await expect.poll(async () => (await api({op: 'status', id})).status,
+      {timeout: 60000}).toBe('done');
+    expect((await api({op: 'status', id})).outcome.kind).toBe('passed');
     // Open → clay lists every Hoon file at that context, and an arbitrary
     // suite opened from it runs as a saved suite.
     await page.locator('#run-controls select').first().focus();

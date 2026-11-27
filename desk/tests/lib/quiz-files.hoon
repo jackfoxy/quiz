@@ -67,6 +67,12 @@
   ^-  @t
   (of-wain:format (weld lines `wain`~['|%' '++  fate  |=(@ud &)' '--']))
 ::
+++  imports-engine
+  ::  Whether the prelude imports quiz-engine.
+  |=  text=@t
+  ^-  ?
+  (~(has in (silt (imports:files text))) /lib/quiz-engine/hoon)
+::
 ++  test-imports-engine
   ::  A /+ import of quiz-engine, under any face, marks a property.
   ^-  tang
@@ -85,8 +91,8 @@
         (source ~['::  /+  engine=quiz-engine'])
     ==
   ;:  weld
-    (expect !>((levy yes imports-engine:files)))
-    (expect !>(!(lien no imports-engine:files)))
+    (expect !>((levy yes imports-engine)))
+    (expect !>(!(lien no imports-engine)))
   ==
 ::
 ++  test-has-fate
@@ -110,19 +116,38 @@
   ==
 ::
 ++  test-role-of
-  ::  A property needs the engine and ++fate; a suite needs a ++test- arm.
+  ::  A property needs the engine and ++fate; a suite needs /lib/test and a
+  ::  ++test- arm, and is a quiz suite when it also imports a quiz library.
   ^-  tang
   =/  suite  (of-wain:format ~['/+  *test' '|%' '++  test-one  ~' '--'])
+  =/  quiz-suite
+    |=  prelude=@t
+    ^-  @t
+    (of-wain:format ~[prelude '|%' '++  test-one  ~' '--'])
   =/  both
     %-  of-wain:format
     ~['/+  e=quiz-engine' '|%' '++  fate  |=(@ud &)' '++  test-x  ~' '--']
   =/  bare  (of-wain:format ~['|%' '++  test  ~' '++  tests-x  ~' '--'])
+  ::  a thread with test- arms and no /lib/test, as %base/ted/ph/ahoy
+  =/  thread
+    (of-wain:format ~['/+  *ph-io' '|%' '++  test-mesa-ames-1  ~' '--'])
+  =/  quiet  (of-wain:format ~['/+  quiz' '|%' '++  test-one  ~' '--'])
   ;:  weld
     (expect-eq !>(`%suite) !>((role-of:files suite)))
     (expect-eq !>(`%property) !>((role-of:files both)))
     (expect-eq !>(`%property) !>((role-of:files (source ~['/+  quiz-engine']))))
     (expect-eq !>(~) !>((role-of:files (source ~))))
     (expect-eq !>(~) !>((role-of:files bare)))
+    (expect-eq !>(~) !>((role-of:files thread)))
+    (expect-eq !>(~) !>((role-of:files quiet)))
+    %+  expect-eq  !>(`%quiz-suite)
+    !>((role-of:files (quiz-suite '/+  *test, quiz')))
+    %+  expect-eq  !>(`%quiz-suite)
+    !>((role-of:files (quiz-suite '/+  *test, auto=quiz-auto')))
+    %+  expect-eq  !>(`%quiz-suite)
+    !>((role-of:files (quiz-suite '/+  e=quiz-engine, *test')))
+    %+  expect-eq  !>(`%suite)
+    !>((role-of:files (quiz-suite '/+  *test, quiz-gen')))
   ==
 ::
 ++  test-imports-engine-long-source
@@ -132,6 +157,6 @@
   =/  long  (source (weld `wain`~['/+  engine=quiz-engine'] body))
   ;:  weld
     (expect !>((gth (met 3 long) prelude-bytes:files)))
-    (expect !>((imports-engine:files long)))
+    (expect !>((imports-engine long)))
   ==
 --

@@ -217,8 +217,9 @@
         value.revision = clay ? tab.path[2] : context?.revision || '';
         if (tab.path?.[0] === 'examples') value.mode = 'suite';
         else if (['props', 'failing'].includes(tab.path?.[0])) value.mode = 'file';
-        // As the Clay source index decides: ++fate makes a property, else a
-        // ++test- arm a suite.
+        // ++fate makes a property, else a ++test- arm a suite.  Looser than
+        // the Clay source index, which also reads imports: any Clay file
+        // opens here, through Open → clay too.
         else if (clay) {
           const text = tab.text || '';
           value.mode = !/^\+\+  fate(\s|$)/m.test(text)

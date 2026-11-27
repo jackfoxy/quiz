@@ -45,11 +45,10 @@
   ==
 ::
 ++  properties
-  ::  Hoon files on `desk` at `revision` that are property documents (the
-  ::  prelude imports quiz-engine, under any face, and `++  fate` is
-  ::  declared) or suites (a `++  test-` arm), as workbench paths under
-  ::  /clay with their role. The Clay source view lists these; Open lists
-  ::  every Hoon file at the same context.
+  ::  Hoon files on `desk` at `revision` that are property documents,
+  ::  suites or quiz suites (see +role-of), as workbench paths under /clay
+  ::  with their role. The Clay source view lists these; Open lists every
+  ::  Hoon file at the same context.
   |=  [bol=bowl:gall desk=@tas revision=@ud]
   ^-  (each (list [path role]) failure:ufiles)
   ::  a-co, not scot: +locate parses the revision with +dem, so no dots.
@@ -75,28 +74,38 @@
     [%.n (fail-with:ufiles %internal 500 'clay browse failed' p.found)]
   [%.y p.found]
 ::
-+$  role  ?(%property %suite)
++$  role  ?(%property %suite %quiz-suite)
+::
+++  quiz-libs
+  ::  Libraries whose import, beside /lib/test, makes a quiz suite.
+  ^-  (list path)
+  ~[/lib/quiz/hoon /lib/quiz-auto/hoon /lib/quiz-engine/hoon]
 ::
 ++  role-of
-  ::  A property document, else a suite, else neither.
+  ::  A property document, else a suite, else neither. Both are read from
+  ::  the prelude's imports: a property imports quiz-engine and declares
+  ::  `++  fate`; a suite imports /lib/test and has a `++  test-` arm, and
+  ::  is a quiz suite when it also imports a quiz library.
   |=  text=@t
   ^-  (unit role)
-  ?:  &((imports-engine text) (has-arm '++  fate' text))  `%property
-  ?:  (has-arm '++  test-' text)  `%suite
-  ~
+  =/  libs=(set path)  (silt (imports text))
+  ?:  &((~(has in libs) /lib/quiz-engine/hoon) (has-arm '++  fate' text))
+    `%property
+  ?.  &((~(has in libs) /lib/test/hoon) (has-arm '++  test-' text))
+    ~
+  ?.  (lien quiz-libs ~(has in libs))  `%suite
+  `%quiz-suite
 ::
-++  imports-engine
-  ::  Whether the prelude imports /lib/quiz-engine under any face. Only
-  ::  whole lines within the first prelude-bytes are parsed.
+++  imports
+  ::  The libraries the prelude imports, under any face. Only whole lines
+  ::  within the first prelude-bytes are parsed.
   |=  text=@t
-  ^-  ?
+  ^-  (list path)
   =/  lines=wain  (to-wain:format (end [3 prelude-bytes] text))
   =?  lines  (gth (met 3 text) prelude-bytes)  (snip lines)
   =/  parsed  (header-rule:build [1 1] (trip (of-wain:format lines)))
-  ?~  q.parsed  |
-  %+  lien  p.u.q.parsed
-  |=  dep=dependency:build
-  =(/lib/quiz-engine/hoon path.dep)
+  ?~  q.parsed  ~
+  (turn p.u.q.parsed |=(dep=dependency:build path.dep))
 ::
 ++  has-arm
   ::  Whether a line at column 0 is `++  fate` alone or before a space
