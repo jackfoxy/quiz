@@ -11,49 +11,57 @@ They save when the Settings dialog closes. A call that exceeds its limit ends th
 run as **interrupted**. A property document's `++within` can lower its own
 property call limit below the Settings value, never raise it.
 
-**My documents** stores your Hoon and Markdown files under `/data/quiz` on
-the installed desk. **Open**, **Save**, and **Save As** use the file chooser;
-choose `hoon` or `md` when saving. Ctrl-S, Ctrl-Shift-S and Alt-O invoke
-these actions. Closing or reopening an edited tab asks before discarding
-changes. Leaving the page prompts when the browser permits it.
+The explorer has two views of the same kind: **Properties and suites**
+shows `%quiz`, and **Apps** shows any other local desk, chosen from its
+**Desk** list. They list the only kind of file the workbench opens or
+saves. A property document imports `quiz-engine` on a `/+` prelude line, under any face, and declares a
+`++  fate` arm at the start of a line. Otherwise a file that imports `test`
+on a `/+` line and has a `++  test-` arm at the start of a line is a suite,
+marked “(suite)”, or a quiz suite, marked “(quiz suite)”, when its `/+`
+lines also import `quiz`, `quiz-auto` or `quiz-engine`. Any other file is
+neither listed, opened nor saved.
 
-**Examples** contains passing property documents (`props`), intentional
-failures (`failing`), and existing test suites (`examples`). Property documents
-default to saved-property execution; suites default to saved-suite execution.
-See the [example catalog](examples.md) for expected outcomes. **Documentation** contains
-these reference files. Both are read-only. **Open editable copy** creates
-an unsaved tab; save it in My documents to keep your version.
-
-**Clay source** lists the property documents and suites on a local desk at
-an explicit revision. A property document imports `quiz-engine` on a `/+`
-prelude line, under any face, and declares a `++  fate` arm at the start of a
-line. Otherwise a file that imports `test` on a `/+` line and has a
-`++  test-` arm at the start of a line is a suite, marked “(suite)”, or a
-quiz suite, marked “(quiz suite)”, when its `/+` lines also import `quiz`,
-`quiz-auto` or `quiz-engine`. Select a desk and its files list at once,
-in folders that start below the desk and revision. The revision box opens
+A view's files list at once, in folders that start below the desk and
+revision; in **Apps**, selecting a desk lists it. In `%quiz`,
+`examples/props` holds passing property documents, `examples/failing`
+intentional failures and `tests/examples` existing suites (see the
+[example catalog](examples.md)). Every desk, in either view, shows
+`data/`, the place for your own documents, even before it holds any. The revision box opens
 at the desk's head, marked by a green `now`; ▴, ▾ and the Up and Down keys
-step one revision, and a typed number takes effect on Enter. A number
-outside 1 to the head is refused. The context menu of the box, a folder or
-a file (right-click, Shift-F10, Alt-Enter or `…`) offers **Now**, which
-returns to the head from any revision, and **Revision…**, which selects
-the box for a typed revision. A file's menu, here and in Examples, also
-offers **Open and run**, which opens the property or suite and runs it
-with its tab's run settings. Each desk keeps the revision last chosen
-for it, and a desk at `now` follows its head when a save moves it. The
-revision is pinned: changing files does not change that view. Select a
-file, or right-click it (Shift-F10, Alt-Enter or its `…` button) and
-choose **Open**, to read it or make an editable copy. The Open chooser's
-`clay` location lists every Hoon file at the desk and revision last listed
-in Clay source. A Clay tab runs as a saved suite when it has a `++  test-`
-arm and no `++  fate`, and as a saved property otherwise.
+step one revision, and a typed number takes effect on Enter. A number outside 1 to the head is refused. Each desk keeps the
+revision last chosen for it, and a desk at `now` follows its head when a
+save or delete moves it.
 
-Tabs, unsaved text, selections, pane layout, the last browsed Clay context,
-each desk's revision and the Clay source folders you closed are saved in
-this browser's local storage. Clearing browser data removes unsaved work.
-Saved files remain in Clay. A restored tab keeps its buffer; explicitly
-reopening it reloads the saved file and protects dirty edits with a
-confirmation.
+At `now` files are writable: **Save** commits into that desk, and **Delete**
+is offered on a file's menu. A numbered revision is pinned and never
+changes; a file opened from one is editable, and **Save** writes the same
+path at `now`. **Save As** asks for a path with no revision, since every
+save lands at `now`. It starts from the tab's `<desk>/<path>`, such as
+`quiz/examples/props/01-success`, or for a new document from `data/` of
+the visible view's desk, such as `quiz/data/`, and lists that desk the same
+way. `<desk>/data/` alone is refused; add a name. A path that does not start with a desk's name goes
+in `data/` of the visible view's desk: `mine` saves as `data/mine.hoon`, and
+`data/quiz/mine`, which already starts there, as `data/quiz/mine.hoon`. The
+mark is always `hoon`: `mine.hoon`, `mine/hoon` and `mine` name the same
+file. **Open** lists the
+same files at the same context. Ctrl-S, Ctrl-Shift-S and Alt-O invoke these actions. Closing
+or reopening an edited tab asks before discarding changes. Leaving the page
+prompts when the browser permits it.
+
+Select a file, or open its context menu (right-click, Shift-F10, Alt-Enter
+or its `…` button): **Open**, **Open and run**, which opens the property or
+suite and runs it with its tab's run settings, and **Delete** at `now`. The
+menu of a file, a folder or the revision box also offers **Now**, which
+returns to the head from any revision, and **Revision…**, which selects the
+box for a typed revision. A tab runs as a saved suite when it has a
+`++  test-` arm and no `++  fate`, and as a saved property otherwise; a tab
+at `now` runs at the desk's head revision.
+
+Tabs, unsaved text, selections, pane layout, the last browsed context,
+each desk's revision and the folders you closed are saved in this
+browser's local storage. Clearing browser data removes unsaved work. Saved
+files remain in Clay. A restored tab keeps its buffer; explicitly reopening
+it reloads the saved file and protects dirty edits with a confirmation.
 
 Choose a source workflow in each tab's run controls:
 
@@ -141,8 +149,9 @@ its pinned revision and any explicit seed); **Replay exact property** reuses
 the captured source, effective configuration and seed. Suites cannot replay.
 **Save as regression** turns a property run's shrunk counterexample into a
 suite that fails until the bug is fixed. It opens unsaved as
-`regression-<id>`, in **Saved suite** mode; save it under **My documents**,
-and the tab selects the new revision for **Run saved suite**. It is disabled
+`regression-<id>`, in **Saved suite** mode; save it at `now`, for example
+under `data/quiz` in `%quiz`, and the tab selects the new revision for
+**Run saved suite**. It is disabled
 for suites, expected failures and runs without a counterexample; see
 [chapter 8](../users-guide.md#save-a-counterexample-as-a-regression).
 An error after a counterexample, such as a crashing shrinker, shows its

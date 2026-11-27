@@ -3,6 +3,9 @@
 |%
 ::
 ++  handle
+  ::  urui's file wire over Clay, as +locate maps it: only property
+  ::  documents, suites and quiz suites (+role-of) are opened or saved.
+  ::
   ::  urui's tomb probe uses the file's case as the outer scry date.
   ::  For a pinned numeric revision, keep that case on the inner beam
   ::  and use now for the outer tomb query. Shared urui stays unchanged.
@@ -23,10 +26,10 @@
       [(refuse:ufiles id p.where) current]
     ?.  write.p.where
       [(refuse:ufiles id read-only:ufiles) current]
+    ?:  &(?=(%save -.op) ?=(~ (role-of text.op)))
+      [(refuse:ufiles id unindexed) current]
     (handle:ufiles policy bol id req current)
   ?.  ?=([%load *] op)
-    (handle:ufiles policy bol id req current)
-  ?.  ?=([%clay *] rel.op)
     (handle:ufiles policy bol id req current)
   =/  where  (resolve:ufiles policy bol rel.op)
   ?:  ?=(%.n -.where)
@@ -36,13 +39,21 @@
   ?.  .^(? %cx (weld tomb beam))
     [(refuse:ufiles id missing:ufiles) current]
   =/  text  (need (from-stored:ufiles %cord .^(* %cq beam)))
+  ?~  (role-of text)
+    [(refuse:ufiles id unindexed) current]
   :_  current
   %+  reply:ufiles  id
   %-  ok-json:ufiles
   :~  ['text' s+text]
       ['hash' s+(text-hash:ufiles text)]
-      ['readonly' b+&]
+      ['readonly' b+!write.p.where]
   ==
+::
+++  unindexed
+  ::  The refusal for a file that is not a property document or suite.
+  ^-  failure:ufiles
+  %^  fail:ufiles  %unindexed  400
+  'only property documents, suites and quiz suites can be opened or saved'
 ::
 ++  properties
   ::  Hoon files on `desk` at `revision` that are property documents,
@@ -125,29 +136,25 @@
   4.096
 ::
 ++  locate
-  ::  Virtual workbench roots. Only work documents may be written.
+  ::  Every workbench path is /clay/<desk>/<case>/<path>. At `now` it is
+  ::  the desk's current files, writable; at a revision number it is
+  ::  pinned and read-only.
   |=  [bol=bowl:gall rel=path]
   ^-  (each location:ufiles failure:ufiles)
-  =/  here=beak  [our.bol q.byk.bol [%da now.bol]]
-  ?+  rel
-    ::  A bare relative path is a writable work path.
-    [%.y [here (weld /data/quiz rel) &]]
-    [%work *]      [%.y [here (weld /data/quiz t.rel) &]]
-    [%examples *]  [%.y [here (weld /tests/examples t.rel) |]]
-    [%props *]     [%.y [here (weld /examples/props t.rel) |]]
-    [%failing *]   [%.y [here (weld /examples/failing t.rel) |]]
-    [%docs *]      [%.y [here (weld /doc t.rel) |]]
-    [%clay *]
-      ?.  ?=([%clay @ @ *] rel)
-        [%.n (fail:ufiles %context 400 'select a desk and revision')]
-      =/  desk  i.t.rel
-      =/  revision  (rush i.t.t.rel dem)
-      ?~  revision
-        [%.n (fail:ufiles %context 400 'revision must be a decimal number')]
-      =/  pinned  (pin:build our.bol desk [%ud u.revision] now.bol)
-      ?:  ?=(%.n -.pinned)
-        [%.n (fail:ufiles %context 404 code.p.pinned)]
-      =/  ctx  p.pinned
-      [%.y [[our.ctx desk.ctx [%ud revision.ctx]] t.t.t.rel |]]
-  ==
+  ?.  ?=([%clay @ @ *] rel)
+    [%.n (fail:ufiles %context 400 'select a desk and revision')]
+  =/  desk  i.t.rel
+  ?:  =(%now i.t.t.rel)
+    =/  pinned  (pin:build our.bol desk [%da now.bol] now.bol)
+    ?:  ?=(%.n -.pinned)
+      [%.n (fail:ufiles %context 404 code.p.pinned)]
+    [%.y [[our.bol desk.p.pinned [%da now.bol]] t.t.t.rel &]]
+  =/  revision  (rush i.t.t.rel dem)
+  ?~  revision
+    [%.n (fail:ufiles %context 400 'revision must be now or a decimal number')]
+  =/  pinned  (pin:build our.bol desk [%ud u.revision] now.bol)
+  ?:  ?=(%.n -.pinned)
+    [%.n (fail:ufiles %context 404 code.p.pinned)]
+  =/  ctx  p.pinned
+  [%.y [[our.ctx desk.ctx [%ud revision.ctx]] t.t.t.rel |]]
 --

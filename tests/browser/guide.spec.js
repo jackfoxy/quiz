@@ -1,7 +1,7 @@
 'use strict';
 // Validates the workbench paths that ai-ug.md teaches and that no other
 // browser spec reaches: help and settings shortcuts, copy and open shortcuts,
-// a reference panel, the run shortcut, Clay source browsing, Use latest
+// a reference panel, the run shortcut, Properties and suites browsing, Use latest
 // revision (also straight after Save As), run-history deletion, and the Vim
 // keybinding setting. Other guide steps are covered by
 // examples.spec.js, runs.spec.js, workbench.spec.js and scenario doubles.
@@ -62,11 +62,12 @@ test('Ctrl-Shift-S saves as and Ctrl-S saves', async ({page}) => {
   await page.locator('button:has-text("+")').first().click();
   await page.locator('#quiz-editor .ace_text-input').focus();
   await page.keyboard.press('ControlOrMeta+A');
-  await page.keyboard.insertText('|%\n++  fate\n  |=  n=@ud\n  =(n n)\n--');
+  await page.keyboard.insertText('/+  engine=quiz-engine\n|%\n++  fate\n  |=  n=@ud\n  =(n n)\n--');
   await page.keyboard.press('ControlOrMeta+Shift+S');
-  await page.locator('#urui-file-dialog-path').fill(name);
+  await page.locator('#urui-file-dialog-path').fill(`data/quiz/${name}`);
   await page.locator('#urui-file-dialog-confirm').click();
-  await expect(page.locator('#document-location')).toHaveText(`work/${name}/hoon`);
+  const path = ['clay', 'quiz', 'now', 'data', 'quiz', name, 'hoon'];
+  await expect(page.locator('#document-location')).toHaveText(path.join('/'));
   // Use latest revision at once, while the explorer still refreshes after
   // the save: its reply must not be discarded.
   await page.getByRole('button', {name: 'Use latest revision'}).click();
@@ -81,7 +82,7 @@ test('Ctrl-Shift-S saves as and Ctrl-S saves', async ({page}) => {
   await page.keyboard.press('ControlOrMeta+S');
   await expect.poll(() => page.evaluate(() => window.quiz.documents.dirty('property',
     window.quiz.documents.active('property').id))).toBe(false);
-  await page.request.post('/apps/quiz/files', {data: {op: 'delete', path: ['work', name, 'hoon']}});
+  await page.request.post('/apps/quiz/files', {data: {op: 'delete', path}});
 });
 
 test('Delete record and Clear completed history keep unfinished runs', async ({page}) => {
@@ -141,7 +142,7 @@ test('More limits, alternates-only preview and date or label revisions', async (
     return record;
   };
   await page.evaluate(path => window.quiz.documents.open('property', path),
-    ['props', '01-success', 'hoon']);
+    ['clay', 'quiz', 'now', 'examples', 'props', '01-success', 'hoon']);
   await expect(page.locator('#run-mode')).toHaveValue('file');
   await page.locator('#run-more summary').click();
   await page.locator('#run-attemptsMax').fill('500');
@@ -163,7 +164,7 @@ test('More limits, alternates-only preview and date or label revisions', async (
   await page.locator('#run-onTimeout').selectOption('');
   // Alternates without verdicts, on a document whose first sample shrinks.
   await page.evaluate(path => window.quiz.documents.open('property', path),
-    ['failing', '08-seeded-threshold', 'hoon']);
+    ['clay', 'quiz', 'now', 'examples', 'failing', '08-seeded-threshold', 'hoon']);
   await page.locator('#run-previewShow').selectOption('alts');
   await page.locator('#run-previewCount').fill('3');
   await page.locator('#run-preview').click();
@@ -193,7 +194,7 @@ test('More limits, alternates-only preview and date or label revisions', async (
 test('F5 runs the selected property from the run panel', async ({page}) => {
   await open(page);
   await page.evaluate(path => window.quiz.documents.open('property', path),
-    ['props', '01-success', 'hoon']);
+    ['clay', 'quiz', 'now', 'examples', 'props', '01-success', 'hoon']);
   await expect(page.locator('#run-mode')).toHaveValue('file');
   const before = await page.evaluate(() => window.quiz.documents.active('property').runIds?.length || 0);
   await page.locator('#run-mode').focus();
@@ -217,16 +218,16 @@ test('Add Ref opens a reference panel that follows the document', async ({page})
   await expect(page.locator('.ref-source').filter({hasText: '(lte n 9)'})).toHaveCount(1);
 });
 
-test('Use latest revision and Clay source browsing open a read-only file', async ({page}) => {
+test('Use latest revision and Properties and suites open a pinned file', async ({page}) => {
   await open(page);
   await page.getByRole('button', {name: 'Use latest revision'}).click();
   await expect(page.locator('#run-revision')).not.toHaveValue('');
   const revision = await page.locator('#run-revision').inputValue();
-  await page.getByRole('tab', {name: 'Clay source'}).click();
-  await expect(page.locator('#clay-desk')).toHaveValue('quiz');
+  await page.getByRole('tab', {name: 'Properties and suites'}).click();
+  await expect(page.locator('#properties-panel .clay-desk-name')).toHaveText('%quiz');
   await page.locator('#clay-revision').fill(revision);
   await page.locator('#clay-revision').press('Enter');
-  const file = page.locator('#clay-source-tree .file-tree-file[data-path*="/props/"]').first();
+  const file = page.locator('#properties-tree .file-tree-file[data-path*="/props/"]').first();
   await expect(file).toBeVisible({timeout: 30000});
   await file.click();
   await expect(page.locator('#document-location')).toHaveText(/clay|props/);

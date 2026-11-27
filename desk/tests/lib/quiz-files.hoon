@@ -8,46 +8,26 @@
     now  ~2026.10.15
   ==
 ::
-++  test-work-root
+++  test-only-clay-locations
+  ::  Every workbench path is under /clay; the old virtual roots are gone.
   ^-  tang
-  =/  got  (locate:files bol /work/folder/property/hoon)
-  %+  expect-eq
-  !>([%.y [[~zod %quiz [%da ~2026.10.15]] /data/quiz/folder/property/hoon &]])
-  !>(got)
-::
-++  test-read-only-roots
-  ^-  tang
-  =/  examples  (locate:files bol /examples/example/hoon)
-  =/  docs  (locate:files bol /docs/reference/source-format/md)
-  ?>  ?=(%.y -.examples)
-  ?>  ?=(%.y -.docs)
-  ;:  weld
-    (expect-eq !>(/tests/examples/example/hoon) !>(rel.p.examples))
-    (expect-eq !>(/doc/reference/source-format/md) !>(rel.p.docs))
-    (expect !>(!write.p.examples))
-    (expect !>(!write.p.docs))
-  ==
-::
-++  test-bare-path-alias
-  ^-  tang
-  %+  expect-eq
-  !>((locate:files bol /work/draft/hoon))
-  !>((locate:files bol /draft/hoon))
-::
-++  test-property-example-roots
-  ^-  tang
-  =/  props  (locate:files bol /props/success/hoon)
-  =/  failing  (locate:files bol /failing/crash/hoon)
-  ?>  ?=(%.y -.props)
-  ?>  ?=(%.y -.failing)
-  ;:  weld
-    (expect-eq !>(/examples/props/success/hoon) !>(rel.p.props))
-    (expect-eq !>(/examples/failing/crash/hoon) !>(rel.p.failing))
-    (expect !>(!write.p.props))
-    (expect !>(!write.p.failing))
-  ==
+  =/  gone=(list path)
+    :~  /work/folder/property/hoon
+        /draft/hoon
+        /examples/example/hoon
+        /props/success/hoon
+        /failing/crash/hoon
+        /docs/reference/source-format/md
+    ==
+  %-  zing
+  %+  turn  gone
+  |=  rel=path
+  =/  got  (locate:files bol rel)
+  ?>  ?=(%.n -.got)
+  (expect-eq !>(400) !>(status.p.got))
 ::
 ++  test-clay-selection-required
+  ::  A desk and a case, `now` or a revision number, come first.
   ^-  tang
   =/  missing  (locate:files bol /clay)
   =/  partial  (locate:files bol /clay/quiz)

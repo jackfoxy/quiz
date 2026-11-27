@@ -201,9 +201,6 @@
     function pathFor(tab) {
       const path = tab?.path;
       if (!path || path.at(-1) !== 'hoon') return null;
-      if (path[0] === 'work') return ['data', 'quiz', ...path.slice(1)];
-      if (path[0] === 'examples') return ['tests', 'examples', ...path.slice(1)];
-      if (['props', 'failing'].includes(path[0])) return ['examples', ...path];
       if (path[0] === 'clay') return path.slice(3);
       return null;
     }
@@ -212,15 +209,13 @@
       const value = tab.runSettings;
       if (!value.desk) {
         const clay = tab.path?.[0] === 'clay';
-        const context = getContexts().find((item) => item.desk === 'quiz');
-        value.desk = clay ? tab.path[1] : context?.desk || '';
-        value.revision = clay ? tab.path[2] : context?.revision || '';
-        if (tab.path?.[0] === 'examples') value.mode = 'suite';
-        else if (['props', 'failing'].includes(tab.path?.[0])) value.mode = 'file';
-        // ++fate makes a property, else a ++test- arm a suite.  Looser than
-        // the Clay source index, which also reads imports: any Clay file
-        // opens here, through Open → clay too.
-        else if (clay) {
+        value.desk = clay ? tab.path[1] : 'quiz';
+        // A path at now runs at the desk's head: a run is always pinned.
+        const head = getContexts().find((item) => item.desk === value.desk)?.revision || '';
+        value.revision = clay && tab.path[2] !== 'now' ? tab.path[2] : head;
+        // ++fate makes a property, else a ++test- arm a suite, as the
+        // index's roles fall out for the files it lets open.
+        if (clay) {
           const text = tab.text || '';
           value.mode = !/^\+\+  fate(\s|$)/m.test(text)
             && (/^\+\+  test-/m.test(text) || tab.path[3] === 'tests') ? 'suite' : 'file';
@@ -504,8 +499,12 @@
         tell(`Regression for run ${rec.id} opened as ${result.name}. Save it, then choose Run saved suite: it fails until the bug is fixed.`);
       });
     }
+    // A save lands at now, in a new revision of its desk: the tab runs
+    // there next.
     function saved(tab) {
-      if (tab?.regression && tab.path?.[0] === 'work' && active()?.id === tab.id) void latest();
+      if (tab?.path?.[0] !== 'clay' || tab.path[2] !== 'now') return;
+      settings(tab).desk = tab.path[1];
+      if (active()?.id === tab.id) void latest();
     }
     async function remove() {
       const id = selection(); const rec = records.get(id);

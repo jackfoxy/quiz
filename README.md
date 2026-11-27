@@ -43,15 +43,17 @@ Documentation file browser remain available.
 
 ## Quick start
 
-1. Open **Examples → props → 01-success**, leave requested/seed overrides blank
+1. In **Properties and suites** (it opens at `%quiz`, `now`), open
+   **examples → props → 01-success**, leave requested/seed overrides blank
    and choose **Run saved property**. It accepts 20 checks.
-2. Open **failing → 03-crash** to see zero underflow, or
-   **failing → 08-seeded-threshold** to see the counterexample shrink 541 → 501.
-3. Choose **Open editable copy**, edit and run **Draft property**, then save.
-   Saved execution uses its selected Clay revision: choose **Use latest
-   revision** after saving when you want the new version.
-4. Open **examples → 02-boxcar** for a saved suite, discover arms and run all
-   three. Use **Replay exact property** on a property result to repeat its
+2. Open **examples → failing → 03-crash** to see zero underflow, or
+   **examples → failing → 08-seeded-threshold** to see the counterexample
+   shrink 541 → 501.
+3. Edit it and run **Draft property**, then **Save As** a path such as
+   `data/quiz/mine`. Saved execution uses its selected Clay revision; after a
+   save the tab selects the desk's new revision.
+4. Open **tests → examples → 02-boxcar** for a saved suite, discover arms
+   and run all three. Use **Replay exact property** on a property result to repeat its
    recorded source, imports, effective seed and configuration.
 
 The [user's guide](desk/doc/users-guide.md) teaches domain guards, norns,

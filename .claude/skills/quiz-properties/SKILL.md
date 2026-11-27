@@ -362,8 +362,9 @@ Symptom table: [troubleshooting](../../../desk/doc/reference/engine-and-library.
 3. If the fate already states it, choose **Save as regression** (HTTP op
    `regression`): a suite that copies the document and requires the fate to
    pass the shrunk counterexample, `cue`d from its jam. It fails until the
-   bug is fixed and survives engine and generator changes. Save it under
-   My documents and run it as a saved suite. Not offered for
+   bug is fixed and survives engine and generator changes. Save it at
+   `now` (for example `data/quiz/` in `%quiz`) and run it as a saved suite.
+   Not offered for
    `failed-as-expected`, runs without a counterexample, or suites.
 4. If the fix changes the requirement, write the counterexample as an
    ordinary `test-*` arm with `expect-eq`. Keep the property beside it as a

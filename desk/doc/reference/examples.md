@@ -1,10 +1,11 @@
 # Bundled examples
 
-Open **Examples** in the workbench. `props` and `failing` contain read-only
-property documents that default to **Saved property**. `examples` contains
-the original read-only **Saved suite** files. **Open editable copy** makes a
-draft you can change and save in My documents. For API callers, use the actual
-Clay paths linked below, not the workbench's virtual root names.
+In the workbench's **Properties and suites**, at `%quiz`, `examples/props`
+and `examples/failing` contain property documents that default to **Saved
+property**; `tests/examples` contains the **Saved suite** files. Edit one and
+run the draft to experiment. At `now`, **Save** writes the bundled file in
+`%quiz` itself, so use **Save As** under `data/quiz/` to keep your own
+version. API callers use the same paths, as `clay/quiz/now/…`.
 
 Every property fixes seed `0v123` in its `conf`. Leave the panel overrides blank
 to reproduce its configuration. The ordinary target is 20 accepted checks;

@@ -104,9 +104,10 @@ test('save as regression, save it, and run the saved suite until the fix', async
   const bug = '    ::  Bug: should take the head of (flop back.q).\n    [`i.back.q [t.back.q ~]]';
   const fix = '    =/  back  (flop back.q)\n    ?>  ?=(^ back)\n    [`i.back [t.back ~]]';
   const revision = () => page.locator('#run-revision').inputValue();
+  const at = ['clay', 'quiz', 'now', 'data', 'quiz', stem, 'hoon'];
   try {
     await page.evaluate(() => window.quiz.documents.open('property',
-      ['failing', '11-queue-model-bug', 'hoon']));
+      ['clay', 'quiz', 'now', 'examples', 'failing', '11-queue-model-bug', 'hoon']));
     await page.locator('#run-latest').click();
     await expect(page.locator('#run-message')).toContainText('Selected');
     await page.locator('#run-start').click();
@@ -125,9 +126,9 @@ test('save as regression, save it, and run the saved suite until the fix', async
     expect(text).toContain(bug);
     const before = await revision();
     await page.locator('#property-save').click();
-    await page.locator('#urui-file-dialog-path').fill(stem);
+    await page.locator('#urui-file-dialog-path').fill(`data/quiz/${stem}`);
     await page.locator('#urui-file-dialog-confirm').click();
-    await expect(page.locator('#document-location')).toHaveText(`work/${stem}/hoon`);
+    await expect(page.locator('#document-location')).toHaveText(at.join('/'));
     await expect.poll(revision).not.toBe(before);
     await page.locator('#run-start').click();
     await expect.poll(async () => (await selected(page))?.id).not.toBe(failed.id);
@@ -147,13 +148,13 @@ test('save as regression, save it, and run the saved suite until the fix', async
     expect(passed.outcome.status).toBe('passed');
     await page.screenshot({path: 'test-results/quiz-regression.png', fullPage: true});
   } finally {
-    await page.request.post('/apps/quiz/files', {data: {op: 'delete', path: ['work', stem, 'hoon']}});
+    await page.request.post('/apps/quiz/files', {data: {op: 'delete', path: at}});
   }
 });
 
 test('deleted saved source reports a diagnostic while its pinned revision still runs', async ({page}) => {
-  const path = ['work', `run-deleted-${Date.now()}`, 'hoon'];
-  const source = '|%\n++  fate\n  |=  n=@ud\n  =(n n)\n--';
+  const path = ['clay', 'quiz', 'now', 'data', 'quiz', `run-deleted-${Date.now()}`, 'hoon'];
+  const source = '/+  engine=quiz-engine\n|%\n++  fate\n  |=  n=@ud\n  =(n n)\n--';
   const file = async body => {
     const response = await page.request.post('/apps/quiz/files', {data: body});
     expect(response.ok()).toBeTruthy();

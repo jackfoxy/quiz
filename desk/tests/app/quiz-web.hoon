@@ -358,12 +358,14 @@
     (expect-eq !>(~) !>(files.state:+.loaded))
   ==
 ::
-++  test-workbench-read-only-writes
+++  test-workbench-clay-only
+  ::  Paths outside /clay are refused, as is a Markdown save.
   ^-  tang
   =/  cases
-    :~  ['{"op":"save","path":["examples","copy","hoon"],"text":"x"}' 403]
-        ['{"op":"delete","path":["docs","source-format","md"]}' 403]
-        ['{"op":"save","path":["docs","copy","md"],"text":"x"}' 400]
+    :~  ['{"op":"save","path":["work","copy","hoon"],"text":"x"}' 400]
+        ['{"op":"save","path":["examples","copy","hoon"],"text":"x"}' 400]
+        ['{"op":"delete","path":["docs","source-format","md"]}' 400]
+        ['{"op":"save","path":["clay","quiz","now","x","md"],"text":"x"}' 400]
     ==
   %-  zing
   %+  turn  cases

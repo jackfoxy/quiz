@@ -2,8 +2,8 @@
 
 ## Quiz
 
-On macOS use Command where this table says Ctrl. Read-only documents cannot
-be saved over the original; use **Open editable copy** first.
+On macOS use Command where this table says Ctrl. Saving a document opened
+from a numbered revision writes the same path at `now`.
 
 <!-- generated: app-chords -->
 

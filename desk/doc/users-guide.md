@@ -8,7 +8,7 @@ and replay the experiment.
 This guide follows the example-led progression of [Obelisk's user's
 guide][obelisk-guide]: start with a small working document, change one thing
 at a time, and introduce more powerful operations when the example needs
-them. You will grow a collection under `guide/` in **My documents**. Later
+them. You will grow a collection under `data/quiz/guide/` in `%quiz`. Later
 chapters use the bundled examples to test collections, dependent inputs,
 generated functions and Gall agent doors.
 
@@ -52,14 +52,13 @@ Use a disposable development ship with Quiz installed and both `%quiz` and
 `/apps/quiz/`. Installation is an operator task outside the workbench; follow
 the repository's [installation instructions][installation] if needed.
 
-The explorer has four views:
-
-| View | What you keep or find there |
-| --- | --- |
-| **My documents** | Your saved Hoon properties, suites and Markdown notes |
-| **Examples** | Read-only `props`, intentionally `failing` properties, and `examples` containing existing suites |
-| **Documentation** | Shipped Markdown documentation as read-only text |
-| **Clay source** | Indexed properties and suites on a selected desk at a pinned revision |
+The explorer has two views. **Properties and suites** shows `%quiz`, and
+**Apps** any other local desk, chosen from its **Desk** list. Choose a
+revision; the view lists that desk's property documents, suites and quiz
+suites in folders. It opens at `%quiz` `now`, where `examples/props` holds passing
+properties, `examples/failing` intentionally failing ones, `tests/examples`
+the bundled suites, and `data/quiz` your own documents. Only property
+documents and suites can be opened or saved; no other file appears.
 
 The document editor holds your source. The run controls below it choose what
 to execute. **Run results** holds server-confirmed history and the selected
@@ -83,6 +82,7 @@ Click **+** on the document tab strip. Replace the editor contents with this
 complete property:
 
 ```hoon
+/+  engine=quiz-engine
 |%
 ::
 ++  fate
@@ -116,10 +116,14 @@ it, inspect the evidence, change the claim, and compare experiments.
 
 ## 3. Save a document and pin its source
 
-Choose **Save As**, enter `guide/identity`, and select format `hoon`. The
-document appears under **My documents** and is stored in the app desk's
-Clay namespace as `/data/quiz/guide/identity/hoon`. Nested names use
-lowercase letters, digits and hyphens, with `/` between directories.
+In **Properties and suites**, choose **Save As**. The path starts at
+`quiz/data/`; complete it as `quiz/data/quiz/guide/identity` (or enter
+`data/quiz/guide/identity`, which goes under the visible view's desk,
+`%quiz`). Every save lands at `now`, so the document is saved into `%quiz` as `/data/quiz/guide/identity/hoon` and appears under
+`data/quiz/guide` in **Properties and suites**. Nested names use lowercase
+letters, digits and hyphens, with `/` between directories. A document must
+be a property document or suite to save: this one imports `quiz-engine`
+and declares `++  fate`.
 
 A saved document and an editor buffer are different run sources:
 
@@ -142,8 +146,9 @@ does not advance the selected revision. This protects reproducibility but
 also explains why a saved run can seem to ignore your fix.
 
 Restore `add 0`, save, and advance the revision again. Keep this document for
-later experiments. To keep a bundled example, use **Open editable copy** and
-then **Save As**; the original is read-only.
+later experiments. To keep a bundled example, open it and **Save As** under
+`data/quiz/`. At `now`, **Save** writes the bundled file in `%quiz` itself;
+to experiment without saving, edit it and run the draft.
 
 Browser storage restores tabs, unsaved text, selections, layout and run
 associations. Clay keeps explicitly saved documents. Save work you want to
@@ -152,7 +157,8 @@ asks before discarding edits.
 
 ## 4. Distinguish false, crash and discard
 
-Open **Examples**. Expand the named folder and click a file. For bundled
+In **Properties and suites**, at `%quiz`, expand `examples` and the named
+folder and click a file. For bundled
 examples throughout this guide, clear count, seed and size overrides, and
 set **Repeated samples** to **Document conf**. Then **Run saved property**.
 Each example supplies a fixed `0v123` seed and its own configuration.
@@ -204,8 +210,8 @@ Use a guard to express a necessary precondition. Use a suitable generator
 when ordinary inputs would mostly be discarded. A generator's type alone
 does not establish semantic requirements such as positivity or sorted order.
 
-Now open `failing/08-seeded-threshold` and choose **Open editable copy**.
-Save it as `guide/threshold`. Its complete source is:
+Now open `failing/08-seeded-threshold` and **Save As**
+`data/quiz/guide/threshold`. Its complete source is:
 
 ```hoon
 /+  engine=quiz-engine
@@ -526,7 +532,7 @@ holds:
   unless the fate passes; a crash or `%drop` fails too, and a false report
   adds its notes and expected/actual values.
 
-Save it as `guide/queue-regression`. Saving commits a new revision of the
+Save it as `data/quiz/guide/queue-regression`. Saving commits a new revision of the
 desk, and the tab selects it. **Run saved suite**. The one arm fails with
 "the fate failed the counterexample".
 
@@ -589,7 +595,7 @@ Create a new document containing this complete suite:
 --
 ```
 
-Save as `guide/regression`. Select **Saved suite**, choose **Use latest
+Save as `data/quiz/guide/regression`. Select **Saved suite**, choose **Use latest
 revision**, click **Discover suite arms**, leave **Suite arms** blank, and
 **Run saved suite**. Both arms should pass. Chapter 17 explains suite results
 and adds the bundled example suites to this workflow.
@@ -597,7 +603,7 @@ and adds the bundled example suites to this workflow.
 ### Mark an intentionally false property
 
 Run `props/15-expect-failure`. Its `++expect %fail` makes the known false
-claim finish **failed-as-expected**, shrinking to 10. Open an editable copy,
+claim finish **failed-as-expected**, shrinking to 10. Without saving,
 replace `(lth value 10)` with `=(value value)` and run the draft. It ends
 **passed-unexpectedly**: the anticipated counterexample disappeared.
 
@@ -637,7 +643,7 @@ The complete document is:
 rendering keeps the original types. As shrinking succeeds, the explanation
 is updated to describe the shrunk input.
 
-Make an editable copy, change the comparison's actual computation to
+Without saving, change the comparison's actual computation to
 `value`, and run the draft: it passes. Restore the original computation to
 recover the useful failure. This deliberately tautological edit checks that
 you understand the comparison; it is not a meaningful production property.
@@ -675,7 +681,7 @@ the outcome is **uncovered**. Empty lists appeared in only 1% of accepted
 samples; `++cover` required 10%. Its row reads `empty`, 1 / 100, 1%, 10%,
 not met.
 
-1. Open an editable copy of 14.
+1. Open 14; do not save your edits.
 2. Change `%check` in `++cover` to `%warn`.
 3. Run the draft. The result passes with **Coverage warnings**.
 4. Restore `%check`. Before weakening a real requirement, decide whether
@@ -697,7 +703,7 @@ Each named digit must occupy at least 5% of that table's entries. Label
 coverage divides by accepted samples; table coverage divides by entries in
 the named table. One sample can contribute several entries.
 
-Make an editable copy and raise the requirement for `'5'` to 100. Run the
+Without saving, raise the requirement for `'5'` to 100. Run the
 draft and read the resulting table shortfall. Restore five afterward.
 
 ### Ask for statistical coverage
@@ -719,8 +725,8 @@ says **plain threshold** and why, and its share is only observed.
 Quiz uses Wilson bounds at successively doubled targets. Optional
 `++confidence` sets `[certainty tolerance]`, default `[9 90]`: certainty is
 the exponent in a power of ten, and tolerance is a percentage of the
-required share. To exercise the arm, add this before the final `--` in an
-editable copy and run the draft:
+required share. To exercise the arm, add this before the final `--`,
+without saving, and run the draft:
 
 ```hoon
 ::
@@ -838,7 +844,7 @@ Open and run `failing/19-queue-gen-lib`. It rebuilds this approach with
 generate commands, repair or constrain them, then filter shrink candidates
 through the same validity condition. `alts-of` adapts the typed shrinker.
 
-Use **Open editable copy** to experiment with these constructions and
+Edit drafts of these examples to experiment with these constructions and
 **Preview samples** to inspect their initial candidates before running.
 Command-sequence testing is an ordinary fate over data; Quiz has no separate
 parallel or asynchronous state-machine runner.
@@ -871,8 +877,8 @@ bound of one and pinned list containing 90.
 
 Independent `pair` generation is appropriate for unrelated values. Use
 `bind` for dependent draws, and `seeded`/`dependent` when their relationship
-must survive shrinking too. These examples are the templates to copy into
-**My documents** for such properties.
+must survive shrinking too. These examples are the templates to **Save As**
+under `data/quiz/` for such properties.
 
 ## 14. Generate functions
 
@@ -899,7 +905,7 @@ which the predicate rejects. This small example explains why the law fails.
 Use `fun-of` for generated cases or `fun-on` for a complete finite domain.
 `apply` looks up a value; `fun-text` prints a table for a note. `shrink-fun`
 removes cases and simplifies outputs/defaults while preserving keys.
-Open an editable copy of 24 and inspect its norn and alts together before
+Open 24 and inspect its norn and alts together before
 changing the generated function domains.
 
 ## 15. Test agent doors and simulated time
@@ -977,7 +983,7 @@ hang and each abort has recovery overhead.
 | `%fail` | Records a timeout failure and tries to shrink it |
 | `%discard` | Counts the input as dropped and continues within budgets |
 
-For a short second experiment, make an editable copy of 27, replace
+For a short second experiment, open 27 and, without saving, replace
 `on-timeout %fail` with `on-timeout %discard`, and lower `attempts-max` to
 15 in the same configuration update. Run the draft and inspect drops and
 the terminal budget result. Restore the original settings afterward.
@@ -1064,9 +1070,8 @@ suites; use **Rerun request**. A suite requiring live scries can work with
 Dojo's `-test` yet fail under the app runner's refusing scry gate.
 
 To extend your `guide/regression`, edit it, **Save**, **Use latest revision**,
-discover, and run again. There is no draft-suite mode. A suite copied into
-**My documents** works directly; choosing an arbitrary suite elsewhere on
-a desk is affected by the Clay browsing gap in the next chapter.
+discover, and run again. There is no draft-suite mode. A suite listed in
+**Properties and suites** or **Apps** runs directly.
 
 ## 18. Use other Clay contexts and imports
 
@@ -1076,8 +1081,8 @@ and revision. A saved run reads both the file and imports there.
 
 To browse indexed properties and suites:
 
-1. Open **Clay source** and select a desk. Its files list at once, at the
-   desk's head, marked `now`.
+1. **Properties and suites** lists `%quiz`; in **Apps**, select another
+   desk. Its files list at once, at the desk's head, marked `now`.
 2. To pin an older revision, step with ▴ and ▾ (or Up and Down), or type a
    positive decimal revision and press Enter. The list follows. **Now** on
    the context menu of the box or any listed row returns to the head.
@@ -1085,8 +1090,10 @@ To browse indexed properties and suites:
    **Open and run** to run it at once with its tab's run settings. Files are
    listed in folders below the desk and revision. Suites are marked
    “(suite)” and quiz suites “(quiz suite)”.
-4. Inspect its read-only source and pinned context, or use **Open editable
-   copy** to experiment with a draft.
+4. Inspect its source and pinned context, or edit it and run the draft.
+   At `now`, **Save** writes into that desk. A file from a numbered
+   revision saves to the same path at `now`; **Save As** chooses another
+   path, typed as `<desk>/<path>` with no revision, and saves it at `now`.
 
 The index is textual: a property imports `quiz-engine` on a `/+` prelude line,
 under any face, and has a top-level `++  fate`; a suite imports `test` on a
@@ -1095,11 +1102,9 @@ also imports `quiz`, `quiz-auto` or `quiz-engine`. A valid minimal property
 without the engine import is absent, as is a file with `++  test-` arms that
 does not import `test`, such as a thread.
 
-Any other Hoon file at that context opens through **Open** (Alt-O): choose
-the `clay` location, which lists every Hoon file at the desk and revision last
-browsed in **Clay source**. A file with `++  test-` arms and no `++  fate`
-opens ready to run as a saved suite, so external suites run from the
-workbench.
+**Open** (Alt-O) lists the same files at the same context. A file with
+`++  test-` arms and no `++  fate` opens ready to run as a saved suite, so
+external suites run from the workbench.
 
 ### Import dependencies
 
@@ -1129,14 +1134,14 @@ while investigating a reproducibility problem.
 ## 19. Arrange the workbench and find help
 
 Use **Open** to reopen a saved file, **Save** to update it and **Save As** to
-keep another version. Markdown is available as `md` for your notes; Hoon
-files are the runnable sources. **Copy** copies the active document text to
+keep another version. Only property documents, suites and quiz suites can
+be opened or saved. **Copy** copies the active document text to
 the clipboard. It does not create a tab or export the selected run.
 
 **Add Ref** opens a reference panel that follows the document while you
 edit. Drag tabs to reorder them and use **×** to close one. File-row **…**
-menus offer actions including deletion of writable work files, with
-confirmation. Read-only examples and documentation cannot be overwritten.
+menus offer actions including deletion of files at `now`, with
+confirmation. A numbered revision cannot be overwritten or deleted.
 If a save reports a conflict, preserve your buffer and compare it with the
 other saved version before overwriting.
 
@@ -1162,14 +1167,15 @@ Use Command in place of Ctrl on macOS. Rerun, replay and cancel have buttons
 but no configured shortcuts. The editor retains its normal search,
 undo/redo, selection and editing commands; see [keyboard help][keys].
 
-**Documentation** always offers shipped source text. **Help** uses rendered
-documentation when a Markdown-capable `%docs` is installed, with a built-in
-summary as fallback. Installation of `%docs` is outside Quiz's workbench.
+**Help** uses rendered documentation when a Markdown-capable `%docs` is
+installed, with a built-in summary as fallback. Installation of `%docs` is
+outside Quiz's workbench.
 
 ## Choosing useful properties
 
 Use this table when deciding what to test. Open the named documents under
-**Examples**; the tutorial and boxcar suites are in its `examples` folder.
+`%quiz` `examples` in **Properties and suites**; the tutorial and boxcar
+suites are under `tests/examples`.
 **Conceptual** rows are exercises to write, not additional Quiz APIs.
 
 | Technique | Working example or conceptual exercise |
@@ -1326,10 +1332,10 @@ implementation interfaces, not additional workbench operations.
 | Saved-suite discovery and named/all arms | Run controls | Available for openable saved suites |
 | CPU limits and document call limit | Settings and `++within` | Available |
 | Queue observation, cancellation and history refresh | Result controls | Available; cancellation waits for a scheduling boundary |
-| Browse indexed properties and suites at numeric revisions | Clay source | Available |
+| Browse and save properties and suites on any desk, at now or a numeric revision | Properties and suites (`%quiz`), Apps (other desks) | Available; a numeric revision saves to now |
 | Advance a saved tab's revision | Use latest revision | Available |
-| General Clay-file chooser, including unindexed external suites | Open → clay | Available at the context browsed in Clay source |
-| Date/label revision selection | Pinned revision | Available; Clay source browsing stays numeric |
+| Open or save a file that is not a property document or suite | — | Refused |
+| Date/label revision selection | Pinned revision | Available; Properties and suites browsing stays numeric |
 | Delete one completed run or clear completed history | Delete record; Clear completed history | Available; queued and active runs are kept |
 | Full machine-readable record and sample noun export | Record: Download record, Copy sample noun | Available |
 | Secondary shrinker error alongside retained failure | Error cause above the retained evidence | Available |

@@ -24,7 +24,8 @@
           ==
           |
       ==
-      %columns  &  `files  ~
+      %columns  &  `files
+      ~[['property-copy' 'Copy to clipboard']]
   ==
 ::
 ++  shortcuts
@@ -79,38 +80,32 @@
   ==
 ::
 ++  files
-  ::  One document kind. Only /work is writable; examples, help and Clay
-  ::  sources are read-only.
+  ::  One document kind, property documents and suites, all in Clay as
+  ::  /clay/<desk>/<case>: writable at `now`, read-only at a revision.
+  ::  Clay source draws its own tree, so urui browses none.
   ^-  files:urui
   :*  '/apps/quiz/files'
       :~  :*  name=%property
-              noun='Document'
+              noun='Property or suite'
               untitled='Untitled'
               starter=starter
-              :~  [/work ~[%hoon %md] ~ &]
-                  [/examples ~[%hoon] ~ |]
-                  [/props ~[%hoon] ~ |]
-                  [/failing ~[%hoon] ~ |]
-                  [/docs ~[%md] ~ |]
-                  [/clay ~[%hoon] ~ |]
-              ==
+              roots=~[[/clay ~[%hoon] ~ &]]
               preview=~
               actions=~[%open %save %save-as %copy %ref]
               refs=&
               share=~
           ==
       ==
-      :~  [%work-files %property ~[/work]]
-          [%example-files %property ~[/props /failing /examples]]
-          [%doc-files %property ~[/docs]]
-      ==
+      ~
   ==
 ::
 ++  starter
-  ::  A new document: the smallest passing property.
+  ::  A new document: the smallest passing property. It imports the
+  ::  engine, so it is a property document and can be saved.
   ^-  @t
   %-  of-wain:format
-  :~  '|%'
+  :~  '/+  engine=quiz-engine'
+      '|%'
       '++  fate'
       '  |=  n=@ud'
       '  =(n (add 0 n))'
@@ -118,13 +113,12 @@
   ==
 ::
 ++  file-policy
-  ::  urui's policy plus the bare-path alias, Hoon stored as cord and
-  ::  Markdown as mime, 512 KiB files, and quiz's virtual roots.
+  ::  urui's policy with Hoon stored as cord, 512 KiB files, and quiz's
+  ::  /clay locations.
   ^-  policy:ufiles
   =/  policy  (make-policy:ufiles files /data/quiz |)
   %=  policy
-    roots  (snoc roots.policy [~ ~[%hoon] ~ &])
-    codecs  ~[[%hoon %cord] [%md %mime]]
+    codecs  ~[[%hoon %cord]]
     max-bytes  524.288
     locate  `locate:locations
   ==
@@ -136,17 +130,14 @@
   [name [~ & ''] item]
 ::
 ++  reference-pane
-  ::  Explorer views: My documents, Examples, Documentation, Clay source.
+  ::  Two explorer views, which quiz.js draws: Properties and suites
+  ::  shows %quiz, Apps any other desk.
   ^-  pane:urui
   :*  %reference  'explorer-pane'  'Quiz explorer'  %read-only  ~
       :~  %+  pinned  %tabs
           :-  %tabs
           :~  :*  %views  'Explorer'  %views  ~
-                  :~  [%work-files 'My documents']
-                      [%example-files 'Examples']
-                      [%doc-files 'Documentation']
-                      [%clay-source 'Clay source']
-                  ==
+                  ~[[%properties 'Properties and suites'] [%apps 'Apps']]
                   ~  |  &
               ==
           ==
@@ -164,8 +155,7 @@
           (pinned %head [%heading `'Document' `'source-status' ~])
           %+  pinned  %controls
           :-  %controls
-          :~  ;button#editable-copy(type "button"): Open editable copy
-              ;span#document-location
+          :~  ;span#document-location
                 =aria-live  "polite"
                 ; New document
               ==
@@ -199,17 +189,17 @@
   ^-  marl
   :~  ;div#fallback-help-content
         ;p: Install %docs for the full Quiz help and reference.
-        ;p: Documentation opens the shipped guide and reference as text.
         ;h2: Start here
-        ;p: Examples has passing props, intentional failing cases and suites.
-        ;p: Run 01-success with blank overrides; inspect 03-crash at zero.
-        ;h2: Documents
-        ;p: Use + for a new property. Open files from My documents or Examples.
-        ;p: Save writes to this desk. Save As keeps another copy.
+        ;p: In %quiz, examples/props holds passing properties.
+        ;p: examples/failing holds failing cases; tests/examples, suites.
+        ;p: Run 01-success; inspect 03-crash at zero.
+        ;h2: Properties and suites, Apps
+        ;p: Properties and suites shows %quiz; Apps, any other desk.
+        ;p: Pick a revision; now is the desk's current files.
+        ;p: At now Save writes into that desk; a revision is read-only.
+        ;p: Only property documents, suites and quiz suites open or save.
+        ;p: Use + for a new property. Save As keeps another copy.
         ;p: Unsaved tabs and editor selections are restored in this browser.
-        ;h2: Clay source
-        ;p: Pick a desk and immutable revision to list its property documents.
-        ;p: Read-only files can be opened as editable copies.
         ;h2: Runs
         ;p: Draft runs use the editor; saved runs use the pinned revision.
         ;p: After saving, choose Use latest revision for the saved version.
@@ -336,12 +326,13 @@
       #run-controls [disabled] { opacity: .6; }
       #quiz-editor { height: 100%; min-height: 12rem; }
       #document-location { overflow-wrap: anywhere; color: var(--muted); }
-      #clay-source-panel:not([hidden]) { display: flex;
-        flex-direction: column; }
-      #clay-controls { padding: .75rem .75rem 0; }
-      #clay-controls label { display: block; margin: .5rem 0; }
-      #clay-state { margin: .5rem 0 0; }
-      #clay-controls select { width: 100%; }
+      #properties-panel:not([hidden]), #apps-panel:not([hidden]) {
+        display: flex; flex-direction: column; }
+      .clay-controls { padding: .75rem .75rem 0; }
+      .clay-controls label { display: block; margin: .5rem 0; }
+      .clay-desk-name { margin: .5rem 0; font-weight: 600; }
+      .clay-state { margin: .5rem 0 0; }
+      .clay-controls select { width: 100%; }
       .clay-case { display: inline-flex; align-items: stretch;
         gap: .15rem; }
       .clay-case-field { flex: 0 0 auto; display: inline-flex;
@@ -356,8 +347,8 @@
         font: inherit; text-align: right; outline: none; }
       .clay-case button { font: inherit; padding: 0 .4rem; min-width: 0;
         line-height: 1; }
-      #clay-state { font-size: .85rem; color: var(--muted); }
-      #clay-source-tree { flex: 1 1 auto; height: auto; }
+      .clay-state { font-size: .85rem; color: var(--muted); }
+      #properties-tree, #apps-tree { flex: 1 1 auto; height: auto; }
       .clay-tree { display: grid; gap: .1rem; }
       .clay-row { display: flex; align-items: center; min-width: 0; }
       .clay-row:hover { background: var(--background); }
@@ -370,6 +361,7 @@
       .clay-toggle[aria-expanded="true"]::before { content: '▾'; }
       .clay-kids { padding-left: .85rem; }
       .clay-kids[hidden] { display: none; }
+      .clay-empty { margin: .2rem 0 .2rem 1.25rem; color: var(--muted); }
       .clay-tree .file-tree-file { padding-left: 1.25rem; }
       .clay-tree .file-tree-file[data-role="suite"]::after {
         content: " (suite)"; color: var(--muted); }

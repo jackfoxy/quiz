@@ -1101,11 +1101,12 @@ selection and layout. Clearing it loses unsaved buffers, not server history.
 
 ### Workbench and shortcuts
 
-Open **Examples** for passing properties (`props`), intentional failures
-(`failing`) and existing suites (`examples`). Examples/docs/Clay files are
-read-only; **Open editable copy** makes a writable unsaved tab. **My documents**
-saves under `/data/quiz`. **Documentation** exposes this reference as source
-text; installed `%docs` provides the rendered help-site mechanism.
+**Properties and suites** lists the property documents, suites and quiz
+suites of `%quiz` at a chosen revision, and **Apps** those of any other
+desk; in `%quiz` see `examples/props`,
+`examples/failing` and `tests/examples`. At `now` files save into that desk;
+a numbered revision is read-only and saves to the same path at `now`. No
+other file opens or saves. Installed `%docs` provides the rendered help.
 
 **Draft property** runs the editor buffer. **Saved property/suite** excludes
 unsaved edits and uses the chosen revision. Saving does not advance it; choose
@@ -1117,8 +1118,8 @@ source association and the selected result across browser reload.
 
 **Run**, **Rerun request**, **Replay exact property** and **Cancel selected run**
 follow server state. **Save as regression** opens a run's regression suite
-as an unsaved tab in **Saved suite** mode; once it is saved under
-**My documents**, the tab selects the new revision. Network failure preserves last confirmed counters and
+as an unsaved tab in **Saved suite** mode; once it is saved at `now`, the
+tab selects the new revision. Network failure preserves last confirmed counters and
 disables mutations until reconnection. A lost admission reply may still have
 created a run: inspect history before retrying. The UI does not invent progress.
 
@@ -1229,7 +1230,7 @@ already checked parts/configuration and own scheduling and persistence.
 | [quiz-agent](../../lib/quiz-agent.hoon) | Gall bowl, Clay requests, Behn scheduling, facts/scries and local admission callbacks |
 | [quiz-json](../../lib/quiz-json.hoon) | JSON codecs; decimal string IDs; no vases on HTTP |
 | [quiz-web-agent](../../lib/quiz-web-agent.hoon) | Eyre authentication/routes, correlated admission, config inspection and file wire |
-| [quiz-files](../../lib/quiz-files.hoon) | Consumer virtual roots and pinned Clay reads |
+| [quiz-files](../../lib/quiz-files.hoon) | `/clay/<desk>/<case>` locations, the property/suite index and its open and save checks |
 | [quiz-web](../../lib/quiz-web.hoon) | Compiled urui configuration, shell, help and assets |
 | [quiz-runs.js](../../web/quiz-runs.js), [quiz.js](../../web/quiz.js) | Quiz controls/results and document integration; shared urui owns editor/file/dialog/session machinery |
 

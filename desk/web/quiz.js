@@ -50,10 +50,12 @@
   let runSelection = null;
   let runner = null;
   let contexts = [];
-  let browseGeneration = 0;
-  // urui's file wire, except that Open's bare /clay root browses the
-  // context chosen in Clay source: urui's chooser lists one flat scope and
-  // the server cannot know which desk and revision this browser picked.
+  // Set by the save dialog for its one listing; see transport.browse.
+  let saveListing = false;
+  // urui's file wire, except that the chooser's bare /clay root lists the
+  // desk and revision of the visible view, through the same
+  // index: urui's chooser lists one flat scope, and only property
+  // documents and suites may be opened or saved.
   async function filesPost(body) {
     const response = await fetch('/apps/quiz/files', {
       method: 'POST', credentials: 'same-origin',
@@ -73,17 +75,26 @@
   }
   const transport = {
     browse: async (scope) => {
-      const bare = scope.length === 1 && scope[0] === 'clay';
-      if (bare && !context) {
-        throw new Error('Choose a desk and revision in Clay source, then Browse revision.');
+      if (scope.length === 1 && scope[0] === 'clay') {
+        const name = chosen().name();
+        if (!headOf(name)) throw new Error('Choose a desk in Apps.');
+        // The Save As list is the desk's files at now, without the case:
+        // the chooser's paths are <desk>/<path>, and saves land at now.
+        if (saveListing) {
+          saveListing = false;
+          const entries = await listing(name, String(headOf(name)));
+          return entries.map((entry) => ({...entry,
+            path: [...entry.path.slice(0, 2), ...entry.path.slice(3)]}));
+        }
+        return shown(name, await listing(name, revisionOf(name)));
       }
-      const target = bare ? ['clay', context.desk, context.revision] : scope;
-      return (await filesPost({op: 'browse', scope: target})).entries || [];
+      return (await filesPost({op: 'browse', scope})).entries || [];
     },
+    // Never read-only to urui: Save and Save As of a numbered revision go
+    // to the same path at now (beforeSave), which the server permits.
     load: async (path) => {
       const reply = await filesPost({op: 'load', path});
-      return {text: String(reply.text ?? ''), hash: reply.hash ?? null,
-        readonly: reply.readonly === true};
+      return {text: String(reply.text ?? ''), hash: reply.hash ?? null, readonly: false};
     },
     save: async (path, text, choices = {}) => {
       const reply = await filesPost({op: 'save', path, text,
@@ -108,12 +119,20 @@
     },
     onChange: () => { runtime.session.queue(); runner?.changed(); },
     transport,
+    // A save or delete commits to its desk: a desk shown at now relists.
+    onFile: ({op, phase}) => {
+      if (phase === 'done' && ['save', 'delete'].includes(op)) void refreshHeads();
+    },
     session: {
       read: (key) => key === 'clayContext' ? context
         : key === 'clayTree' ? clayTree
           : key === 'runSelection' ? runSelection : undefined,
       validate: (key, value) => key === 'clayContext'
-        ? validContext(value) : key === 'clayTree' ? validClayTree(value)
+        ? validContext(value)
+        //  undefined when absent, so a record from before the slot is told
+        //  apart from an empty tree
+        : key === 'clayTree' ? (value && typeof value === 'object'
+          ? validClayTree(value) : undefined)
         : key === 'runSelection'
           ? (typeof value === 'string' && /^[1-9][0-9]{0,39}$/.test(value) ? value : null)
           : undefined
@@ -122,11 +141,44 @@
       property: {
         fields: {defaults: window.quizRunFields, validate: window.quizRunFields},
         afterActivate: (tab) => showDocument(tab),
-        saved: (tab) => { showDocument(tab); runner?.saved(tab); void refreshHeads(); }
+        saved: (tab) => { showDocument(tab); runner?.saved(tab); },
+        // The chooser starts from the tab's <desk>/<path>, with no case;
+        // a new document starts in data/ of the visible view's desk.
+        saveDialog: (tab) => {
+          saveListing = true;
+          const path = tab.path;
+          if (path?.[0] === 'clay' && path.length > 4) {
+            return {value: [path[1], ...path.slice(3, -1)].join('/')};
+          }
+          const name = chosen().name();
+          return headOf(name) ? {value: `${name}/data/`} : {};
+        },
+        // Every save lands at now, marked hoon: a numbered revision's path
+        // moves to the same path at now; a chooser path is <desk>/<path>,
+        // or, when it names no desk or only a desk, a path in data/ of the
+        // visible view's desk (`mine` is data/mine.hoon, `quiz` alone is
+        // data/quiz.hoon), unless it already starts with data/.
+        beforeSave: (tab, {path}) => {
+          saveListing = false;
+          if (path[0] !== 'clay') return undefined;
+          const [, first, ...named] = path;
+          const rest = headOf(first) && named.length > 2
+            && /^(now|[1-9][0-9]*)$/.test(named[0]) ? named.slice(1) : named;
+          const typed = [first, ...rest];
+          const target = headOf(first) && rest.length > 1
+            ? ['clay', first, 'now', ...rest]
+            : ['clay', chosen().name(), 'now',
+              ...(first === 'data' && rest.length > 1 ? [] : ['data']), ...typed];
+          // the untouched default, <desk>/data/, would write data.hoon
+          if (target.length === 5 && target[3] === 'data') {
+            throw new Error(`Enter a name under ${target[1]}/data/.`);
+          }
+          return {path: target};
+        }
       }
     },
-    // As heathcliff's: Clay source's rows and revision box offer Now and
-    // Revision…; Open is for files, and Clay is never deleted from here.
+    // As heathcliff's: the rows and revision box offer Now and Revision…;
+    // Open is for files, and only a file at now can be deleted.
     contextMenu: {
       items: [
         {id: 'open-run', label: 'Open and run',
@@ -137,14 +189,11 @@
       state: (target) => {
         const clay = target.path?.[0] === 'clay';
         const head = clay ? headOf(target.path[1]) : 0;
-        //  Clay rows carry the index's role; the Examples roots hold
-        //  only properties and suites
-        const runnable = target.entry === 'file' ? Boolean(target.role)
-          : !target.entry && ['props', 'failing', 'examples'].includes(target.path?.[0]);
+        const file = target.entry === 'file';
         return {
-          'open-run': {hidden: !runnable},
-          open: {hidden: Boolean(target.entry) && target.entry !== 'file'},
-          delete: {hidden: clay},
+          'open-run': {hidden: !file},
+          open: {hidden: !file},
+          delete: {hidden: !file || target.path[2] !== 'now'},
           now: {hidden: !clay,
             disabled: head <= 1 || Number(revisionOf(target.path[1])) >= head},
           revision: {hidden: !clay, disabled: head <= 1}
@@ -155,12 +204,10 @@
           void openAndRun(target.path);
           return;
         }
-        if (target.path?.[0] !== 'clay' || target.path[1] !== desk.value) return;
-        if (id === 'now') pick(headOf(desk.value));
-        else if (id === 'revision') {
-          revision.focus();
-          revision.select();
-        }
+        const view = target.path?.[0] === 'clay' ? viewOf(target.path[1]) : undefined;
+        if (!view) return;
+        if (id === 'now') view.pick(headOf(target.path[1]));
+        else if (id === 'revision') view.focus();
       }
     }
   });
@@ -178,28 +225,16 @@
   }
   function showDocument(tab) {
     if (!tab) return;
-    const readOnly = Boolean(tab.readonly
-      || (tab.path && tab.path[0] !== 'work'));
-    byId('editable-copy').hidden = !readOnly;
+    // a numbered revision saves to now
+    const pinned = Boolean(tab.path) && tab.path[2] !== 'now';
     byId('document-location').textContent = tab.path
-      ? `${readOnly ? 'Read-only: ' : ''}${tab.path.join('/')}`
+      ? `${tab.path.join('/')}${pinned ? ' (saves to now)' : ''}`
       : 'Unsaved document';
     // Ace's module API owns syntax modes; urui continues to own editing.
     const raw = window.ace?.edit(byId('quiz-editor'));
-    raw?.session?.setMode((tab.path?.at(-1) === 'md'
-      || (!tab.path && tab.label?.endsWith('.md')))
-      ? 'ace/mode/text' : 'ace/mode/hoon');
+    raw?.session?.setMode('ace/mode/hoon');
     runner?.activate(tab);
   }
-  function editableCopy() {
-    const tab = docs.active('property');
-    if (!tab) return undefined;
-    const label = tab.label || 'Document';
-    return docs.create('property', {
-      text: tab.text, clean: '', label: `Copy of ${label}`, focus: true
-    });
-  }
-  byId('editable-copy').addEventListener('click', editableCopy);
   window.addEventListener('beforeunload', (event) => {
     runtime.session.save();
     if (!docs.list('property').some((tab) => docs.dirty('property', tab.id))) {
@@ -239,11 +274,15 @@
       throw error;
     } finally { clearTimeout(timeout); }
   }
-  // ---- Clay source ----------------------------------------------------
-  //  A desk, a revision and Browse revision choose the context; its
-  //  property documents and suites are listed below as a tree after
-  //  heathcliff's explorer, its folders starting below the desk and
-  //  revision.  The context is what Open's /clay location browses.
+  // ---- Properties and suites, Apps ---------------------------------------
+  //  Two explorer views of one kind: Properties and suites shows %quiz;
+  //  Apps shows any other desk, chosen from its list.  A revision chooses
+  //  the context; its property documents, suites and quiz suites are
+  //  listed below as a tree after heathcliff's explorer, its folders
+  //  starting below the desk and revision.  At the head the paths say
+  //  `now` and are writable; at a revision number they are pinned, and
+  //  save to the same path at now.  The chooser's /clay root lists the
+  //  visible view's context.
   function make(tag, attrs = {}, ...children) {
     const node = document.createElement(tag);
     for (const [key, value] of Object.entries(attrs)) {
@@ -255,36 +294,6 @@
     if (children.length) node.append(...children);
     return node;
   }
-  const desk = make('select', {id: 'clay-desk'});
-  //  The revision box, after heathcliff's: `now` sits left, green, while
-  //  the box holds the desk's head; ▴ ▾ and the arrow keys step.
-  const now = make('span', {class: 'clay-now', text: 'now', 'aria-hidden': 'true'});
-  const revision = make('input', {id: 'clay-revision', type: 'text', inputmode: 'numeric'});
-  const newer = make('button', {id: 'clay-newer', type: 'button', text: '▴',
-    'aria-label': 'Newer revision', title: 'Newer revision'});
-  const older = make('button', {id: 'clay-older', type: 'button', text: '▾',
-    'aria-label': 'Older revision', title: 'Older revision'});
-  const state = make('p', {id: 'clay-state', role: 'status', text: 'Loading desks…'});
-  const field = make('span', {class: 'clay-case-field'}, now, revision);
-  const selector = make('span', {class: 'clay-case'}, field, newer, older);
-  const controls = make('div', {id: 'clay-controls'},
-    make('label', {for: 'clay-desk', text: 'Desk'}), desk,
-    make('label', {for: 'clay-revision', text: 'Revision'}), selector, state);
-  //  its menu offers Now from any revision, as a heathcliff desk row's does
-  const selectorMenu = (event) => {
-    if (!headOf(desk.value)) return;
-    runtime.explorer.context.open('property',
-      ['clay', desk.value, revisionOf(desk.value)], revision, event,
-      {entry: 'revision'});
-  };
-  selector.addEventListener('contextmenu', selectorMenu);
-  revision.addEventListener('keydown', (event) => {
-    if (!event.altKey || event.key !== 'Enter') return;
-    event.preventDefault();
-    selectorMenu(event);
-  });
-  const clayHost = byId('clay-source-tree');
-  byId('clay-source-panel')?.replaceChildren(...[controls, clayHost].filter(Boolean));
   //  persisted: each desk's chosen revision, absent at its head, and the
   //  folders the user closed, by desk, revision and path
   let clayTree = {cases: {}, closed: {}};
@@ -313,7 +322,13 @@
   }
   const headOf = (name) => Number(contexts.find((item) => item.desk === name)?.revision || 0);
   const revisionOf = (name) => clayTree.cases[name] || String(headOf(name));
-  //  A folder: a toggle row and its children, built on first open.
+  //  a listing of `name` at its chosen revision, its paths at now when
+  //  that is the head
+  function shown(name, entries) {
+    if (clayTree.cases[name]) return entries;
+    return entries.map((entry) => ({...entry,
+      path: [entry.path[0], entry.path[1], 'now', ...entry.path.slice(3)]}));
+  }
   //  The file context menu on a Clay row, as on urui's own rows: right
   //  click, Shift-F10 or Alt-Enter on `focus`, or the row's … button.
   function withMenu(row, focus, path, detail, label) {
@@ -374,9 +389,11 @@
     return withMenu(make('div', {class: 'explorer-file-row'}, file), file, path,
       {entry: 'file', role: file.dataset.role}, label);
   }
-  function showClay(entries) {
-    if (!clayHost) return;
-    const top = {dirs: new Map(), files: []};
+  //  Every desk shows data/, the place for saved documents, even when empty.
+  function showClay(host, name, entries) {
+    if (!host) return;
+    const top = {dirs: new Map([['data', {path: ['data'], dirs: new Map(), files: []}]]),
+      files: []};
     for (const entry of entries) {
       const relative = entry.path.slice(3);
       if (relative.length < 2) continue;
@@ -390,97 +407,179 @@
       });
       branch.files.push(entry);
     }
-    const base = entries[0]?.path.slice(0, 3) || [];
+    const base = ['clay', name, clayTree.cases[name] || 'now'];
     const prefix = base.slice(1).join(':');
     const label = (entry) => entry.path.slice(-2).join('.');
-    const build = (branch) => [
-      ...[...branch.dirs.keys()].sort().map((name) => {
-        const dir = branch.dirs.get(name);
-        const where = dir.path.join('/');
-        return folder(name, [...base, ...dir.path], `${prefix}:${where}`,
-          (kids) => kids.append(...build(dir)));
+    const build = (branch) => branch.dirs.size || branch.files.length ? [
+      ...[...branch.dirs.keys()].sort().map((dir) => {
+        const node = branch.dirs.get(dir);
+        const where = node.path.join('/');
+        return folder(dir, [...base, ...node.path], `${prefix}:${where}`,
+          (kids) => kids.append(...build(node)));
       }),
       ...branch.files.slice()
         .sort((left, right) => label(left).localeCompare(label(right)))
         .map(fileRow)
-    ];
-    clayHost.setAttribute('aria-busy', 'false');
-    clayHost.replaceChildren(make('div', {class: 'clay-tree'}, ...build(top)));
+    ] : [make('p', {class: 'clay-empty', text: 'No files yet.'})];
+    host.setAttribute('aria-busy', 'false');
+    host.replaceChildren(make('div', {class: 'clay-tree'}, ...build(top)));
   }
-  function showCase() {
-    const head = headOf(desk.value);
-    const number = Number(revisionOf(desk.value));
-    revision.value = head ? String(number) : '';
-    revision.title = head ? `Revision of %${desk.value}: 1 to ${head}; ${head} is now` : '';
-    revision.setAttribute('aria-label', `Revision of %${desk.value}`);
-    now.style.visibility = head && number >= head ? 'visible' : 'hidden';
-    field.style.width = `${String(head || 1).length + 5}ch`;
-    newer.disabled = !head || number >= head;
-    older.disabled = !head || number <= 1;
+  //  One view: `fixed` names its desk, else a list offers every desk
+  //  but %quiz.  Its ids are `prefix`-desk, -revision, -newer, -older and
+  //  -state; urui made `panel` and `tree`.
+  function clayView({prefix, panel, tree, fixed}) {
+    const desk = fixed ? null : make('select', {id: `${prefix}-desk`});
+    //  The revision box, after heathcliff's: `now` sits left, green, while
+    //  the box holds the desk's head; ▴ ▾ and the arrow keys step.
+    const now = make('span', {class: 'clay-now', text: 'now', 'aria-hidden': 'true'});
+    const revision = make('input', {id: `${prefix}-revision`, type: 'text',
+      inputmode: 'numeric'});
+    const newer = make('button', {id: `${prefix}-newer`, type: 'button', text: '▴',
+      'aria-label': 'Newer revision', title: 'Newer revision'});
+    const older = make('button', {id: `${prefix}-older`, type: 'button', text: '▾',
+      'aria-label': 'Older revision', title: 'Older revision'});
+    const state = make('p', {id: `${prefix}-state`, class: 'clay-state', role: 'status',
+      text: 'Loading desks…'});
+    const field = make('span', {class: 'clay-case-field'}, now, revision);
+    const selector = make('span', {class: 'clay-case'}, field, newer, older);
+    const named = fixed
+      ? [make('p', {class: 'clay-desk-name', text: `%${fixed}`})]
+      : [make('label', {for: `${prefix}-desk`, text: 'Desk'}), desk];
+    const controls = make('div', {class: 'clay-controls'}, ...named,
+      make('label', {for: `${prefix}-revision`, text: 'Revision'}), selector, state);
+    const host = byId(tree);
+    const panelNode = byId(panel);
+    panelNode?.replaceChildren(...[controls, host].filter(Boolean));
+    let generation = 0;
+    const view = {
+      name: () => fixed || desk.value,
+      visible: () => Boolean(panelNode) && !panelNode.hidden,
+      focus() {
+        revision.focus();
+        revision.select();
+      },
+      state: (text) => { state.textContent = text; },
+      //  fills an Apps list from the desks, keeping `selected` if it can
+      fill(selected) {
+        if (fixed) return;
+        desk.replaceChildren();
+        for (const item of contexts) {
+          if (item.desk !== 'quiz') desk.append(make('option', {value: item.desk, text: `%${item.desk}`}));
+        }
+        if (selected && selected !== 'quiz' && !headOf(selected)) {
+          desk.append(make('option', {value: selected, text: `%${selected} (unavailable)`}));
+        }
+        desk.value = selected && selected !== 'quiz' ? selected
+          : contexts.find((item) => item.desk !== 'quiz')?.desk || '';
+      },
+      showCase() {
+        const name = view.name();
+        const head = headOf(name);
+        const number = Number(revisionOf(name));
+        revision.value = head ? String(number) : '';
+        revision.title = head ? `Revision of %${name}: 1 to ${head}; ${head} is now` : '';
+        revision.setAttribute('aria-label', `Revision of %${name}`);
+        now.style.visibility = head && number >= head ? 'visible' : 'hidden';
+        field.style.width = `${String(head || 1).length + 5}ch`;
+        newer.disabled = !head || number >= head;
+        older.disabled = !head || number <= 1;
+      },
+      async browse() {
+        const name = view.name();
+        const mine = ++generation;
+        host?.replaceChildren();
+        if (!headOf(name)) {
+          state.textContent = name ? `%${name} is not available.`
+            : 'No other local desk is available.';
+          return false;
+        }
+        const selected = {desk: name, revision: revisionOf(name)};
+        if (!fixed) {
+          context = selected;
+          runtime.session.queue();
+        }
+        state.textContent = `Loading %${name} at revision ${selected.revision}…`;
+        try {
+          // Property documents, suites and quiz suites, as +role-of in
+          // quiz-files decides.
+          const entries = await listing(name, selected.revision);
+          if (mine !== generation) return false;
+          showClay(host, name, shown(name, entries));
+          const count = (role) => entries.filter((entry) =>
+            (entry.role || 'property') === role).length;
+          const at = clayTree.cases[name] ? `revision ${selected.revision}, pinned`
+            : `now, revision ${selected.revision}`;
+          state.textContent = `${count('property')} property documents, `
+            + `${count('suite')} suites and ${count('quiz-suite')} quiz suites`
+            + ` — %${name} at ${at}.`;
+          return true;
+        } catch (cause) {
+          if (mine !== generation) return false;
+          state.textContent = String(cause.message || cause);
+          return false;
+        }
+      },
+      pick(number, typed = number) {
+        const name = view.name();
+        const head = headOf(name);
+        if (!Number.isInteger(number) || number < 1 || number > head) {
+          runtime.notify(`%${name} has no revision ${typed}; `
+            + `its revisions run from 1 to ${head} (now).`, {kind: 'error'});
+          view.showCase();
+          return;
+        }
+        if (number >= head) delete clayTree.cases[name];
+        else clayTree.cases[name] = String(number);
+        view.showCase();
+        view.browse();
+      }
+    };
+    const step = (by) => {
+      const next = Number(revisionOf(view.name())) + by;
+      if (next >= 1 && next <= headOf(view.name())) view.pick(next);
+    };
+    //  its menu offers Now from any revision, as a heathcliff desk row's does
+    const selectorMenu = (event) => {
+      const name = view.name();
+      if (!headOf(name)) return;
+      runtime.explorer.context.open('property',
+        ['clay', name, clayTree.cases[name] || 'now'], revision, event,
+        {entry: 'revision'});
+    };
+    selector.addEventListener('contextmenu', selectorMenu);
+    desk?.addEventListener('change', () => {
+      view.showCase();
+      view.browse();
+    });
+    revision.addEventListener('change', () => {
+      const text = revision.value.trim().replace(/^now */, '');
+      if (text === '') view.pick(headOf(view.name()));
+      else view.pick(/^[0-9]+$/.test(text) ? Number(text) : NaN, text);
+    });
+    revision.addEventListener('keydown', (event) => {
+      if (event.altKey && event.key === 'Enter') {
+        event.preventDefault();
+        selectorMenu(event);
+      } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        step(event.key === 'ArrowUp' ? 1 : -1);
+      }
+    });
+    newer.addEventListener('click', () => step(1));
+    older.addEventListener('click', () => step(-1));
+    return view;
   }
+  const properties = clayView({prefix: 'clay', panel: 'properties-panel',
+    tree: 'properties-tree', fixed: 'quiz'});
+  const apps = clayView({prefix: 'apps', panel: 'apps-panel', tree: 'apps-tree'});
+  const views = [properties, apps];
+  //  the view a desk is shown in, and the visible view
+  const viewOf = (name) => views.find((view) => view.name() === name);
+  const chosen = () => (apps.visible() ? apps : properties);
   async function browseClay() {
-    const name = desk.value;
-    const generation = ++browseGeneration;
-    clayHost?.replaceChildren();
-    if (!headOf(name)) {
-      state.textContent = name ? `%${name} is not available.` : 'No local desk is available.';
-      return false;
-    }
-    const selected = {desk: name, revision: revisionOf(name)};
-    context = selected;
-    runtime.session.queue();
-    state.textContent = `Loading %${name} at revision ${selected.revision}…`;
-    try {
-      // Property documents, suites and quiz suites, as +role-of in
-      // quiz-files decides.  Open's /clay location, at this same
-      // context, lists every Hoon file.
-      const entries = await listing(name, selected.revision);
-      if (generation !== browseGeneration) return false;
-      showClay(entries);
-      const count = (role) => entries.filter((entry) => (entry.role || 'property') === role).length;
-      state.textContent = `${count('property')} property documents, ${count('suite')} suites `
-        + `and ${count('quiz-suite')} quiz suites — revision ${selected.revision}. `
-        + 'Open → clay lists every Hoon file here.';
-      return true;
-    } catch (cause) {
-      if (generation !== browseGeneration) return false;
-      state.textContent = String(cause.message || cause);
-      return false;
-    }
+    const results = await Promise.all(views.map((view) => view.browse()));
+    return results.every(Boolean);
   }
-  function pick(number, typed = number) {
-    const head = headOf(desk.value);
-    if (!Number.isInteger(number) || number < 1 || number > head) {
-      runtime.notify(`%${desk.value} has no revision ${typed}; `
-        + `its revisions run from 1 to ${head} (now).`, {kind: 'error'});
-      showCase();
-      return;
-    }
-    if (number >= head) delete clayTree.cases[desk.value];
-    else clayTree.cases[desk.value] = String(number);
-    showCase();
-    browseClay();
-  }
-  function step(by) {
-    const next = Number(revisionOf(desk.value)) + by;
-    if (next >= 1 && next <= headOf(desk.value)) pick(next);
-  }
-  desk.addEventListener('change', () => {
-    showCase();
-    browseClay();
-  });
-  revision.addEventListener('change', () => {
-    const text = revision.value.trim().replace(/^now */, '');
-    if (text === '') pick(headOf(desk.value));
-    else pick(/^[0-9]+$/.test(text) ? Number(text) : NaN, text);
-  });
-  revision.addEventListener('keydown', (event) => {
-    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
-    event.preventDefault();
-    step(event.key === 'ArrowUp' ? 1 : -1);
-  });
-  newer.addEventListener('click', () => step(1));
-  older.addEventListener('click', () => step(-1));
   async function fetchContexts() {
     const result = await post('/apps/quiz/api', {op: 'contexts'});
     contexts = result.contexts.map(validContext).filter(Boolean);
@@ -494,7 +593,7 @@
     try {
       await fetchContexts();
     } catch (cause) {
-      state.textContent = String(cause.message || cause);
+      for (const view of views) view.state(String(cause.message || cause));
       problem('Could not load desks. Sign in and reload to try again.');
       return;
     }
@@ -503,30 +602,23 @@
       clayTree.cases[context.desk] = context.revision;
     }
     clayRestored = true;
-    const selected = context?.desk || (headOf('quiz') ? 'quiz' : contexts[0]?.desk);
-    desk.replaceChildren();
-    for (const item of contexts) {
-      desk.append(make('option', {value: item.desk, text: `%${item.desk}`}));
-    }
-    if (selected && !headOf(selected)) {
-      desk.append(make('option', {value: selected, text: `%${selected} (unavailable)`}));
-    }
-    desk.value = selected || '';
-    showCase();
+    apps.fill(context?.desk);
+    for (const view of views) view.showCase();
     await browseClay();
   }
-  //  A save commits to %quiz: a desk shown at now follows its head.
+  //  A save or delete commits to its desk: a view shown at now follows
+  //  its head.
   async function refreshHeads() {
-    const name = desk.value;
-    const head = headOf(name);
-    const atNow = !clayTree.cases[name];
+    const before = views.map((view) => [view, view.name(), headOf(view.name())]);
     try {
       await fetchContexts();
     } catch (_) {
       return;
     }
-    showCase();
-    if (atNow && headOf(name) !== head) browseClay();
+    for (const [view, name, head] of before) {
+      view.showCase();
+      if (!clayTree.cases[name] && headOf(name) !== head) view.browse();
+    }
   }
   // Ship-wide CPU time limits live in %quiz; urui's Settings dialog hosts them.
   const limitFields = [['call-time', 'quiz-limit-call'],
@@ -588,7 +680,7 @@
     getContexts: () => contexts, getDefaults: () => defaults,
     selection: () => runSelection, select: (id) => { runSelection = id; }
   });
-  window.quiz = {runtime, documents: docs, editableCopy, browseClay, validContext, runs: runner,
+  window.quiz = {runtime, documents: docs, browseClay, validContext, runs: runner,
     loadLimits, saveLimits};
   //  F5 runs: the Run control is built by quiz-runs.js inside
   //  #run-controls, so the chord goes through the button rather than

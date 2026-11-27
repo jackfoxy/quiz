@@ -54,17 +54,22 @@ for (const [root, name, outcome, why] of examples) {
     await page.goto('/apps/quiz/');
     await page.waitForFunction(() => window.quiz?.ready);
     await page.evaluate(() => window.quiz.ready);
-    const path = [root, name, 'hoon'];
-    const listing = await page.request.post('/apps/quiz/files', {data:{op:'browse',scope:[root]}});
-    expect(listing.ok()).toBeTruthy();
-    expect((await listing.json()).entries.some(entry =>
-      JSON.stringify(entry.path) === JSON.stringify(path))).toBeTruthy();
+    // Each example is a file of %quiz, listed by the index at its head.
+    const rel = root === 'examples' ? ['tests', 'examples', name, 'hoon']
+      : ['examples', root, name, 'hoon'];
+    const api = async (data) => (await page.request.post('/apps/quiz/api', {data})).json();
+    const head = (await api({op:'contexts'})).contexts.find(item => item.desk === 'quiz').revision;
+    const {entries} = await api({op:'properties', desk:'quiz', revision:head});
+    const listed = entries.find(entry =>
+      JSON.stringify(entry.path) === JSON.stringify(['clay', 'quiz', head, ...rel]));
+    expect(listed?.role).toBe(outcome === 'suite' ? 'quiz-suite' : 'property');
+    const path = ['clay', 'quiz', 'now', ...rel];
     await page.evaluate(path => window.quiz.documents.open('property', path), path);
     await expect(page.locator('#run-mode')).toHaveValue(outcome === 'suite' ? 'suite' : 'file');
-    await expect(page.locator('#property-save')).toBeDisabled();
-    // Both write operations must remain refused on every example root.
+    // A numbered revision refuses both writes.
     for (const op of ['save', 'delete']) {
-      const refused = await page.request.post('/apps/quiz/files', {data:{op,path,text:'x'}});
+      const refused = await page.request.post('/apps/quiz/files',
+        {data:{op, path:['clay', 'quiz', head, ...rel], text:'x'}});
       expect(refused.status()).toBe(403);
     }
     await page.locator('#run-start').click();
@@ -75,8 +80,7 @@ for (const [root, name, outcome, why] of examples) {
     await expect.poll(async () => (await record())?.status, {timeout:45000}).toBe('done');
     const got = await record();
     expect(got.outcome.kind).toBe(outcome);
-    expect(got.snapshot.path).toEqual(root === 'examples'
-      ? ['tests','examples',name,'hoon'] : ['examples',root,name,'hoon']);
+    expect(got.snapshot.path).toEqual(rel);
     await expect(page.locator('#run-stale')).toContainText('matches');
     if (outcome === 'suite') {
       expect(got.outcome.status).toBe('passed');
@@ -281,7 +285,7 @@ test('Preview shows samples, verdicts and shrink candidates', async ({page}) => 
   await page.waitForFunction(() => window.quiz?.ready);
   await page.evaluate(() => window.quiz.ready);
   await page.evaluate(path => window.quiz.documents.open('property', path),
-    ['failing', '08-seeded-threshold', 'hoon']);
+    ['clay', 'quiz', 'now', 'examples', 'failing', '08-seeded-threshold', 'hoon']);
   await page.locator('#run-previewCount').fill('5');
   await page.locator('#run-preview').click();
   const record = () => page.evaluate(() => {
@@ -307,7 +311,7 @@ test('Run panel overrides the duplicates policy', async ({page}) => {
   await page.waitForFunction(() => window.quiz?.ready);
   await page.evaluate(() => window.quiz.ready);
   await page.evaluate(path => window.quiz.documents.open('property', path),
-    ['failing', '05-duplicates', 'hoon']);
+    ['clay', 'quiz', 'now', 'examples', 'failing', '05-duplicates', 'hoon']);
   await expect(page.locator('#run-mode')).toHaveValue('file');
   await page.locator('#run-duplicates').selectOption('allow');
   await page.locator('#run-sizeMax').fill('4');
@@ -336,7 +340,7 @@ test('hanging samples fail with a timeout under on-timeout %fail', async ({page}
     await page.waitForFunction(() => window.quiz?.ready);
     await page.evaluate(() => window.quiz.ready);
     await page.evaluate(path => window.quiz.documents.open('property', path),
-      ['props', '27-timeout-fail', 'hoon']);
+      ['clay', 'quiz', 'now', 'examples', 'props', '27-timeout-fail', 'hoon']);
     await page.locator('#run-start').click();
     const record = () => page.evaluate(() => {
       const id = JSON.parse(localStorage.getItem('quiz.session')).runSelection;
@@ -403,7 +407,7 @@ test('Preview summarizes a weak generator against its repair', async ({page}) =>
   await page.evaluate(() => window.quiz.ready);
   const summary = async (name) => {
     await page.evaluate(path => window.quiz.documents.open('property', path),
-      ['props', name, 'hoon']);
+      ['clay', 'quiz', 'now', 'examples', 'props', name, 'hoon']);
     await page.locator('#run-previewShow').selectOption('verdicts');
     await page.locator('#run-previewCount').fill('200');
     const newest = () => page.evaluate(() =>
@@ -439,7 +443,7 @@ test('Find examples for each label shows the smallest of each', async ({page}) =
   await page.evaluate(() => window.quiz.ready);
   const search = async (name) => {
     await page.evaluate(path => window.quiz.documents.open('property', path),
-      ['props', name, 'hoon']);
+      ['clay', 'quiz', 'now', 'examples', 'props', name, 'hoon']);
     await page.locator('#run-examplesCount').fill('100');
     const newest = () => page.evaluate(() =>
       window.quiz.documents.active('property').runIds?.[0] || null);

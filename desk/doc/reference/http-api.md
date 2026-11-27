@@ -367,9 +367,10 @@ whose `/+` lines import `/lib/test` and that has a `++  test-` arm is
 or `/lib/quiz-engine`, else `suite`. Other files are omitted. The first 4,096
 bytes of each file are parsed for the prelude, in whole lines. The arm checks
 are textual: a line must start at column 0 with `++  fate` followed by a
-space or the end of the line, or with `++  test-`; nothing is compiled. The paths open through the file
-wire below. The workbench's **Clay source** view uses this; the file wire's
-`browse` lists every file. A missing or unavailable desk or revision returns
+space or the end of the line, or with `++  test-`; nothing is compiled. The
+paths open through the file wire below. The workbench's **Properties and
+suites** view and its Open chooser use this; the file wire's `browse` lists
+every file. A missing or unavailable desk or revision returns
 the file wire's error envelope (400 or 404). The command is a read and takes
 no API slot.
 
@@ -381,21 +382,23 @@ A timeout is not a rollback of an admitted run. An engine rejection returns
 
 ## File wire
 
-The file wire serves `.hoon` source as text under `/data/quiz` in the app's
-own desk. Paths in this protocol are relative to that root. Save/delete are verified asynchronously with a
+The file wire serves `.hoon` source as text from any local desk, under
+`/clay/<desk>/<case>` (see below). Only property documents, suites and quiz
+suites, as the index above decides, can be loaded or saved; any other text
+returns 400 `unindexed`. Save/delete are verified asynchronously with a
 10-second timeout and one pending change at a time.
 
 ```json
-{"op":"browse","scope":[]}
-{"op":"save","path":["example","hoon"],"text":"|%  ++  fate  |=(@ud &)  --","base":null,"overwrite":false}
-{"op":"load","path":["example","hoon"]}
+{"op":"browse","scope":["clay","quiz","now"]}
+{"op":"save","path":["clay","quiz","now","data","quiz","example","hoon"],"text":"/+  e=quiz-engine\n|%  ++  fate  |=(@ud &)  --","base":null,"overwrite":false}
+{"op":"load","path":["clay","quiz","now","data","quiz","example","hoon"]}
 ```
 
 `load` returns `{"ok":true,"text":"...","hash":"0v..."}`. Supply that hash as
 `base` on a later save or delete to detect conflicts:
 
 ```json
-{"op":"delete","path":["example","hoon"],"base":"0v..."}
+{"op":"delete","path":["clay","quiz","now","data","quiz","example","hoon"],"base":"0v..."}
 ```
 
 Errors use urui's `{"ok":false,"error":{"code":...,"message":...,
@@ -406,20 +409,14 @@ simpler `{"error":"..."}` shape described above.
 
 ## Workbench file locations
 
-The `/apps/quiz/files` wire accepts these virtual paths (the last segment
-is the mark, such as `hoon` or `md`):
+Every `/apps/quiz/files` path is `clay/<desk>/<case>/<path>/hoon`:
 
-| Prefix | Clay location | Access |
+| Case | Clay location | Access |
 | --- | --- | --- |
-| `work` | This desk's `/data/quiz` | Read/write Hoon and Markdown |
-| `examples` | This desk's `/tests/examples` | Read-only Hoon suites |
-| `props` | This desk's `/examples/props` | Read-only Hoon properties |
-| `failing` | This desk's `/examples/failing` | Read-only teaching failures |
-| `docs` | This desk's `/doc` | Read-only Markdown |
-| `clay/<desk>/<revision>` | Local desk, explicit decimal revision | Read-only Hoon |
+| `now` | The local desk's current files | Read/write: a save commits to that desk |
+| a decimal revision | The local desk at that revision | Read-only |
 
-The earlier relative Hoon paths remain writable aliases under `/data/quiz`.
-Read-only restrictions are enforced by the server, including save and
-delete requests. Browse Clay with a desk and revision; bare `clay` returns
-a context-selection error. The workbench's Open chooser sends the context
-last browsed in Clay source instead of a bare `clay`. Unavailable desks or revisions return 404.
+Other prefixes, and marks other than `hoon`, return 400. Read-only
+restrictions are enforced by the server, including save and delete
+requests. Browse Clay with a desk and case; bare `clay` returns a
+context-selection error. Unavailable desks or revisions return 404.

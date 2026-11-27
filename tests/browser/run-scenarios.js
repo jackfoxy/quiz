@@ -195,7 +195,7 @@ async function scenario(env, mock, name) {
     assert.equal(el('run-original').textContent,'541');
     assert.equal(el('run-shrunk').textContent,'501');
     // Save as regression opens the suite as an unsaved tab in Saved suite
-    // mode; once saved under work it selects the new revision.
+    // mode; once saved at now it selects the desk's new head.
     assert.equal(el('run-save-regression').disabled, false);
     await runs.saveRegression();
     const regression = docs.active('property');
@@ -209,7 +209,7 @@ async function scenario(env, mock, name) {
     assert.equal(el('run-start').textContent, 'Run saved suite');
     assert.equal(el('run-start').disabled, true, 'an unsaved suite cannot run');
     field('revision', '3');
-    regression.path = ['work', `regression-${replayId}`, 'hoon'];
+    regression.path = ['clay', 'quiz', 'now', 'data', 'quiz', `regression-${replayId}`, 'hoon'];
     runs.saved(regression);
     for (let i = 0; i < 20; i++) await env.tick();
     assert.equal(el('run-revision').value, '20');
@@ -274,7 +274,7 @@ async function scenario(env, mock, name) {
     assert(!other.runIds?.includes(original));
     assert.match(el('run-source-tab').textContent, /Source tab/);
     docs.select('property',tab.id);
-    await docs.open('property',['examples','example','hoon']);
+    await docs.open('property',['clay','quiz','now','tests','example','hoon']);
     field('mode','suite'); field('requested','invalid ignored for suites');
     field('arms','test-one');
     mock.hold('suite-arms');
